@@ -353,12 +353,14 @@ body {
 .hl-comment { color: var(--ink-soft); font-style: italic; }
 .hl-var { color: var(--accent); font-weight: 600; }
 
-/* Layer that carries the computed results, scroll-synced with the text. */
+/* Layer that carries the computed results, scroll-synced with the text.
+   No overflow clipping here: like the highlight layer, it is clipped by the
+   .editor box. Clipping on this layer would move with its translateY() and
+   wrongly hide the results once the note is scrolled. */
 .editor__results-layer {
   position: absolute;
   inset: 0;
   z-index: 1;
-  overflow: hidden;
   pointer-events: none;
 }
 
