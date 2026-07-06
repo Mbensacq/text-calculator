@@ -245,6 +245,46 @@ body {
   .topbar__hint { display: none; }
 }
 
+/* ---- Function palette --------------------------------------------- */
+
+.fnbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper);
+  scrollbar-width: thin;
+}
+
+.fnbar__label {
+  font-style: italic;
+  font-weight: 700;
+  color: var(--ink-soft);
+  margin-right: 4px;
+  font-size: 15px;
+}
+
+.fn {
+  flex: 0 0 auto;
+  border: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .12s ease, border-color .12s ease, color .12s ease;
+}
+.fn:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.fn:active { transform: translateY(1px); }
+
 /* ---- Writing surface ---------------------------------------------- */
 
 .sheet {

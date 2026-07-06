@@ -129,6 +129,13 @@
 
     document.getElementById('new-note').addEventListener('click', newNote);
 
+    // Function palette: insert "name()" with the caret between the parentheses.
+    document.getElementById('fnbar').addEventListener('click', function (e) {
+      const btn = e.target.closest('.fn');
+      if (!btn) return;
+      editor.insertAtCaret(btn.dataset.insert, 1);
+    });
+
     // Sidebar toggle (mobile)
     const toggle = document.getElementById('sidebar-toggle');
     function openSidebar() { layoutEl.classList.add('sidebar-open'); }

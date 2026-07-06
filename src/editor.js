@@ -125,6 +125,18 @@
         input.scrollTop = 0;
         recompute();
       },
+      // Insert text at the caret (used by the function palette). The caret is
+      // left `caretOffsetFromEnd` characters before the end of the inserted
+      // text — e.g. 1 to land it between a freshly inserted "()".
+      insertAtCaret: function (text, caretOffsetFromEnd) {
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        input.value = input.value.slice(0, start) + text + input.value.slice(end);
+        const pos = start + text.length - (caretOffsetFromEnd || 0);
+        input.setSelectionRange(pos, pos);
+        input.focus();
+        recompute();
+      },
     };
   }
 

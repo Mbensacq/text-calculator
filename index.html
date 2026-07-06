@@ -31,6 +31,19 @@
         <p class="topbar__hint">Terminez une ligne par « = » pour afficher le résultat.</p>
       </header>
 
+      <div class="fnbar" id="fnbar" role="toolbar" aria-label="Fonctions">
+        <span class="fnbar__label">ƒ</span>
+        <button type="button" class="fn" data-insert="sum()" title="Somme d'une liste : sum(1, 2, 3)">somme</button>
+        <button type="button" class="fn" data-insert="moyenne()" title="Moyenne : moyenne(12, 15, 9)">moyenne</button>
+        <button type="button" class="fn" data-insert="min()" title="Minimum">min</button>
+        <button type="button" class="fn" data-insert="max()" title="Maximum">max</button>
+        <button type="button" class="fn" data-insert="sqrt()" title="Racine carrée">√</button>
+        <button type="button" class="fn" data-insert="round()" title="Arrondi à l'entier">arrondi</button>
+        <button type="button" class="fn" data-insert="abs()" title="Valeur absolue">|x|</button>
+        <button type="button" class="fn" data-insert="floor()" title="Arrondi inférieur">plancher</button>
+        <button type="button" class="fn" data-insert="ceil()" title="Arrondi supérieur">plafond</button>
+      </div>
+
       <main class="sheet">
         <div class="editor">
           <textarea id="input" class="editor__input" spellcheck="false" autocomplete="off"
