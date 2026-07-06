@@ -112,6 +112,20 @@
         return Units.div(evaluate(ast.operand, env), Units.scalar(100));
 
       case 'binary': {
+        // Accounting-friendly percentages: "300 € + 20%" means +20% *of* 300 €
+        // (i.e. 360 €), not "add the number 0.2". Only kicks in when the left
+        // side carries a real unit, so "20% + 30%" still adds to 50%.
+        if ((ast.op === '+' || ast.op === '-') && ast.right.type === 'percent') {
+          const base = evaluate(ast.left, env);
+          if (!Units.isDimensionless(base.dim)) {
+            const frac = Units.div(evaluate(ast.right.operand, env), Units.scalar(100));
+            const factor = ast.op === '+'
+              ? Units.add(Units.scalar(1), frac)
+              : Units.sub(Units.scalar(1), frac);
+            return Units.mul(base, factor);
+          }
+        }
+
         const a = evaluate(ast.left, env);
         const b = evaluate(ast.right, env);
         switch (ast.op) {

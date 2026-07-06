@@ -20,9 +20,9 @@
     'pain = 2.90 €',
     'oeufs = 3.20 €',
     'total = lait + pain + oeufs',
-    'avec_pourboire = total * 1.05',
+    'ttc = total + 20%',
     '',
-    'Essayez aussi : 2 h en min, 20% * 300 €, sqrt(144), 3 cafés * 4',
+    'Essayez aussi : 2 h en min, 90 km/h en m/s, sqrt(144), 3 cafés * 4',
   ].join('\n');
 
   function ready(fn) {
