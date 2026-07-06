@@ -1,55 +1,71 @@
 # Text Calculator
 
 Un bloc-notes qui **calcule pendant que vous écrivez**. On prend des notes
-librement, on définit des variables au fil du texte — `distance = 10 km`,
-`temps = 2 h` — et les résultats s'affichent en direct dans la marge, à la
-manière de [Soulver](https://soulver.app) ou des notes d'Apple.
+librement, on définit des variables au fil du texte, et le résultat s'affiche
+**juste après le « = »**, dans le fil du texte — à la manière des notes
+d'Apple. Une ligne ne calcule que si elle se termine par `=` ; on peut donc
+écrire de longs calculs sur une ligne et placer le `=` là où l'on veut voir
+le résultat.
 
 La particularité : **une variable peut être utilisée avant d'être définie**.
-Écrivez `vitesse = distance / temps` en haut de la page et définissez
-`distance` et `temps` trois lignes plus bas — le calcul se met à jour quand
-même. Toute la note forme une seule portée.
+Écrivez `vitesse =` en haut de la page et définissez `vitesse`, `distance` et
+`temps` plus bas — le résultat s'affiche quand même. Toute la note forme une
+seule portée.
 
 ```
-vitesse = distance / temps      → 50 km/h
-
-# Données du trajet
-distance = 100 km               → 100 km
-temps    = 2 h                  → 2 h
+# Trajet
+vitesse =                → 50 km/h
+vitesse = distance / temps
+distance = 100 km
+temps = 2 h
 ```
 
 ## Fonctionnalités
 
+- **Résultat après le « = »** : rien ne s'affiche tant que la ligne ne se
+  termine pas par `=`, et le résultat apparaît juste après, dans une couleur
+  distincte de celle des variables.
 - **Variables littérales** définies n'importe où (`nom = expression`).
 - **Références en avant** : utilisez une variable au-dessus de sa définition.
 - **Unités et analyse dimensionnelle** : longueurs, masses, durées, aires,
   volumes, monnaies, données… `2 km + 500 m`, `10 km / 2 h → 5 km/h`.
 - **Conversions** avec `en` : `2 h en min`, `90 km/h en m/s`.
+- **Listes et plages** : `notes = 12, 15, 9` puis `moyenne(notes) =`, et des
+  plages façon mathématique : `sum(1, 2, …, 10) =` → `55`.
+- **Fonctions type Excel** insérables en un clic (barre ƒ) : `sum`, `moyenne`,
+  `min`, `max`, `sqrt`, `round`, `abs`, `floor`, `ceil`… et **constantes**
+  (`pi`, `e`, `tau`).
 - **Étiquettes libres** pour compter : `3 pommes + 2 pommes → 5 pommes`.
 - **Pourcentages comptables** : `300 € + 20% → 360 €` (TVA, remise, pourboire).
-- **Fonctions** (`sqrt`, `round`, `min`, `max`, `sum`, `moyenne`, `sin`…) et
-  **constantes** (`pi`, `e`, `tau`).
 - **Plusieurs notes** dans une barre latérale, enregistrées automatiquement
   dans le navigateur (localStorage).
-- **Coloration légère** des titres, commentaires et variables.
-- **La prose reste de la prose** : les lignes de texte ordinaire n'affichent
-  aucun résultat parasite.
+- **Coloration légère** des titres, commentaires, variables et résultats.
 
 ## Le mini-langage
 
-| Vous écrivez            | Résultat        |
-| ----------------------- | --------------- |
-| `1 + 2 * 3`             | `7`             |
-| `2 ^ 10`                | `1 024`         |
-| `20% * 300 €`           | `60 €`          |
-| `300 € + 20%`           | `360 €`         |
-| `2 km + 500 m`          | `2.5 km`        |
-| `100 km/h * 2 h`        | `200 km`        |
-| `2 h en min`            | `120 min`       |
-| `3 cafés * 4`           | `12 cafés`      |
+Ajoutez un `=` en fin de ligne pour afficher le résultat (montré ici après `→`) :
 
+| Vous écrivez              | Résultat          |
+| ------------------------- | ----------------- |
+| `1 + 2 * 3 =`             | `7`               |
+| `2 ^ 10 =`                | `1 024`           |
+| `20% * 300 € =`           | `60 €`            |
+| `300 € + 20% =`           | `360 €`           |
+| `2 km + 500 m =`          | `2.5 km`          |
+| `100 km/h * 2 h =`        | `200 km`          |
+| `2 h en min =`            | `120 min`         |
+| `3 cafés * 4 =`           | `12 cafés`        |
+| `sum(1, 2, …, 8) =`       | `36`              |
+| `moyenne(12, 15, 9) =`    | `12`              |
+| `prix =`                  | valeur de `prix`  |
+
+- **Afficher un résultat** : la ligne doit finir par `=`. `nom =` montre la
+  valeur d'une variable ; `nom = expr =` la définit *et* l'affiche.
 - Un nom de variable est un identifiant simple (`prix`, `taux_tva`, `x`).
   Il peut contenir des accents. La dernière définition d'un même nom l'emporte.
+- Une **liste** s'écrit avec des virgules (`notes = 12, 15, 9`) et se combine
+  avec les fonctions (`sum`, `moyenne`, `min`, `max`) ou élément par élément
+  (`notes * 2`). Une **plage** s'écrit avec `…` : `1, 2, …, 10`.
 - Un identifiant inconnu (ni variable, ni unité) devient une **étiquette**
   (`pommes`, `cafés`, `tickets`…) : on peut ainsi additionner des choses.
 - Les lignes commençant par `#` ou `//` sont des titres/commentaires.
