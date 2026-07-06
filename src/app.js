@@ -36,6 +36,14 @@
     else fn();
   }
 
+  // Register the service worker so the app installs and works offline.
+  // (No-op on file:// or unsupported browsers.)
+  if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () { /* ignore */ });
+    });
+  }
+
   ready(function () {
     const store = TC.createStore(DEFAULT_NOTE);
 

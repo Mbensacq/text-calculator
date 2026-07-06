@@ -2,10 +2,22 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Text Calculator</title>
   <meta name="description" content="Éditeur de notes avec calcul intégré : variables, unités, fonctions, listes et conditions.">
-  <link rel="stylesheet" href="styles/main.css?v=3">
+
+  <!-- Installable web app (Add to Home Screen) -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#f6f5f1" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#17161a" media="(prefers-color-scheme: dark)">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Text Calc">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+
+  <link rel="stylesheet" href="styles/main.css?v=4">
 </head>
 <body>
   <div class="app" id="app">
@@ -53,14 +65,14 @@
     </div>
   </div>
 
-  <script src="src/units.js?v=3"></script>
-  <script src="src/tokenizer.js?v=3"></script>
-  <script src="src/parser.js?v=3"></script>
-  <script src="src/evaluator.js?v=3"></script>
-  <script src="src/formatter.js?v=3"></script>
-  <script src="src/engine.js?v=3"></script>
-  <script src="src/editor.js?v=3"></script>
-  <script src="src/storage.js?v=3"></script>
-  <script src="src/app.js?v=3"></script>
+  <script src="src/units.js?v=4"></script>
+  <script src="src/tokenizer.js?v=4"></script>
+  <script src="src/parser.js?v=4"></script>
+  <script src="src/evaluator.js?v=4"></script>
+  <script src="src/formatter.js?v=4"></script>
+  <script src="src/engine.js?v=4"></script>
+  <script src="src/editor.js?v=4"></script>
+  <script src="src/storage.js?v=4"></script>
+  <script src="src/app.js?v=4"></script>
 </body>
 </html>
