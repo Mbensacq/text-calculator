@@ -363,29 +363,36 @@ body {
   pointer-events: none;
 }
 
-/* Computed result, shown inline just after the "=", as a soft chip. A colour
-   distinct from variables (teal) so the two never blur together. */
+/* Computed result, shown inline just after the "=". The outer box is exactly
+   one line tall and centres the pill on it, so the result always sits on the
+   same baseline as the text — never offset. */
 .calc-result {
   position: absolute;
   z-index: 1;
   margin-left: 10px;
-  margin-top: 3px;
+  height: calc(16px * 1.7);
+  display: flex;
+  align-items: center;
+  transform-origin: left center;
+  transition: left .1s cubic-bezier(.2, .7, .3, 1);
+}
+
+/* The visible chip. A colour distinct from variables (teal) so they never
+   blur together. */
+.calc-result__pill {
   padding: 1px 9px;
-  height: calc(16px * 1.7 - 6px);
-  line-height: calc(16px * 1.7 - 6px);
+  border-radius: 8px;
   white-space: nowrap;
   color: var(--result);
   background: var(--result-bg);
-  border-radius: 8px;
   font-size: 15px;
+  line-height: 1.35;
   font-weight: 600;
-  transform-origin: left center;
-  transition: left .1s cubic-bezier(.2, .7, .3, 1);
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
 }
 
-.calc-result--error {
+.calc-result--error .calc-result__pill {
   color: var(--error);
   background: var(--error-bg);
   font-weight: 500;

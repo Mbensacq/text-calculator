@@ -135,27 +135,26 @@
         if (!entry) {
           const el = document.createElement('span');
           el.className = 'calc-result';
-          el.style.left = marker.offsetLeft + 'px';
-          el.style.top = marker.offsetTop + 'px';
+          const pill = span('calc-result__pill', '');
+          el.appendChild(pill);
           results.appendChild(el);
-          entry = pool[i] = { el: el, text: null };
+          entry = pool[i] = { el: el, pill: pill, text: null };
           isNew = true;
-        } else {
-          entry.el.style.left = marker.offsetLeft + 'px';
-          entry.el.style.top = marker.offsetTop + 'px';
         }
-
-        const el = entry.el;
-        el.classList.toggle('calc-result--error', !!inf.error);
+        // Horizontal: end of the text (the marker). Vertical: the top of the
+        // block line — an inline marker's offsetTop sits half a leading too low.
+        entry.el.style.left = marker.offsetLeft + 'px';
+        entry.el.style.top = marker.parentNode.offsetTop + 'px';
+        entry.el.classList.toggle('calc-result--error', !!inf.error);
 
         if (isNew) {
-          el.textContent = inf.text;
+          entry.pill.textContent = inf.text;
           entry.text = inf.text;
-          animate(el, ENTER_KEYFRAMES, 200);
+          animate(entry.el, ENTER_KEYFRAMES, 200);
         } else if (entry.text !== inf.text) {
-          el.textContent = inf.text;
+          entry.pill.textContent = inf.text;
           entry.text = inf.text;
-          animate(el, UPDATE_KEYFRAMES, 170);
+          animate(entry.el, UPDATE_KEYFRAMES, 170);
         }
       }
 
