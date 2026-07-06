@@ -41,7 +41,7 @@
 
     const editor = TC.createEditor({
       input: document.getElementById('input'),
-      mirror: document.getElementById('mirror'),
+      highlight: document.getElementById('highlight'),
       results: document.getElementById('results'),
       onChange: function (text) {
         store.updateBody(activeId, text);

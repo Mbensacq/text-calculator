@@ -1,21 +1,24 @@
 /*
  * editor.js — the writing surface.
  *
- * A plain <textarea> holds the text (so typing, selection and undo all behave
- * natively). Results are drawn in a right-hand gutter, each one aligned to the
- * line it belongs to. Alignment is done with a hidden "mirror" element that
- * copies the textarea's exact metrics: every source line becomes a block whose
- * offsetTop tells us where that line sits, wrapping included.
+ * A plain <textarea> holds the text so typing, selection and undo all behave
+ * natively. Two extra layers sit behind it, sharing its exact metrics:
+ *
+ *   • a highlight layer that re-renders each line with light syntax colouring
+ *     (headings, comments, variable names). The textarea's own text is drawn
+ *     transparent, so what the eye reads is this coloured layer underneath.
+ *   • the same layer doubles as a measuring "mirror": each source line is a
+ *     block whose offsetTop tells us where to place its result in the gutter,
+ *     wrapping included.
  */
 (function (root, factory) {
-  const mod = factory(root.TC);
+  const mod = factory();
   root.TC = root.TC || {};
   root.TC.createEditor = mod.createEditor;
   if (typeof module !== 'undefined' && module.exports) module.exports = mod;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (TC) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  // Textarea metrics we must replicate on the mirror for identical wrapping.
   const COPIED_STYLES = [
     'fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'fontVariant',
     'letterSpacing', 'lineHeight', 'textTransform', 'wordSpacing', 'textIndent',
@@ -24,10 +27,37 @@
     'boxSizing', 'tabSize',
   ];
 
+  const HEADING_RE = /^\s*#/;
+  const COMMENT_RE = /^\s*\/\//;
+  const ASSIGN_RE = /^(\s*)([\p{L}_][\p{L}\p{N}_]*)(\s*=)([\s\S]*)$/u;
+
+  function textNode(t) { return document.createTextNode(t); }
+  function span(cls, t) {
+    const s = document.createElement('span');
+    s.className = cls;
+    s.textContent = t;
+    return s;
+  }
+
+  // Fill a line element with lightly-coloured pieces.
+  function colourise(div, line) {
+    if (!line.trim()) { div.textContent = '​'; return; }
+    if (HEADING_RE.test(line)) { div.appendChild(span('hl-heading', line)); return; }
+    if (COMMENT_RE.test(line)) { div.appendChild(span('hl-comment', line)); return; }
+    const m = line.match(ASSIGN_RE);
+    if (m) {
+      div.appendChild(textNode(m[1]));
+      div.appendChild(span('hl-var', m[2]));
+      div.appendChild(textNode(m[3] + m[4]));
+      return;
+    }
+    div.textContent = line;
+  }
+
   function createEditor(opts) {
-    const input = opts.input;     // <textarea>
-    const mirror = opts.mirror;   // hidden measuring div
-    const results = opts.results; // gutter container (holds .editor__results-inner)
+    const input = opts.input;         // <textarea>
+    const highlight = opts.highlight; // visible colour + measuring layer
+    const results = opts.results;     // gutter container
     const onChange = opts.onChange || function () {};
 
     const inner = document.createElement('div');
@@ -36,54 +66,47 @@
 
     function copyMetrics() {
       const cs = getComputedStyle(input);
-      for (const prop of COPIED_STYLES) mirror.style[prop] = cs[prop];
-      mirror.style.width = input.clientWidth + 'px';
-      mirror.style.whiteSpace = 'pre-wrap';
-      mirror.style.overflowWrap = 'break-word';
-      mirror.style.wordBreak = 'break-word';
+      for (const prop of COPIED_STYLES) highlight.style[prop] = cs[prop];
+      highlight.style.width = input.clientWidth + 'px';
     }
 
-    // Rebuild the mirror and return the vertical offset of each source line.
-    function measureLineTops(linesText) {
-      mirror.textContent = '';
+    // Rebuild the highlight layer and return the vertical offset of each line.
+    function renderLines(linesText) {
+      highlight.textContent = '';
       const frag = document.createDocumentFragment();
       const nodes = [];
       for (let i = 0; i < linesText.length; i++) {
         const div = document.createElement('div');
-        div.className = 'mirror-line';
-        // A zero-width space keeps empty lines one row tall.
-        div.textContent = linesText[i].length ? linesText[i] : '​';
+        div.className = 'hl-line';
+        colourise(div, linesText[i]);
         frag.appendChild(div);
         nodes.push(div);
       }
-      mirror.appendChild(frag);
+      highlight.appendChild(frag);
       return nodes.map((n) => n.offsetTop);
     }
 
     function syncScroll() {
-      inner.style.transform = 'translateY(' + -input.scrollTop + 'px)';
+      const y = -input.scrollTop;
+      highlight.style.transform = 'translateY(' + y + 'px)';
+      inner.style.transform = 'translateY(' + y + 'px)';
     }
 
     function recompute() {
       const text = input.value;
-      const linesText = text.split('\n');
-      const tops = measureLineTops(linesText);
+      const tops = renderLines(text.split('\n'));
       const result = TC.evaluateDocument(text);
 
       const frag = document.createDocumentFragment();
       for (const rec of result.lines) {
         const top = tops[rec.index];
         if (top == null) continue;
-        if (rec.error) {
-          frag.appendChild(makeResult(top, rec.error, true));
-        } else if (rec.display != null) {
-          frag.appendChild(makeResult(top, rec.display, false));
-        }
+        if (rec.error) frag.appendChild(makeResult(top, rec.error, true));
+        else if (rec.display != null) frag.appendChild(makeResult(top, rec.display, false));
       }
       inner.textContent = '';
       inner.appendChild(frag);
       syncScroll();
-
       onChange(text, result);
     }
 
@@ -93,11 +116,8 @@
       el.style.top = top + 'px';
       el.title = text;
       if (isError) {
-        const glyph = document.createElement('span');
-        glyph.className = 'res__glyph';
-        glyph.textContent = '⚠';
-        el.appendChild(glyph);
-        el.appendChild(document.createTextNode(' ' + text));
+        el.appendChild(span('res__glyph', '⚠'));
+        el.appendChild(textNode(' ' + text));
       } else {
         el.textContent = text;
       }
@@ -106,10 +126,7 @@
 
     input.addEventListener('input', recompute);
     input.addEventListener('scroll', syncScroll);
-    window.addEventListener('resize', function () {
-      copyMetrics();
-      recompute();
-    });
+    window.addEventListener('resize', function () { copyMetrics(); recompute(); });
 
     copyMetrics();
 
