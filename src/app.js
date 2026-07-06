@@ -5,7 +5,7 @@
   'use strict';
 
   const DEFAULT_NOTE = [
-    '# Bienvenue 👋',
+    '# Bienvenue',
     'Écrivez librement. Pour afficher un résultat, terminez la ligne par « = ».',
     '',
     '(2 + 3) * 4 =',

@@ -1,7 +1,7 @@
 {
   "name": "text-calculator",
   "version": "0.1.0",
-  "description": "Un bloc-notes qui calcule : écrivez vos notes, définissez des variables (même plus bas dans le texte) et obtenez les résultats en direct.",
+  "description": "Éditeur de notes avec calcul intégré : variables, unités, fonctions, listes et conditions.",
   "license": "MIT",
   "private": true,
   "type": "commonjs",
