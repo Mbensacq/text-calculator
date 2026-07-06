@@ -6,12 +6,15 @@
 
   const DEFAULT_NOTE = [
     '# Bienvenue 👋',
-    "Ceci est un bloc-notes qui calcule pendant que vous écrivez.",
+    'Écrivez librement. Pour afficher un résultat, terminez la ligne par « = ».',
     '',
-    'Une variable peut être utilisée avant même sa définition :',
-    'vitesse = distance / temps',
+    '(2 + 3) * 4 =',
+    '90 km/h en m/s =',
     '',
     '# Trajet',
+    'Une variable peut servir avant même sa définition :',
+    'vitesse =',
+    'vitesse = distance / temps',
     'distance = 100 km',
     'temps = 2 h',
     '',
@@ -19,10 +22,13 @@
     'lait = 1.15 €',
     'pain = 2.90 €',
     'oeufs = 3.20 €',
-    'total = lait + pain + oeufs',
-    'ttc = total + 20%',
+    'total = lait + pain + oeufs =',
+    'total + 20% =',
     '',
-    'Essayez aussi : 2 h en min, 90 km/h en m/s, sqrt(144), 3 cafés * 4',
+    '# Listes',
+    'notes = 12, 15, 9, 17',
+    'moyenne(notes) =',
+    'sum(1, 2, ..., 10) =',
   ].join('\n');
 
   function ready(fn) {
@@ -42,7 +48,6 @@
     const editor = TC.createEditor({
       input: document.getElementById('input'),
       highlight: document.getElementById('highlight'),
-      results: document.getElementById('results'),
       onChange: function (text) {
         store.updateBody(activeId, text);
         // Refresh the sidebar title/snippet, but not on every keystroke.

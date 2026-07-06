@@ -36,45 +36,45 @@
   const COMMENT_RE = /^\s*(#|\/\/)/;
 
   // Split "name = expression" into its parts when the left side is a single
-  // identifier. Returns null when the line is not an assignment.
+  // identifier AND there is something on the right. A line like "name =" is a
+  // *display request* (show the value), not an assignment, so it is excluded.
   function splitAssignment(line) {
     const eq = line.indexOf('=');
     if (eq === -1) return null;
     const left = line.slice(0, eq);
     const right = line.slice(eq + 1);
+    if (right.trim() === '') return null;
     const lt = tokenize(left);
-    // Expect exactly: ident, eof
     if (lt.length === 2 && lt[0].type === 'ident') {
       return { name: lt[0].value, rhs: right };
     }
     return null;
   }
 
-  // Does this line contain an actual computation worth showing a result for?
-  // A bare number or a lone unknown word ("3 pommes") stays silent; a reference
-  // to a known variable, an operator, a function or a conversion does not.
-  function hasComputation(tokens, defs) {
-    for (const t of tokens) {
-      if (t.type === 'op' || t.type === 'percent' || t.type === 'keyword' ||
-          t.type === 'lparen' || t.type === 'pow2' || t.type === 'pow3') {
-        return true;
-      }
-      if (t.type === 'ident') {
-        if (defs[t.value]) return true;
-        if (Ev.CONSTANTS[t.value]) return true;
-        if (Units.isKnownUnit(t.value)) return true;
-      }
-    }
-    return false;
+  // A line shows a result only when it ends with "=" (Apple-Notes style):
+  // the result is placed right after that sign. Returns the expression part
+  // (without the trailing "=") and whether a result was requested.
+  function splitResultRequest(raw) {
+    const trimmedEnd = raw.replace(/\s+$/, '');
+    if (trimmedEnd.charAt(trimmedEnd.length - 1) !== '=') return { core: raw, requested: false };
+    const core = trimmedEnd.slice(0, -1);
+    if (core.trim() === '') return { core: raw, requested: false };
+    return { core: core, requested: true };
   }
 
   function classify(rawLine) {
-    const line = rawLine;
-    if (line.trim() === '') return { kind: 'blank' };
-    if (COMMENT_RE.test(line)) return { kind: 'comment' };
-    const asg = splitAssignment(line);
-    if (asg) return { kind: 'def', name: asg.name, source: asg.rhs };
-    return { kind: 'expr', source: line };
+    const split = splitResultRequest(rawLine);
+    const core = split.core;
+    let rec;
+    if (core.trim() === '') rec = { kind: 'blank' };
+    else if (COMMENT_RE.test(core)) rec = { kind: 'comment' };
+    else {
+      const asg = splitAssignment(core);
+      if (asg) rec = { kind: 'def', name: asg.name, source: asg.rhs };
+      else rec = { kind: 'expr', source: core };
+    }
+    rec.resultRequested = split.requested;
+    return rec;
   }
 
   function evaluateDocument(text) {
@@ -87,7 +87,7 @@
     });
 
     // ---- Pass 1: collect definitions (last one wins) -------------------
-    const defs = {}; // name -> { ast | null, parseError, record }
+    const defs = {}; // name -> { ast | null, parseError }
     for (const rec of records) {
       if (rec.kind !== 'def') continue;
       let ast = null;
@@ -97,9 +97,7 @@
       } catch (e) {
         parseError = e.message;
       }
-      defs[rec.name] = { ast, parseError, record: rec };
-      rec.ast = ast;
-      rec.parseError = parseError;
+      defs[rec.name] = { ast: ast, parseError: parseError };
     }
 
     // ---- Pass 2: lazy, memoised resolution with cycle detection --------
@@ -122,7 +120,7 @@
           throw new CalcError('définition invalide de « ' + name + ' »');
         }
         const value = evaluate(def.ast, env);
-        cache[name] = { value };
+        cache[name] = { value: value };
         return value;
       } catch (e) {
         cache[name] = { error: e.message };
@@ -138,56 +136,34 @@
       },
     };
 
-    // ---- Produce per-line results -------------------------------------
-    const variables = {};
+    // ---- Produce per-line results (only for lines ending in "=") -------
     for (const rec of records) {
+      if (!rec.resultRequested) continue;
       if (rec.kind === 'def') {
-        if (rec.parseError) {
-          rec.error = rec.parseError;
-          continue;
-        }
         try {
-          const value = resolveVar(rec.name);
-          rec.value = value;
-          rec.display = Fmt.formatQuantity(value);
-          variables[rec.name] = value;
+          rec.value = resolveVar(rec.name);
+          rec.display = Fmt.formatValue(rec.value);
         } catch (e) {
           rec.error = e.message;
         }
       } else if (rec.kind === 'expr') {
-        const tokens = tokenize(rec.source);
-        if (!hasComputation(tokens, defs)) continue; // prose — stay silent
         let ast;
         try {
-          ast = parse(tokens);
+          ast = parse(tokenize(rec.source));
         } catch (e) {
-          continue; // does not parse as an expression → treat as prose
+          continue; // "=" on something that isn't an expression → ignore
         }
         try {
-          const value = evaluate(ast, env);
-          // Suppress noisy "labels only" lines that are really prose.
-          if (Fmt.labelDimensionCount(value) > 1 && !astHasOperator(ast)) continue;
-          rec.value = value;
-          rec.display = Fmt.formatQuantity(value);
+          rec.value = evaluate(ast, env);
+          rec.display = Fmt.formatValue(rec.value);
         } catch (e) {
           rec.error = e.message;
         }
       }
     }
 
-    return { lines: records, variables: variables };
+    return { lines: records };
   }
 
-  function astHasOperator(ast) {
-    if (!ast || typeof ast !== 'object') return false;
-    if (ast.type === 'binary' && !ast.implicit) return true;
-    if (ast.type === 'percent' || ast.type === 'convert' || ast.type === 'call') return true;
-    for (const k in ast) {
-      const v = ast[k];
-      if (v && typeof v === 'object' && astHasOperator(v)) return true;
-    }
-    return false;
-  }
-
-  return { evaluateDocument, splitAssignment, classify };
+  return { evaluateDocument, splitAssignment, splitResultRequest, classify };
 });

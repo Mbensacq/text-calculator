@@ -26,6 +26,7 @@
   --sidebar-bg: #efede6;
   --active-bg: #e4ded1;
   --heading: #a15c00;
+  --result: #b0308a;
   --select: rgba(15, 118, 110, .18);
   --shadow: 0 1px 2px rgba(40, 35, 25, .04), 0 8px 30px rgba(40, 35, 25, .06);
 }
@@ -44,6 +45,7 @@
     --sidebar-bg: #191820;
     --active-bg: #2b2933;
     --heading: #e0a458;
+    --result: #f19bd6;
     --select: rgba(79, 209, 197, .22);
     --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 34px rgba(0, 0, 0, .4);
   }
@@ -270,7 +272,6 @@ body {
   font-size: 16px;
   line-height: 1.7;
   padding: var(--pad-top) var(--pad-x);
-  padding-right: calc(var(--gutter) + var(--pad-x));
   border: 0;
 }
 
@@ -309,59 +310,24 @@ body {
 .hl-comment { color: var(--ink-soft); font-style: italic; }
 .hl-var { color: var(--accent); font-weight: 600; }
 
-.editor__rule {
+/* Computed result, shown inline right after the "=". A colour distinct from
+   variables (teal) so the two never blur together. */
+.calc-result {
   position: absolute;
-  z-index: 3;
-  top: 12px;
-  bottom: 12px;
-  right: calc(var(--gutter) + var(--pad-x) - 12px);
-  width: 1px;
-  background: var(--rule);
-  pointer-events: none;
-}
-
-.editor__results {
-  position: absolute;
-  z-index: 4;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: calc(var(--gutter) + var(--pad-x));
-  overflow: hidden;
-  pointer-events: none;
-  background: var(--paper);
-}
-
-.editor__results-inner {
-  position: absolute;
-  top: var(--pad-top);
-  left: 0;
-  right: 0;
-  will-change: transform;
-}
-
-.res {
-  position: absolute;
-  right: var(--pad-x);
-  left: 10px;
-  height: calc(16px * 1.7);
+  z-index: 1;
+  font-size: 16px;
   line-height: calc(16px * 1.7);
-  font-size: 15px;
-  text-align: right;
+  height: calc(16px * 1.7);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--accent);
+  color: var(--result);
+  font-weight: 600;
+  pointer-events: none;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
 }
 
-/* Errors read left-to-right so the start of the message stays visible, with
-   an ellipsis if it runs long; the full text is available on hover (title). */
-.res--error {
+.calc-result--error {
   color: var(--error);
-  font-size: 12.5px;
-  text-align: left;
+  font-weight: 500;
+  font-size: 14px;
 }
-
-.res__glyph { font-size: 11px; }

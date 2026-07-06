@@ -2,14 +2,15 @@
  * editor.js — the writing surface.
  *
  * A plain <textarea> holds the text so typing, selection and undo all behave
- * natively. Two extra layers sit behind it, sharing its exact metrics:
+ * natively. A highlight layer sits behind it, sharing its exact metrics, and
+ * renders each line with light syntax colouring (headings, comments, variable
+ * names). The textarea's own text is drawn transparent, so what the eye reads
+ * is this coloured layer.
  *
- *   • a highlight layer that re-renders each line with light syntax colouring
- *     (headings, comments, variable names). The textarea's own text is drawn
- *     transparent, so what the eye reads is this coloured layer underneath.
- *   • the same layer doubles as a measuring "mirror": each source line is a
- *     block whose offsetTop tells us where to place its result in the gutter,
- *     wrapping included.
+ * Results are shown Apple-Notes style: only lines ending in "=" produce one,
+ * and it is placed inline right after that sign. We find the exact spot with a
+ * zero-width marker appended to the line, then position the result there
+ * absolutely so it never affects wrapping or line heights.
  */
 (function (root, factory) {
   const mod = factory();
@@ -39,7 +40,6 @@
     return s;
   }
 
-  // Fill a line element with lightly-coloured pieces.
   function colourise(div, line) {
     if (!line.trim()) { div.textContent = '​'; return; }
     if (HEADING_RE.test(line)) { div.appendChild(span('hl-heading', line)); return; }
@@ -57,12 +57,7 @@
   function createEditor(opts) {
     const input = opts.input;         // <textarea>
     const highlight = opts.highlight; // visible colour + measuring layer
-    const results = opts.results;     // gutter container
     const onChange = opts.onChange || function () {};
-
-    const inner = document.createElement('div');
-    inner.className = 'editor__results-inner';
-    results.appendChild(inner);
 
     function copyMetrics() {
       const cs = getComputedStyle(input);
@@ -70,58 +65,49 @@
       highlight.style.width = input.clientWidth + 'px';
     }
 
-    // Rebuild the highlight layer and return the vertical offset of each line.
-    function renderLines(linesText) {
-      highlight.textContent = '';
-      const frag = document.createDocumentFragment();
-      const nodes = [];
-      for (let i = 0; i < linesText.length; i++) {
-        const div = document.createElement('div');
-        div.className = 'hl-line';
-        colourise(div, linesText[i]);
-        frag.appendChild(div);
-        nodes.push(div);
-      }
-      highlight.appendChild(frag);
-      return nodes.map((n) => n.offsetTop);
-    }
-
     function syncScroll() {
-      const y = -input.scrollTop;
-      highlight.style.transform = 'translateY(' + y + 'px)';
-      inner.style.transform = 'translateY(' + y + 'px)';
+      highlight.style.transform = 'translateY(' + (-input.scrollTop) + 'px)';
     }
 
     function recompute() {
       const text = input.value;
-      const tops = renderLines(text.split('\n'));
+      const lines = text.split('\n');
       const result = TC.evaluateDocument(text);
 
-      const frag = document.createDocumentFragment();
+      const info = {};
       for (const rec of result.lines) {
-        const top = tops[rec.index];
-        if (top == null) continue;
-        if (rec.error) frag.appendChild(makeResult(top, rec.error, true));
-        else if (rec.display != null) frag.appendChild(makeResult(top, rec.display, false));
+        if (rec.error) info[rec.index] = { text: rec.error, error: true };
+        else if (rec.display != null) info[rec.index] = { text: rec.display, error: false };
       }
-      inner.textContent = '';
-      inner.appendChild(frag);
+
+      highlight.textContent = '';
+      const frag = document.createDocumentFragment();
+      const pending = [];
+      for (let i = 0; i < lines.length; i++) {
+        const div = document.createElement('div');
+        div.className = 'hl-line';
+        colourise(div, lines[i]);
+        if (info[i]) {
+          const marker = span('hl-end', '​'); // zero-width, marks end of line
+          div.appendChild(marker);
+          pending.push({ marker: marker, inf: info[i] });
+        }
+        frag.appendChild(div);
+      }
+      highlight.appendChild(frag);
+
+      // Place each result right after its "=", using the marker's position.
+      for (const p of pending) {
+        const el = document.createElement('span');
+        el.className = 'calc-result' + (p.inf.error ? ' calc-result--error' : '');
+        el.textContent = (p.inf.error ? ' ⚠ ' : ' ') + p.inf.text;
+        el.style.left = p.marker.offsetLeft + 'px';
+        el.style.top = p.marker.offsetTop + 'px';
+        highlight.appendChild(el);
+      }
+
       syncScroll();
       onChange(text, result);
-    }
-
-    function makeResult(top, text, isError) {
-      const el = document.createElement('div');
-      el.className = 'res' + (isError ? ' res--error' : '');
-      el.style.top = top + 'px';
-      el.title = text;
-      if (isError) {
-        el.appendChild(span('res__glyph', '⚠'));
-        el.appendChild(textNode(' ' + text));
-      } else {
-        el.textContent = text;
-      }
-      return el;
     }
 
     input.addEventListener('input', recompute);
