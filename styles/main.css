@@ -1,0 +1,213 @@
+/*
+ * main.css — visual design for Text Calculator.
+ *
+ * A calm, paper-like writing surface with results in a right-hand gutter.
+ * Light and dark themes follow the system preference.
+ */
+
+:root {
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+               Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+
+  --gutter: 148px;         /* width reserved on the right for results */
+  --pad-x: 32px;           /* horizontal padding of the writing surface */
+  --pad-top: 28px;
+
+  /* Light theme (default) */
+  --bg: #f6f5f1;
+  --paper: #fffdf9;
+  --ink: #26231d;
+  --ink-soft: #6f6a60;
+  --rule: #ece7dc;
+  --accent: #0f766e;       /* teal — computed results */
+  --accent-soft: #0f766e1a;
+  --error: #c2410c;
+  --topbar-bg: #fffdf9cc;
+  --shadow: 0 1px 2px rgba(40, 35, 25, .04), 0 8px 30px rgba(40, 35, 25, .06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17161a;
+    --paper: #201f24;
+    --ink: #e9e7e2;
+    --ink-soft: #9b978e;
+    --rule: #2f2d34;
+    --accent: #4fd1c5;
+    --accent-soft: #4fd1c51f;
+    --error: #f0895a;
+    --topbar-bg: #201f24cc;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 34px rgba(0, 0, 0, .4);
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- Top bar ------------------------------------------------------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--topbar-bg);
+  backdrop-filter: saturate(180%) blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.brand__mark { font-size: 20px; }
+.brand__name { font-size: 15px; }
+
+.topbar__hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 620px) {
+  .topbar__hint { display: none; }
+}
+
+/* ---- Writing surface ---------------------------------------------- */
+
+.sheet {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+}
+
+.editor {
+  position: relative;
+  width: 100%;
+  max-width: 820px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.editor__input,
+.editor__mirror {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.7;
+  padding: var(--pad-top) var(--pad-x);
+  padding-right: calc(var(--gutter) + var(--pad-x));
+  border: 0;
+}
+
+.editor__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  resize: none;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  caret-color: var(--accent);
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.editor__input::placeholder { color: var(--ink-soft); }
+
+.editor__mirror {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+  pointer-events: none;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  color: transparent;
+  z-index: -1;
+}
+
+.editor__rule {
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  right: calc(var(--gutter) + var(--pad-x) - 12px);
+  width: 1px;
+  background: var(--rule);
+  pointer-events: none;
+}
+
+.editor__results {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: calc(var(--gutter) + var(--pad-x));
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.editor__results-inner {
+  position: absolute;
+  top: var(--pad-top);
+  left: 0;
+  right: 0;
+  will-change: transform;
+}
+
+.res {
+  position: absolute;
+  right: var(--pad-x);
+  left: 10px;
+  height: calc(16px * 1.7);
+  line-height: calc(16px * 1.7);
+  font-size: 15px;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Errors read left-to-right so the start of the message stays visible, with
+   an ellipsis if it runs long; the full text is available on hover (title). */
+.res--error {
+  color: var(--error);
+  font-size: 12.5px;
+  text-align: left;
+}
+
+.res__glyph { font-size: 11px; }

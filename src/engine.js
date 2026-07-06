@@ -15,9 +15,9 @@
 (function (root, factory) {
   const req = typeof require === 'function';
   const mod = factory(
-    req ? require('./tokenizer.js') : root.TC,
-    req ? require('./parser.js') : root.TC,
-    req ? require('./evaluator.js') : root.TC,
+    req ? require('./tokenizer.js') : root.TC.Tokenizer,
+    req ? require('./parser.js') : root.TC.Parser,
+    req ? require('./evaluator.js') : root.TC.Evaluator,
     req ? require('./units.js') : root.TC.Units,
     req ? require('./formatter.js') : root.TC.Formatter
   );

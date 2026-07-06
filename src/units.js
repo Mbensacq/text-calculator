@@ -201,13 +201,13 @@
 
   function add(a, b) {
     if (!sameDim(a.dim, b.dim)) {
-      throw new CalcError('unités incompatibles dans une addition');
+      throw new CalcError('unités incompatibles');
     }
     return quantity(a.base + b.base, a.dim, preferUnit(a.unit, b.unit));
   }
   function sub(a, b) {
     if (!sameDim(a.dim, b.dim)) {
-      throw new CalcError('unités incompatibles dans une soustraction');
+      throw new CalcError('unités incompatibles');
     }
     return quantity(a.base - b.base, a.dim, preferUnit(a.unit, b.unit));
   }
@@ -219,15 +219,15 @@
     return quantity(a.base / b.base, combineDim(a.dim, b.dim, -1), combineDim(a.unit, b.unit, -1));
   }
   function mod(a, b) {
-    if (!sameDim(a.dim, b.dim)) throw new CalcError('unités incompatibles pour le modulo');
+    if (!sameDim(a.dim, b.dim)) throw new CalcError('unités incompatibles');
     if (b.base === 0) throw new CalcError('modulo par zéro');
     return quantity(a.base % b.base, a.dim, preferUnit(a.unit, b.unit));
   }
   function pow(a, b) {
-    if (!isDimensionless(b.dim)) throw new CalcError("l'exposant doit être un nombre");
+    if (!isDimensionless(b.dim)) throw new CalcError("exposant invalide");
     const n = b.base;
     if (!isDimensionless(a.dim) && !Number.isInteger(n) && !Number.isInteger(n * 2)) {
-      throw new CalcError('exposant non entier sur une grandeur dimensionnée');
+      throw new CalcError('exposant non entier');
     }
     return quantity(Math.pow(a.base, n), scaleDim(a.dim, n), scaleDim(a.unit, n));
   }
@@ -240,7 +240,7 @@
   // Convert a quantity so that it is displayed in `targetUnitMap`.
   function convertTo(q, targetUnitMap, targetDim) {
     if (!sameDim(q.dim, targetDim)) {
-      throw new CalcError('conversion impossible entre unités incompatibles');
+      throw new CalcError('conversion impossible');
     }
     return quantity(q.base, q.dim, targetUnitMap);
   }

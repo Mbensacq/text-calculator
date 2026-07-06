@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Text Calculator — le bloc-notes qui calcule</title>
+  <meta name="description" content="Un bloc-notes qui calcule pendant que vous écrivez : variables littérales, unités et références en avant.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%AE%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand__mark">🧮</span>
+        <span class="brand__name">Text&nbsp;Calculator</span>
+      </div>
+      <p class="topbar__hint">Définissez une variable n'importe où — même plus bas dans le texte.</p>
+    </header>
+
+    <main class="sheet">
+      <div class="editor">
+        <textarea id="input" class="editor__input" spellcheck="false" autocomplete="off"
+                  autocapitalize="off" autocorrect="off"
+                  placeholder="Écrivez vos notes… par ex.  distance = 10 km"></textarea>
+        <div class="editor__rule" aria-hidden="true"></div>
+        <div id="results" class="editor__results" aria-hidden="true"></div>
+        <div id="mirror" class="editor__mirror" aria-hidden="true"></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="src/units.js"></script>
+  <script src="src/tokenizer.js"></script>
+  <script src="src/parser.js"></script>
+  <script src="src/evaluator.js"></script>
+  <script src="src/formatter.js"></script>
+  <script src="src/engine.js"></script>
+  <script src="src/editor.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>
