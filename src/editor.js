@@ -2,15 +2,18 @@
  * editor.js — the writing surface.
  *
  * A plain <textarea> holds the text so typing, selection and undo all behave
- * natively. A highlight layer sits behind it, sharing its exact metrics, and
- * renders each line with light syntax colouring (headings, comments, variable
- * names). The textarea's own text is drawn transparent, so what the eye reads
- * is this coloured layer.
+ * natively. Behind it, sharing its exact metrics, sit two layers:
  *
- * Results are shown Apple-Notes style: only lines ending in "=" produce one,
- * and it is placed inline right after that sign. We find the exact spot with a
- * zero-width marker appended to the line, then position the result there
- * absolutely so it never affects wrapping or line heights.
+ *   • a highlight layer that re-renders each line with light syntax colouring
+ *     (headings, comments, variable names). The textarea's own text is drawn
+ *     transparent, so what the eye reads is this coloured layer.
+ *   • a results layer that carries the computed values. Results appear only on
+ *     lines ending in "=", placed right after that sign.
+ *
+ * The results layer is *persistent*: instead of rebuilding every result on each
+ * keystroke, we reuse the element for each line and only animate it when it
+ * actually appears or changes value. That keeps the page calm while typing and
+ * lively exactly when something is computed.
  */
 (function (root, factory) {
   const mod = factory();
@@ -31,6 +34,15 @@
   const HEADING_RE = /^\s*#/;
   const COMMENT_RE = /^\s*\/\//;
   const ASSIGN_RE = /^(\s*)([\p{L}_][\p{L}\p{N}_]*)(\s*=)([\s\S]*)$/u;
+
+  const ENTER_KEYFRAMES = [
+    { opacity: 0, transform: 'translateY(4px) scale(0.96)' },
+    { opacity: 1, transform: 'translateY(0) scale(1)' },
+  ];
+  const UPDATE_KEYFRAMES = [
+    { opacity: 0.45, transform: 'scale(0.97)' },
+    { opacity: 1, transform: 'scale(1)' },
+  ];
 
   function textNode(t) { return document.createTextNode(t); }
   function span(cls, t) {
@@ -54,10 +66,21 @@
     div.textContent = line;
   }
 
+  function animate(el, keyframes, duration) {
+    if (typeof el.animate !== 'function') return;
+    el.animate(keyframes, { duration: duration, easing: 'cubic-bezier(.2,.7,.3,1)' });
+  }
+
   function createEditor(opts) {
     const input = opts.input;         // <textarea>
-    const highlight = opts.highlight; // visible colour + measuring layer
+    const highlight = opts.highlight; // colour + measuring layer
     const onChange = opts.onChange || function () {};
+
+    const results = document.createElement('div');
+    results.className = 'editor__results-layer';
+    highlight.parentNode.appendChild(results);
+
+    const pool = {}; // line index -> { el, text }
 
     function copyMetrics() {
       const cs = getComputedStyle(input);
@@ -66,7 +89,9 @@
     }
 
     function syncScroll() {
-      highlight.style.transform = 'translateY(' + (-input.scrollTop) + 'px)';
+      const y = 'translateY(' + (-input.scrollTop) + 'px)';
+      highlight.style.transform = y;
+      results.style.transform = y;
     }
 
     function recompute() {
@@ -76,34 +101,70 @@
 
       const info = {};
       for (const rec of result.lines) {
-        if (rec.error) info[rec.index] = { text: rec.error, error: true };
+        if (rec.error) info[rec.index] = { text: '⚠ ' + rec.error, error: true };
         else if (rec.display != null) info[rec.index] = { text: rec.display, error: false };
       }
 
+      // Rebuild the coloured text and drop an end-of-line marker on result lines.
       highlight.textContent = '';
       const frag = document.createDocumentFragment();
-      const pending = [];
+      const markers = {};
       for (let i = 0; i < lines.length; i++) {
         const div = document.createElement('div');
         div.className = 'hl-line';
         colourise(div, lines[i]);
         if (info[i]) {
-          const marker = span('hl-end', '​'); // zero-width, marks end of line
+          const marker = span('hl-end', '​');
           div.appendChild(marker);
-          pending.push({ marker: marker, inf: info[i] });
+          markers[i] = marker;
         }
         frag.appendChild(div);
       }
       highlight.appendChild(frag);
 
-      // Place each result right after its "=", using the marker's position.
-      for (const p of pending) {
-        const el = document.createElement('span');
-        el.className = 'calc-result' + (p.inf.error ? ' calc-result--error' : '');
-        el.textContent = (p.inf.error ? ' ⚠ ' : ' ') + p.inf.text;
-        el.style.left = p.marker.offsetLeft + 'px';
-        el.style.top = p.marker.offsetTop + 'px';
-        highlight.appendChild(el);
+      // Reconcile the persistent result elements against the fresh markers.
+      const seen = {};
+      for (const key in info) {
+        const i = +key;
+        const inf = info[i];
+        const marker = markers[i];
+        seen[i] = true;
+
+        let entry = pool[i];
+        let isNew = false;
+        if (!entry) {
+          const el = document.createElement('span');
+          el.className = 'calc-result';
+          el.style.left = marker.offsetLeft + 'px';
+          el.style.top = marker.offsetTop + 'px';
+          results.appendChild(el);
+          entry = pool[i] = { el: el, text: null };
+          isNew = true;
+        } else {
+          entry.el.style.left = marker.offsetLeft + 'px';
+          entry.el.style.top = marker.offsetTop + 'px';
+        }
+
+        const el = entry.el;
+        el.classList.toggle('calc-result--error', !!inf.error);
+
+        if (isNew) {
+          el.textContent = inf.text;
+          entry.text = inf.text;
+          animate(el, ENTER_KEYFRAMES, 200);
+        } else if (entry.text !== inf.text) {
+          el.textContent = inf.text;
+          entry.text = inf.text;
+          animate(el, UPDATE_KEYFRAMES, 170);
+        }
+      }
+
+      // Remove results for lines that no longer ask for one.
+      for (const key in pool) {
+        if (!seen[key]) {
+          pool[key].el.remove();
+          delete pool[key];
+        }
       }
 
       syncScroll();
@@ -121,6 +182,8 @@
       focus: function () { input.focus(); },
       getValue: function () { return input.value; },
       setValue: function (v) {
+        // Clear result elements so the new note animates in fresh.
+        for (const key in pool) { pool[key].el.remove(); delete pool[key]; }
         input.value = v == null ? '' : v;
         input.scrollTop = 0;
         recompute();

@@ -27,6 +27,8 @@
   --active-bg: #e4ded1;
   --heading: #a15c00;
   --result: #b0308a;
+  --result-bg: rgba(176, 48, 138, .09);
+  --error-bg: rgba(194, 65, 12, .10);
   --select: rgba(15, 118, 110, .18);
   --shadow: 0 1px 2px rgba(40, 35, 25, .04), 0 8px 30px rgba(40, 35, 25, .06);
 }
@@ -46,6 +48,8 @@
     --active-bg: #2b2933;
     --heading: #e0a458;
     --result: #f19bd6;
+    --result-bg: rgba(241, 155, 214, .14);
+    --error-bg: rgba(240, 137, 90, .16);
     --select: rgba(79, 209, 197, .22);
     --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 34px rgba(0, 0, 0, .4);
   }
@@ -350,24 +354,40 @@ body {
 .hl-comment { color: var(--ink-soft); font-style: italic; }
 .hl-var { color: var(--accent); font-weight: 600; }
 
-/* Computed result, shown inline right after the "=". A colour distinct from
-   variables (teal) so the two never blur together. */
+/* Layer that carries the computed results, scroll-synced with the text. */
+.editor__results-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Computed result, shown inline just after the "=", as a soft chip. A colour
+   distinct from variables (teal) so the two never blur together. */
 .calc-result {
   position: absolute;
   z-index: 1;
-  font-size: 16px;
-  line-height: calc(16px * 1.7);
-  height: calc(16px * 1.7);
+  margin-left: 10px;
+  margin-top: 3px;
+  padding: 1px 9px;
+  height: calc(16px * 1.7 - 6px);
+  line-height: calc(16px * 1.7 - 6px);
   white-space: nowrap;
   color: var(--result);
+  background: var(--result-bg);
+  border-radius: 8px;
+  font-size: 15px;
   font-weight: 600;
-  pointer-events: none;
+  transform-origin: left center;
+  transition: left .1s cubic-bezier(.2, .7, .3, 1);
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
 }
 
 .calc-result--error {
   color: var(--error);
+  background: var(--error-bg);
   font-weight: 500;
-  font-size: 14px;
+  font-size: 13.5px;
 }
