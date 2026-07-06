@@ -125,6 +125,15 @@ expr('ecarttype(2, 4, 4, 4, 5, 5, 7, 9)', '2');
 expr('sin(pi / 2)', '1');
 expr('round(phi * 1000)', '1 618');
 
+/* ---- user-defined functions --------------------------------------- */
+check('user function', run('f(x) = x^2 + 1\nf(3) =')[1], '10');
+check('multi-arg function', run('aire(l, h) = l * h\naire(3, 4) =')[1], '12');
+check('function uses a global var', run('g(x) = x * k\nk = 10\ng(5) =')[2], '50');
+check('function with units', run('vitesse(d, t) = d / t\nvitesse(100 km, 2 h) =')[1], '50 km/h');
+check('function defined below its call', run('h(2) =\nh(x) = x + 1')[0], '3');
+check('function wrong arity', /attend 1 argument/.test(run('f(x) = x\nf(1, 2) =')[1]), true);
+check('function of a list', run('doubler(l) = l * 2\ndoubler((1, 2, 3)) =')[1], '2, 4, 6');
+
 /* ---- forward references ------------------------------------------- */
 check('forward ref', run(
   'vitesse =\n' +

@@ -34,6 +34,7 @@
   const HEADING_RE = /^\s*#/;
   const COMMENT_RE = /^\s*\/\//;
   const ASSIGN_RE = /^(\s*)([\p{L}_][\p{L}\p{N}_]*)(\s*=)([\s\S]*)$/u;
+  const FUNCDEF_RE = /^(\s*)([\p{L}_][\p{L}\p{N}_]*)(\([^)]*\)\s*=)([\s\S]*)$/u;
 
   const ENTER_KEYFRAMES = [
     { opacity: 0, transform: 'translateY(4px) scale(0.96)' },
@@ -56,6 +57,13 @@
     if (!line.trim()) { div.textContent = '​'; return; }
     if (HEADING_RE.test(line)) { div.appendChild(span('hl-heading', line)); return; }
     if (COMMENT_RE.test(line)) { div.appendChild(span('hl-comment', line)); return; }
+    const fm = line.match(FUNCDEF_RE);
+    if (fm) {
+      div.appendChild(textNode(fm[1]));
+      div.appendChild(span('hl-var', fm[2]));
+      div.appendChild(textNode(fm[3] + fm[4]));
+      return;
+    }
     const m = line.match(ASSIGN_RE);
     if (m) {
       div.appendChild(textNode(m[1]));

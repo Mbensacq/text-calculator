@@ -334,6 +334,10 @@
       case 'call': {
         const name = ast.name;
         const values = evalSequence(ast.args, env);
+        // User-defined functions take precedence, so "f(x) = …" can be called.
+        if (env && env.lookupFunc && env.lookupFunc(name)) {
+          return env.callFunction(name, values);
+        }
         if (FUNCTIONS[name]) {
           if (values.length !== 1) throw new CalcError(name + ' attend 1 argument');
           const v = values[0];
