@@ -159,6 +159,15 @@
     return quantity(value, {}, {});
   }
 
+  // A list value (e.g. "1, 2, 3"). Kept distinct from a Quantity via the
+  // `list` flag so functions like sum/mean can operate on it.
+  function list(items) {
+    return { list: true, items: items };
+  }
+  function isList(v) {
+    return !!(v && v.list === true);
+  }
+
   // Resolve a unit token to its definition, or synthesise a label unit.
   function lookupUnit(name) {
     if (Object.prototype.hasOwnProperty.call(UNITS, name)) return UNITS[name];
@@ -262,6 +271,8 @@
     CalcError,
     quantity,
     scalar,
+    list,
+    isList,
     unitQuantity,
     unitFactor,
     lookupUnit,

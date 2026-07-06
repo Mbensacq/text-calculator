@@ -58,6 +58,19 @@
 
     function parseExpr() { return parseConvert(); }
 
+    // A comma-separated sequence of elements. Each element is an expression or
+    // an ellipsis marker ("…") used to denote a range. Shared by top-level list
+    // literals ("1, 2, 3") and by function arguments ("sum(1, 2, …, 8)").
+    function parseSequence() {
+      const items = [parseElement()];
+      while (at('comma')) { next(); items.push(parseElement()); }
+      return items;
+    }
+    function parseElement() {
+      if (at('ellipsis')) { next(); return { type: 'ellipsis' }; }
+      return parseExpr();
+    }
+
     function parseConvert() {
       let expr = parseAdditive();
       if (at('keyword')) {
@@ -138,11 +151,7 @@
         if (at('lparen')) {
           // Function call
           next();
-          const args = [];
-          if (!at('rparen')) {
-            args.push(parseExpr());
-            while (at('comma')) { next(); args.push(parseExpr()); }
-          }
+          const args = at('rparen') ? [] : parseSequence();
           expect('rparen');
           return { type: 'call', name: t.value, args: args };
         }
@@ -159,11 +168,12 @@
       throw new ParseError('expression inattendue: ' + (t.value == null ? t.type : t.value));
     }
 
-    const result = parseExpr();
+    const items = parseSequence();
     if (!at('eof')) {
       throw new ParseError('jeton en trop: ' + (peek().value == null ? peek().type : peek().value));
     }
-    return result;
+    if (items.length === 1 && items[0].type !== 'ellipsis') return items[0];
+    return { type: 'list', items: items };
   }
 
   return { parse, ParseError };

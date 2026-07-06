@@ -53,6 +53,12 @@
         continue;
       }
 
+      // Ellipsis "…" / "..." — used inside ranges: sum(1, 2, ..., 8)
+      if (ch === '…') { const s = i; i++; push('ellipsis', '…', s); continue; }
+      if (ch === '.' && input[i + 1] === '.' && input[i + 2] === '.') {
+        const s = i; i += 3; push('ellipsis', '...', s); continue;
+      }
+
       // Numbers, including grouping spaces between digits (1 000 000) and a
       // decimal separator that may be '.' or ','.
       if (isDigit(ch) || ((ch === '.' || ch === ',') && isDigit(input[i + 1]))) {

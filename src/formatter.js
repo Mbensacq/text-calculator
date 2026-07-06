@@ -130,5 +130,11 @@
     return n;
   }
 
-  return { formatQuantity, formatNumber, formatUnitMap, labelDimensionCount };
+  // Format any value — a Quantity or a list of values.
+  function formatValue(v) {
+    if (Units.isList(v)) return v.items.map(formatValue).join(', ');
+    return formatQuantity(v);
+  }
+
+  return { formatQuantity, formatValue, formatNumber, formatUnitMap, labelDimensionCount };
 });
