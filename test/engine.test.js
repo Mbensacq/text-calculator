@@ -154,6 +154,12 @@ check('recursive factorial', run('f(n) = si(n <= 1, 1, n * f(n - 1))\nf(5) =')[1
 check('piecewise (absolute value)', run('a(x) = si(x < 0, -x, x)\na(-7) =')[1], '7');
 check('fibonacci', run('fib(n) = si(n < 2, n, fib(n-1) + fib(n-2))\nfib(10) =')[1], '55');
 
+/* ---- robustness ---------------------------------------------------- */
+check('division by zero', /division par z/.test(run('1 / 0 =')[0]), true);
+check('deep recursion guarded', /récursion trop profonde/.test(run('r(n) = r(n) + 1\nr(1) =')[1]), true);
+check('heavy recursion budget', /trop long/.test(run('fib(n) = si(n < 2, n, fib(n-1) + fib(n-2))\nfib(40) =')[1]), true);
+check('unknown function', /inconnue/.test(run('bidule(3) =')[0]), true);
+
 /* ---- forward references ------------------------------------------- */
 check('forward ref', run(
   'vitesse =\n' +

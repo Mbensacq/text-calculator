@@ -144,7 +144,8 @@
     // ---- Pass 2: lazy, memoised resolution with cycle detection --------
     const cache = {};    // name -> { value } | { error }
     const visiting = {}; // name -> true while being resolved
-    let callDepth = 0;   // guards runaway recursion in user functions
+    let callDepth = 0;   // guards runaway *depth* (infinite recursion)
+    let callBudget = 0;  // guards runaway *total work* (e.g. naive fib(40))
 
     function resolveVar(name) {
       if (Object.prototype.hasOwnProperty.call(cache, name)) {
@@ -182,6 +183,9 @@
         throw new CalcError(name + ' attend ' + f.params.length + ' argument(s), reçu ' + argValues.length);
       }
       if (++callDepth > 500) { callDepth--; throw new CalcError('récursion trop profonde'); }
+      // Cap total work so a heavy recursion can't freeze the page while it is
+      // re-evaluated on every keystroke.
+      if (++callBudget > 200000) { callDepth--; throw new CalcError('calcul trop long (interrompu)'); }
       try {
         const locals = {};
         for (let i = 0; i < f.params.length; i++) locals[f.params[i]] = argValues[i];
