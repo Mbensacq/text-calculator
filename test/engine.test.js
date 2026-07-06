@@ -89,6 +89,12 @@ check('sum of a list variable', run('l = 1, 2, 3, 4\nsum(l) =')[1], '10');
 check('list arithmetic', run('l = 1, 2, 3\nl * 2 =')[1], '2, 4, 6');
 check('list with units', run('d = 1 km, 2 km, 3 km\nsum(d) =')[1], '6 km');
 
+/* ---- parenthesised lists ------------------------------------------ */
+expr('(1, 2, 3)', '1, 2, 3');
+expr('sum((1, 2, 3))', '6');
+check('parenthesised list variable', run('liste = (1, 2, ..., 10)\nliste =')[1], '1, 2, 3, 4, 5, 6, 7, 8, 9, 10');
+check('grouping still works', run('(2 + 3) * 4 =')[0], '20');
+
 /* ---- ranges ("…") ------------------------------------------------- */
 expr('sum(1, 2, ..., 8)', '36');
 check('range literal', run('1, ..., 5 =')[0], '1, 2, 3, 4, 5');

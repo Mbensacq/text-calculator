@@ -160,9 +160,11 @@
 
       if (t.type === 'lparen') {
         next();
-        const inner = parseExpr();
+        const items = parseSequence();
         expect('rparen');
-        return inner;
+        // "(a)" is just grouping; "(a, b, …)" is a list / range.
+        if (items.length === 1 && items[0].type !== 'ellipsis') return items[0];
+        return { type: 'list', items: items };
       }
 
       throw new ParseError('expression inattendue: ' + (t.value == null ? t.type : t.value));
