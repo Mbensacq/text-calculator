@@ -105,10 +105,23 @@ fact(6) =             → 720
 `s, min, h, jour, semaine, mois, an` · `km/h, mph, noeud` · `°, rad` ·
 `o, ko, Mo, Go, Kio…` · `€, $, £, CHF, ¥`
 
+## Installer sur mobile (PWA)
+
+Le site est une application web installable et utilisable hors-ligne. Depuis
+un téléphone :
+
+- **Chrome (Android)** : menu ⋮ → *Ajouter à l'écran d'accueil* / *Installer*.
+- **Firefox (Android)** : menu ⋮ → *Installer* / *Ajouter à l'écran d'accueil*.
+- **Safari (iOS)** : bouton Partager → *Sur l'écran d'accueil*.
+
+L'application s'ouvre alors en plein écran, comme une appli native, et
+fonctionne sans connexion (un *service worker* met en cache la coquille).
+
 ## Lancer le projet
 
-Aucune dépendance, aucune étape de build. Ouvrez simplement `index.html` dans
-un navigateur, ou servez le dossier :
+Aucune dépendance, aucune étape de build. Ouvrez `index.html` dans un
+navigateur, ou servez le dossier (recommandé pour tester le mode hors-ligne,
+les *service workers* ne fonctionnant pas en `file://`) :
 
 ```sh
 python3 -m http.server 8000   # puis http://localhost:8000
