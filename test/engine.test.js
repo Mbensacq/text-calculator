@@ -134,6 +134,26 @@ check('function defined below its call', run('h(2) =\nh(x) = x + 1')[0], '3');
 check('function wrong arity', /attend 1 argument/.test(run('f(x) = x\nf(1, 2) =')[1]), true);
 check('function of a list', run('doubler(l) = l * 2\ndoubler((1, 2, 3)) =')[1], '2, 4, 6');
 
+/* ---- comparisons & conditionals ----------------------------------- */
+expr('3 > 2', '1');
+expr('2 > 3', '0');
+expr('5 == 5', '1');
+expr('5 != 5', '0');
+expr('2 + 2 <= 4', '1');
+expr('1 km == 1000 m', '1');
+expr('si(3 > 2, 10, 20)', '10');
+expr('si(3 < 2, 10, 20)', '20');
+expr('et(1, 1)', '1');
+expr('et(1, 0)', '0');
+expr('ou(0, 1)', '1');
+expr('non(0)', '1');
+check('moy alias', run('moy(2, 4, 6) =')[0], '4');
+
+/* ---- recursion via a base case ------------------------------------ */
+check('recursive factorial', run('f(n) = si(n <= 1, 1, n * f(n - 1))\nf(5) =')[1], '120');
+check('piecewise (absolute value)', run('a(x) = si(x < 0, -x, x)\na(-7) =')[1], '7');
+check('fibonacci', run('fib(n) = si(n < 2, n, fib(n-1) + fib(n-2))\nfib(10) =')[1], '55');
+
 /* ---- forward references ------------------------------------------- */
 check('forward ref', run(
   'vitesse =\n' +

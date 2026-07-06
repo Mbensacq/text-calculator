@@ -41,33 +41,41 @@
   // or null when the line is not a definition. A line like "name =" (empty
   // right-hand side) is a *display request*, not a definition, so it is
   // excluded.
-  function splitDefinition(line) {
-    const eq = line.indexOf('=');
-    if (eq === -1) return null;
-    const left = line.slice(0, eq);
-    const right = line.slice(eq + 1);
+  function splitDefinition(core) {
+    const toks = tokenize(core);
+    // Find the first top-level "=" (a single equals, never "==" / "<=" …).
+    let depth = 0;
+    let eqIdx = -1;
+    for (let i = 0; i < toks.length; i++) {
+      const t = toks[i];
+      if (t.type === 'lparen' || t.type === 'lbracket') depth++;
+      else if (t.type === 'rparen' || t.type === 'rbracket') depth--;
+      else if (t.type === 'equals' && depth === 0) { eqIdx = i; break; }
+    }
+    if (eqIdx === -1) return null;
+    const right = core.slice(toks[eqIdx].end);
     if (right.trim() === '') return null;
-    const lt = tokenize(left); // ends with an 'eof' token
+    const left = toks.slice(0, eqIdx);
 
     // Variable: "name"
-    if (lt.length === 2 && lt[0].type === 'ident') {
-      return { kind: 'var', name: lt[0].value, rhs: right };
+    if (left.length === 1 && left[0].type === 'ident') {
+      return { kind: 'var', name: left[0].value, rhs: right };
     }
 
     // Function: "name ( p1 , p2 , … )"
-    if (lt.length >= 5 && lt[0].type === 'ident' && lt[1].type === 'lparen' &&
-        lt[lt.length - 2].type === 'rparen') {
+    if (left.length >= 4 && left[0].type === 'ident' && left[1].type === 'lparen' &&
+        left[left.length - 1].type === 'rparen') {
       const params = [];
       let i = 2;
       for (;;) {
-        if (lt[i].type !== 'ident') return null;
-        params.push(lt[i].value);
+        if (left[i].type !== 'ident') return null;
+        params.push(left[i].value);
         i++;
-        if (lt[i].type === 'comma') { i++; continue; }
+        if (i < left.length && left[i].type === 'comma') { i++; continue; }
         break;
       }
-      if (lt[i].type === 'rparen' && i === lt.length - 2 && params.length >= 1) {
-        return { kind: 'func', name: lt[0].value, params: params, rhs: right };
+      if (i === left.length - 1 && params.length >= 1) {
+        return { kind: 'func', name: left[0].value, params: params, rhs: right };
       }
     }
     return null;
@@ -79,15 +87,18 @@
     return d && d.kind === 'var' ? { name: d.name, rhs: d.rhs } : null;
   }
 
-  // A line shows a result only when it ends with "=" (Apple-Notes style):
-  // the result is placed right after that sign. Returns the expression part
-  // (without the trailing "=") and whether a result was requested.
+  // A line shows a result only when it ends with a lone "=" (Apple-Notes
+  // style): the result is placed right after that sign. Comparison operators
+  // like "==" are not result triggers.
   function splitResultRequest(raw) {
-    const trimmedEnd = raw.replace(/\s+$/, '');
-    if (trimmedEnd.charAt(trimmedEnd.length - 1) !== '=') return { core: raw, requested: false };
-    const core = trimmedEnd.slice(0, -1);
-    if (core.trim() === '') return { core: raw, requested: false };
-    return { core: core, requested: true };
+    const toks = tokenize(raw); // last token is 'eof'
+    const n = toks.length;
+    if (n >= 2 && toks[n - 2].type === 'equals') {
+      const core = raw.slice(0, toks[n - 2].start);
+      if (core.trim() === '') return { core: raw, requested: false };
+      return { core: core, requested: true };
+    }
+    return { core: raw, requested: false };
   }
 
   function classify(rawLine) {

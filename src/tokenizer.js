@@ -131,9 +131,26 @@
         case ')': i++; push('rparen', ')', start); continue;
         case '[': i++; push('lbracket', '[', start); continue;
         case ']': i++; push('rbracket', ']', start); continue;
-        case '!': i++; push('bang', '!', start); continue;
         case ',': i++; push('comma', ',', start); continue;
-        case '=': i++; push('equals', '=', start); continue;
+        case '!':
+          if (input[i + 1] === '=') { i += 2; push('cmp', '!=', start); }
+          else { i++; push('bang', '!', start); }
+          continue;
+        case '=':
+          if (input[i + 1] === '=') { i += 2; push('cmp', '==', start); }
+          else { i++; push('equals', '=', start); }
+          continue;
+        case '<':
+          if (input[i + 1] === '=') { i += 2; push('cmp', '<=', start); }
+          else { i++; push('cmp', '<', start); }
+          continue;
+        case '>':
+          if (input[i + 1] === '=') { i += 2; push('cmp', '>=', start); }
+          else { i++; push('cmp', '>', start); }
+          continue;
+        case '≤': i++; push('cmp', '<=', start); continue;
+        case '≥': i++; push('cmp', '>=', start); continue;
+        case '≠': i++; push('cmp', '!=', start); continue;
         case '→': // →
           i++; push('keyword', 'to', start); continue;
         default:

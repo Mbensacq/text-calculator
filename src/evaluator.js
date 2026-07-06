@@ -73,6 +73,8 @@
     trunc: (a) => Units.quantity(Math.trunc(a.base), a.dim, a.unit),
     frac: (a) => Units.quantity(a.base - Math.trunc(a.base), a.dim, a.unit),
     sign: (a) => Units.scalar(Math.sign(a.base)),
+    non: (a) => Units.scalar(a.base !== 0 ? 0 : 1),
+    not: (a) => Units.scalar(a.base !== 0 ? 0 : 1),
     fact: (a) => Units.scalar(factorialOf(needInt(a, 'fact'))),
     factorielle: (a) => Units.scalar(factorialOf(needInt(a, 'factorielle'))),
     ln: (a) => Units.scalar(Math.log(needDimensionless(a, 'ln'))),
@@ -141,6 +143,7 @@
     produit: (args) => reduceSame(args, 'produit', Units.mul),
     mean: (args) => meanOf(args, 'mean'),
     avg: (args) => meanOf(args, 'avg'),
+    moy: (args) => meanOf(args, 'moy'),
     moyenne: (args) => meanOf(args, 'moyenne'),
     median: (args) => medianOf(args),
     mediane: (args) => medianOf(args),
@@ -180,6 +183,31 @@
   };
 
   const isList = Units.isList;
+
+  // A condition is true when it is a non-zero number. Comparisons and the
+  // logical helpers all return 1 (true) or 0 (false).
+  function truthy(v) {
+    if (isList(v)) throw new CalcError('une condition doit être un nombre, pas une liste');
+    return v.base !== 0;
+  }
+
+  function compareOp(op, a, b) {
+    if (isList(a) || isList(b)) throw new CalcError('comparaison de listes non supportée');
+    const sameDim = Units.sameDim(a.dim, b.dim);
+    if (op === '==' || op === '!=') {
+      const equal = sameDim &&
+        Math.abs(a.base - b.base) <= 1e-9 * Math.max(1, Math.abs(a.base), Math.abs(b.base));
+      return op === '==' ? equal : !equal;
+    }
+    if (!sameDim) throw new CalcError('comparaison entre unités incompatibles');
+    switch (op) {
+      case '<': return a.base < b.base;
+      case '>': return a.base > b.base;
+      case '<=': return a.base <= b.base;
+      case '>=': return a.base >= b.base;
+      default: throw new CalcError('comparaison inconnue: ' + op);
+    }
+  }
 
   // Apply a plain binary operator to two scalar quantities.
   function scalarBinary(op, a, b) {
@@ -331,8 +359,34 @@
         return Units.convertTo(q, target.unit, target.dim);
       }
 
+      case 'compare': {
+        const a = evaluate(ast.left, env);
+        const b = evaluate(ast.right, env);
+        return Units.scalar(compareOp(ast.op, a, b) ? 1 : 0);
+      }
+
       case 'call': {
         const name = ast.name;
+
+        // Lazy special forms: only the taken branch is evaluated, so a
+        // recursive function with a base case terminates.
+        if (name === 'si' || name === 'if') {
+          if (ast.args.length !== 3) {
+            throw new CalcError(name + ' attend 3 arguments : condition, alors, sinon');
+          }
+          return truthy(evaluate(ast.args[0], env))
+            ? evaluate(ast.args[1], env)
+            : evaluate(ast.args[2], env);
+        }
+        if (name === 'et' || name === 'and') {
+          for (const a of ast.args) if (!truthy(evaluate(a, env))) return Units.scalar(0);
+          return Units.scalar(1);
+        }
+        if (name === 'ou' || name === 'or') {
+          for (const a of ast.args) if (truthy(evaluate(a, env))) return Units.scalar(1);
+          return Units.scalar(0);
+        }
+
         const values = evalSequence(ast.args, env);
         // User-defined functions take precedence, so "f(x) = …" can be called.
         if (env && env.lookupFunc && env.lookupFunc(name)) {

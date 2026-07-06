@@ -56,7 +56,18 @@
       return t === 'number' || t === 'ident' || t === 'lparen';
     }
 
-    function parseExpr() { return parseConvert(); }
+    function parseExpr() { return parseComparison(); }
+
+    // Comparisons are the loosest operators: "a + b > c" reads as "(a+b) > c".
+    function parseComparison() {
+      let left = parseConvert();
+      while (at('cmp')) {
+        const op = next().value;
+        const right = parseConvert();
+        left = { type: 'compare', op: op, left: left, right: right };
+      }
+      return left;
+    }
 
     // A comma-separated sequence of elements. Each element is an expression or
     // an ellipsis marker ("…") used to denote a range. Shared by top-level list
