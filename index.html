@@ -9,25 +9,39 @@
   <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
-  <div class="app">
-    <header class="topbar">
-      <div class="brand">
-        <span class="brand__mark">🧮</span>
-        <span class="brand__name">Text&nbsp;Calculator</span>
+  <div class="app" id="app">
+    <aside class="sidebar">
+      <div class="sidebar__head">
+        <span class="sidebar__title">Notes</span>
+        <button id="new-note" class="icon-btn" type="button" title="Nouvelle note (Ctrl/Cmd+Entrée)" aria-label="Nouvelle note">＋</button>
       </div>
-      <p class="topbar__hint">Définissez une variable n'importe où — même plus bas dans le texte.</p>
-    </header>
+      <ul id="note-list" class="note-list"></ul>
+      <div class="sidebar__foot">Calcul littéral · unités · références en avant</div>
+    </aside>
 
-    <main class="sheet">
-      <div class="editor">
-        <textarea id="input" class="editor__input" spellcheck="false" autocomplete="off"
-                  autocapitalize="off" autocorrect="off"
-                  placeholder="Écrivez vos notes… par ex.  distance = 10 km"></textarea>
-        <div class="editor__rule" aria-hidden="true"></div>
-        <div id="results" class="editor__results" aria-hidden="true"></div>
-        <div id="mirror" class="editor__mirror" aria-hidden="true"></div>
-      </div>
-    </main>
+    <div class="scrim" id="scrim" aria-hidden="true"></div>
+
+    <div class="workspace">
+      <header class="topbar">
+        <button id="sidebar-toggle" class="icon-btn topbar__menu" type="button" aria-label="Afficher les notes">☰</button>
+        <div class="brand">
+          <span class="brand__mark">🧮</span>
+          <span class="brand__name">Text&nbsp;Calculator</span>
+        </div>
+        <p class="topbar__hint">Définissez une variable n'importe où — même plus bas dans le texte.</p>
+      </header>
+
+      <main class="sheet">
+        <div class="editor">
+          <textarea id="input" class="editor__input" spellcheck="false" autocomplete="off"
+                    autocapitalize="off" autocorrect="off"
+                    placeholder="Écrivez vos notes… par ex.  distance = 10 km"></textarea>
+          <div class="editor__rule" aria-hidden="true"></div>
+          <div id="results" class="editor__results" aria-hidden="true"></div>
+          <div id="mirror" class="editor__mirror" aria-hidden="true"></div>
+        </div>
+      </main>
+    </div>
   </div>
 
   <script src="src/units.js"></script>
@@ -37,6 +51,7 @@
   <script src="src/formatter.js"></script>
   <script src="src/engine.js"></script>
   <script src="src/editor.js"></script>
+  <script src="src/storage.js"></script>
   <script src="src/app.js"></script>
 </body>
 </html>
