@@ -1,0 +1,13 @@
+# Dependencies (this project is dependency-free, but just in case)
+node_modules/
+
+# Editor / OS noise
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Logs & temp
+*.log
+.cache/
