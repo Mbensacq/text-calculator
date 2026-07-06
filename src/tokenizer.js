@@ -127,10 +127,11 @@
           i++; push('op', '/', start); continue;
         case '^': i++; push('op', '^', start); continue;
         case '%': i++; push('percent', '%', start); continue;
-        case '(':
-        case '[': i++; push('lparen', ch, start); continue;
-        case ')':
-        case ']': i++; push('rparen', ch, start); continue;
+        case '(': i++; push('lparen', '(', start); continue;
+        case ')': i++; push('rparen', ')', start); continue;
+        case '[': i++; push('lbracket', '[', start); continue;
+        case ']': i++; push('rbracket', ']', start); continue;
+        case '!': i++; push('bang', '!', start); continue;
         case ',': i++; push('comma', ',', start); continue;
         case '=': i++; push('equals', '=', start); continue;
         case '→': // →

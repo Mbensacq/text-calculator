@@ -125,6 +125,7 @@
       let node = parsePower();
       for (;;) {
         if (at('percent')) { next(); node = { type: 'percent', operand: node }; }
+        else if (at('bang')) { next(); node = { type: 'factorial', operand: node }; }
         else if (at('pow2')) { next(); node = { type: 'binary', op: '^', left: node, right: { type: 'num', value: 2 } }; }
         else if (at('pow3')) { next(); node = { type: 'binary', op: '^', left: node, right: { type: 'num', value: 3 } }; }
         else break;
@@ -143,6 +144,18 @@
     }
 
     function parseAtom() {
+      let node = parsePrimary();
+      // Indexing, computer-science style: liste[0], m[1][2].
+      while (at('lbracket')) {
+        next();
+        const idx = parseExpr();
+        expect('rbracket');
+        node = { type: 'index', target: node, index: idx };
+      }
+      return node;
+    }
+
+    function parsePrimary() {
       const t = peek();
       if (t.type === 'number') { next(); return { type: 'num', value: t.value }; }
 

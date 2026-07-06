@@ -35,6 +35,34 @@
     return q.base;
   }
 
+  function needInt(q, what) {
+    const v = needDimensionless(q, what);
+    if (!Number.isInteger(v)) throw new CalcError(what + ' attend un entier');
+    return v;
+  }
+
+  function factorialOf(n) {
+    if (n < 0) throw new CalcError('factorielle d’un nombre négatif');
+    if (n > 170) return Infinity; // beyond double precision
+    let r = 1;
+    for (let i = 2; i <= n; i++) r *= i;
+    return r;
+  }
+
+  function gcd2(a, b) {
+    a = Math.abs(a); b = Math.abs(b);
+    while (b) { const t = a % b; a = b; b = t; }
+    return a;
+  }
+
+  function combinations(n, k) {
+    if (k < 0 || k > n) return 0;
+    k = Math.min(k, n - k);
+    let r = 1;
+    for (let i = 1; i <= k; i++) r = (r * (n - k + i)) / i;
+    return Math.round(r);
+  }
+
   const FUNCTIONS = {
     sqrt: (a) => Units.pow(a, Units.scalar(0.5)),
     cbrt: (a) => Units.pow(a, Units.scalar(1 / 3)),
@@ -43,10 +71,13 @@
     floor: (a) => Units.quantity(Math.floor(a.base), a.dim, a.unit),
     ceil: (a) => Units.quantity(Math.ceil(a.base), a.dim, a.unit),
     trunc: (a) => Units.quantity(Math.trunc(a.base), a.dim, a.unit),
+    frac: (a) => Units.quantity(a.base - Math.trunc(a.base), a.dim, a.unit),
     sign: (a) => Units.scalar(Math.sign(a.base)),
+    fact: (a) => Units.scalar(factorialOf(needInt(a, 'fact'))),
+    factorielle: (a) => Units.scalar(factorialOf(needInt(a, 'factorielle'))),
     ln: (a) => Units.scalar(Math.log(needDimensionless(a, 'ln'))),
-    log: (a) => Units.scalar(Math.log10(needDimensionless(a, 'log'))),
     log2: (a) => Units.scalar(Math.log2(needDimensionless(a, 'log2'))),
+    log10: (a) => Units.scalar(Math.log10(needDimensionless(a, 'log10'))),
     exp: (a) => Units.scalar(Math.exp(needDimensionless(a, 'exp'))),
     sin: (a) => Units.scalar(Math.sin(needDimensionless(a, 'sin'))),
     cos: (a) => Units.scalar(Math.cos(needDimensionless(a, 'cos'))),
@@ -54,6 +85,12 @@
     asin: (a) => Units.scalar(Math.asin(needDimensionless(a, 'asin'))),
     acos: (a) => Units.scalar(Math.acos(needDimensionless(a, 'acos'))),
     atan: (a) => Units.scalar(Math.atan(needDimensionless(a, 'atan'))),
+    sinh: (a) => Units.scalar(Math.sinh(needDimensionless(a, 'sinh'))),
+    cosh: (a) => Units.scalar(Math.cosh(needDimensionless(a, 'cosh'))),
+    tanh: (a) => Units.scalar(Math.tanh(needDimensionless(a, 'tanh'))),
+    asinh: (a) => Units.scalar(Math.asinh(needDimensionless(a, 'asinh'))),
+    acosh: (a) => Units.scalar(Math.acosh(needDimensionless(a, 'acosh'))),
+    atanh: (a) => Units.scalar(Math.atanh(needDimensionless(a, 'atanh'))),
   };
 
   // Variadic helpers operate on same-dimension quantities and keep the unit.
@@ -68,18 +105,69 @@
     }
     return acc;
   }
+  const addAll = (args, name) => reduceSame(args, name, Units.add);
+  const meanOf = (args, name) => Units.div(addAll(args, name), Units.scalar(args.length));
+
+  function medianOf(args) {
+    reduceSame(args, 'médiane', (a) => a); // validate same dimension
+    const s = args.slice().sort((a, b) => a.base - b.base);
+    const n = s.length;
+    const m = n >> 1;
+    return n % 2 ? s[m] : Units.div(Units.add(s[m - 1], s[m]), Units.scalar(2));
+  }
+
+  function varianceOf(args) {
+    const mean = meanOf(args, 'variance');
+    let acc = null;
+    for (const x of args) {
+      const d = Units.sub(x, mean);
+      const sq = Units.mul(d, d);
+      acc = acc ? Units.add(acc, sq) : sq;
+    }
+    return Units.div(acc, Units.scalar(args.length));
+  }
+
+  function need2(args, name) {
+    if (args.length !== 2) throw new CalcError(name + ' attend 2 arguments');
+  }
 
   const VARIADIC = {
     min: (args) => reduceSame(args, 'min', (a, b) => (b.base < a.base ? b : a)),
     max: (args) => reduceSame(args, 'max', (a, b) => (b.base > a.base ? b : a)),
-    sum: (args) => reduceSame(args, 'sum', (a, b) => Units.add(a, b)),
-    total: (args) => reduceSame(args, 'total', (a, b) => Units.add(a, b)),
-    mean: (args) => Units.div(reduceSame(args, 'mean', (a, b) => Units.add(a, b)), Units.scalar(args.length)),
-    avg: (args) => Units.div(reduceSame(args, 'avg', (a, b) => Units.add(a, b)), Units.scalar(args.length)),
-    moyenne: (args) => Units.div(reduceSame(args, 'moyenne', (a, b) => Units.add(a, b)), Units.scalar(args.length)),
-    hypot: (args) => Units.pow(reduceSame(args.map((a) => Units.pow(a, Units.scalar(2))), 'hypot', (a, b) => Units.add(a, b)), Units.scalar(0.5)),
-    pow: (args) => { if (args.length !== 2) throw new CalcError('pow attend 2 arguments'); return Units.pow(args[0], args[1]); },
-    mod: (args) => { if (args.length !== 2) throw new CalcError('mod attend 2 arguments'); return Units.mod(args[0], args[1]); },
+    sum: (args) => addAll(args, 'sum'),
+    total: (args) => addAll(args, 'total'),
+    somme: (args) => addAll(args, 'somme'),
+    product: (args) => reduceSame(args, 'product', Units.mul),
+    produit: (args) => reduceSame(args, 'produit', Units.mul),
+    mean: (args) => meanOf(args, 'mean'),
+    avg: (args) => meanOf(args, 'avg'),
+    moyenne: (args) => meanOf(args, 'moyenne'),
+    median: (args) => medianOf(args),
+    mediane: (args) => medianOf(args),
+    médiane: (args) => medianOf(args),
+    variance: (args) => varianceOf(args),
+    stddev: (args) => Units.pow(varianceOf(args), Units.scalar(0.5)),
+    ecarttype: (args) => Units.pow(varianceOf(args), Units.scalar(0.5)),
+    count: (args) => Units.scalar(args.length),
+    hypot: (args) => Units.pow(addAll(args.map((a) => Units.pow(a, Units.scalar(2))), 'hypot'), Units.scalar(0.5)),
+    pow: (args) => { need2(args, 'pow'); return Units.pow(args[0], args[1]); },
+    mod: (args) => { need2(args, 'mod'); return Units.mod(args[0], args[1]); },
+    root: (args) => { need2(args, 'root'); return Units.pow(args[0], Units.div(Units.scalar(1), args[1])); },
+    racine: (args) => { need2(args, 'racine'); return Units.pow(args[0], Units.div(Units.scalar(1), args[1])); },
+    atan2: (args) => { need2(args, 'atan2'); return Units.scalar(Math.atan2(needDimensionless(args[0], 'atan2'), needDimensionless(args[1], 'atan2'))); },
+    log: (args) => {
+      if (args.length === 1) return Units.scalar(Math.log10(needDimensionless(args[0], 'log')));
+      need2(args, 'log');
+      return Units.scalar(Math.log(needDimensionless(args[0], 'log')) / Math.log(needDimensionless(args[1], 'log')));
+    },
+    gcd: (args) => Units.scalar(args.map((a) => needInt(a, 'gcd')).reduce((g, x) => gcd2(g, x))),
+    pgcd: (args) => Units.scalar(args.map((a) => needInt(a, 'pgcd')).reduce((g, x) => gcd2(g, x))),
+    lcm: (args) => Units.scalar(args.map((a) => needInt(a, 'lcm')).reduce((l, x) => (x === 0 ? 0 : Math.abs(l * x) / gcd2(l, x)))),
+    ppcm: (args) => Units.scalar(args.map((a) => needInt(a, 'ppcm')).reduce((l, x) => (x === 0 ? 0 : Math.abs(l * x) / gcd2(l, x)))),
+    combin: (args) => { need2(args, 'combin'); return Units.scalar(combinations(needInt(args[0], 'combin'), needInt(args[1], 'combin'))); },
+    nCr: (args) => { need2(args, 'nCr'); return Units.scalar(combinations(needInt(args[0], 'nCr'), needInt(args[1], 'nCr'))); },
+    perm: (args) => { need2(args, 'perm'); const n = needInt(args[0], 'perm'); const k = needInt(args[1], 'perm'); return Units.scalar(factorialOf(n) / factorialOf(n - k)); },
+    nPr: (args) => { need2(args, 'nPr'); const n = needInt(args[0], 'nPr'); const k = needInt(args[1], 'nPr'); return Units.scalar(factorialOf(n) / factorialOf(n - k)); },
   };
 
   const CONSTANTS = {
@@ -87,6 +175,8 @@
     π: () => Units.scalar(Math.PI),
     e: () => Units.scalar(Math.E),
     tau: () => Units.scalar(2 * Math.PI),
+    phi: () => Units.scalar((1 + Math.sqrt(5)) / 2),
+    φ: () => Units.scalar((1 + Math.sqrt(5)) / 2),
   };
 
   const isList = Units.isList;
@@ -193,6 +283,24 @@
         const v = evaluate(ast.operand, env);
         if (isList(v)) return Units.list(v.items.map((x) => Units.div(x, Units.scalar(100))));
         return Units.div(v, Units.scalar(100));
+      }
+
+      case 'factorial': {
+        const v = evaluate(ast.operand, env);
+        if (isList(v)) return Units.list(v.items.map((x) => Units.scalar(factorialOf(needInt(x, 'factorielle')))));
+        return Units.scalar(factorialOf(needInt(v, 'factorielle')));
+      }
+
+      case 'index': {
+        // 0-based, computer-science style. Negative indexes count from the end.
+        const target = evaluate(ast.target, env);
+        const idxVal = evaluate(ast.index, env);
+        if (isList(idxVal)) throw new CalcError('index invalide');
+        const raw = needInt(idxVal, 'index');
+        const items = isList(target) ? target.items : [target];
+        const k = raw < 0 ? items.length + raw : raw;
+        if (k < 0 || k >= items.length) throw new CalcError('index ' + raw + ' hors de la liste');
+        return items[k];
       }
 
       case 'binary': {

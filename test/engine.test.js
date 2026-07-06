@@ -101,6 +101,30 @@ check('range literal', run('1, ..., 5 =')[0], '1, 2, 3, 4, 5');
 expr('sum(1, ..., 100)', '5 050');
 expr('sum(2, 4, ..., 10)', '30');
 
+/* ---- indexing (0-based, computer-science style) ------------------- */
+check('index a list', run('l = 1, 2, 3, 4\nl[3] =')[1], '4');
+check('index zero', run('l = (10, 20, 30)\nl[0] =')[1], '10');
+check('negative index', run('l = 1, 2, 3\nl[-1] =')[1], '3');
+check('index out of range', /hors de la liste/.test(run('l = 1, 2\nl[5] =')[1]), true);
+expr('(5, 6, 7)[1]', '6');
+
+/* ---- maths for students ------------------------------------------- */
+expr('5!', '120');
+expr('fact(6)', '720');
+expr('pgcd(12, 18)', '6');
+expr('ppcm(4, 6)', '12');
+expr('combin(5, 2)', '10');
+expr('nPr(5, 2)', '20');
+expr('log(1000)', '3');
+expr('log(8, 2)', '3');
+expr('median(1, 2, 3, 4, 5)', '3');
+expr('median(1, 2, 3, 4)', '2.5');
+expr('produit(1, 2, 3, 4)', '24');
+expr('root(27, 3)', '3');
+expr('ecarttype(2, 4, 4, 4, 5, 5, 7, 9)', '2');
+expr('sin(pi / 2)', '1');
+expr('round(phi * 1000)', '1 618');
+
 /* ---- forward references ------------------------------------------- */
 check('forward ref', run(
   'vitesse =\n' +
