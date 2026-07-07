@@ -39,6 +39,11 @@ temps = 2 h
   condition `si(condition, alors, sinon)`, connecteurs `et` / `ou` / `non` —
   de quoi écrire des fonctions par morceaux et de la récursion :
   `fact(n) = si(n <= 1, 1, n * fact(n - 1))`.
+- **Somme indexée** : `Σ(i, 1, n, i^2) =` (aussi `sigma`).
+- **Comptes** : `total` (somme du bloc courant) et `ans` (résultat précédent).
+- **Températures** `°C` / `°F` / `K` : `20 °C en °F =` → `68 °F`.
+- **Commentaires en fin de ligne** avec `//` : `loyer = 800 € // charge fixe`.
+- **Aide-mémoire** intégré (bouton « ? »).
 - **Fonctions type Excel / maths** insérables en un clic (barre ƒ) : `sum`,
   `moyenne`, `médiane`, `variance`, `ecarttype`, `min`, `max`, `produit`,
   `sqrt`, `round`, `abs`, `floor`, `ceil`, `log(x, b)`, `pgcd`, `ppcm`,
