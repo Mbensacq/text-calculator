@@ -57,10 +57,10 @@
   // Case-insensitive fallback lookup so "KM" resolves to "km" when unambiguous.
   const LOWER = {};
 
-  function def(names, factor, dim) {
+  function def(names, factor, dim, offset) {
     const canonical = names[0];
     for (const n of names) {
-      UNITS[n] = { factor, dim, canonical };
+      UNITS[n] = { factor: factor, dim: dim, canonical: canonical, offset: offset || 0 };
       const low = n.toLowerCase();
       if (!(low in LOWER)) LOWER[low] = UNITS[n];
     }
@@ -124,6 +124,12 @@
   def(['mph'], 1609.344 / 3600, { length: 1, time: -1 });
   def(['kn', 'noeud', 'noeuds', 'knot', 'knots'], 1852 / 3600, { length: 1, time: -1 });
 
+  // Temperature (SI base: kelvin). The offset converts the unit to kelvin:
+  // kelvin = value * factor + offset. Best for values and conversions.
+  def(['K', 'kelvin', 'kelvins'], 1, { temp: 1 }, 0);
+  def(['°C', 'degC', 'celsius', 'Celsius'], 1, { temp: 1 }, 273.15);
+  def(['°F', 'degF', 'fahrenheit', 'Fahrenheit'], 5 / 9, { temp: 1 }, 273.15 - 32 * 5 / 9);
+
   // Angle
   def(['rad', 'radian', 'radians'], 1, { angle: 1 });
   def(['deg', '°', 'degré', 'degrés', 'degree', 'degrees'], PI / 180, { angle: 1 });
@@ -178,6 +184,29 @@
 
   function isKnownUnit(name) {
     return lookupUnit(name) !== null;
+  }
+
+  // A unit whose conversion to SI needs an additive offset (°C, °F).
+  function isOffsetUnit(name) {
+    const u = lookupUnit(name);
+    return !!(u && u.offset);
+  }
+
+  // Build a temperature quantity: "20 °C" → 20 * factor + offset kelvins.
+  function offsetQuantity(number, name) {
+    const u = lookupUnit(name);
+    if (!u) return quantity(number, {}, {});
+    return quantity(number * u.factor + (u.offset || 0), u.dim, { [u.canonical]: 1 });
+  }
+
+  // Display magnitude for a unit map, honouring a single offset unit.
+  function magnitude(base, unitMap) {
+    const names = Object.keys(unitMap);
+    if (names.length === 1 && unitMap[names[0]] === 1) {
+      const u = lookupUnit(names[0]);
+      if (u && u.offset) return (base - u.offset) / u.factor;
+    }
+    return base / unitFactor(unitMap);
   }
 
   // Build a quantity for a bare unit token (used for "10 km" — number × unit).
@@ -277,6 +306,9 @@
     unitFactor,
     lookupUnit,
     isKnownUnit,
+    isOffsetUnit,
+    offsetQuantity,
+    magnitude,
     combineDim,
     scaleDim,
     sameDim,

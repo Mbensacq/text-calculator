@@ -154,6 +154,30 @@ check('recursive factorial', run('f(n) = si(n <= 1, 1, n * f(n - 1))\nf(5) =')[1
 check('piecewise (absolute value)', run('a(x) = si(x < 0, -x, x)\na(-7) =')[1], '7');
 check('fibonacci', run('fib(n) = si(n < 2, n, fib(n-1) + fib(n-2))\nfib(10) =')[1], '55');
 
+/* ---- temperatures -------------------------------------------------- */
+expr('20 °C', '20 °C');
+expr('20 °C en °F', '68 °F');
+expr('100 °C en K', '373.15 K');
+expr('37 °C en °F', '98.6 °F');
+
+/* ---- indexed sum (Σ) ---------------------------------------------- */
+expr('Σ(i, 1, 10, i)', '55');
+expr('Σ(i, 1, 5, i^2)', '55');
+expr('sigma(k, 1, 4, 2 * k)', '20');
+expr('somme(i, 1, 100, i)', '5 050');
+expr('sum(1, 2, 3)', '6'); // list form still works
+
+/* ---- inline comments ---------------------------------------------- */
+check('comment on a definition', run('x = 5 // le prix\nx =')[1], '5');
+check('comment on an expression', run('2 + 3 = // somme')[0], '5');
+check('url is not a comment', run('voir https://ex.com\n2 + 2 =')[1], '4');
+
+/* ---- ans / total --------------------------------------------------- */
+check('ans is the previous value', run('10 =\nans + 5 =')[1], '15');
+check('total sums the block', run('# X\nlait = 1.15 €\npain = 2.90 €\ntotal =')[3], '4.05 €');
+check('total resets on a blank line', run('a = 3 €\ntotal =\n\nb = 5 €\ntotal =').filter(Boolean).join(' | '), '3 € | 5 €');
+check('a user-defined total wins', run('total = 99 €\ntotal =')[1], '99 €');
+
 /* ---- robustness ---------------------------------------------------- */
 check('division by zero', /division par z/.test(run('1 / 0 =')[0]), true);
 check('deep recursion guarded', /récursion trop profonde/.test(run('r(n) = r(n) + 1\nr(1) =')[1]), true);

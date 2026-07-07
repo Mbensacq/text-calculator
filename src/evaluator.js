@@ -209,6 +209,16 @@
     }
   }
 
+  // A child environment that overrides a single variable (used by Σ and, more
+  // generally, by any bound-variable construct).
+  function withLocal(env, name, value) {
+    return {
+      lookupVar: function (n) { return n === name ? value : (env && env.lookupVar ? env.lookupVar(n) : null); },
+      lookupFunc: env && env.lookupFunc,
+      callFunction: env && env.callFunction,
+    };
+  }
+
   // Apply a plain binary operator to two scalar quantities.
   function scalarBinary(op, a, b) {
     switch (op) {
@@ -332,6 +342,15 @@
       }
 
       case 'binary': {
+        // Temperature literal: "20 °C" applies the unit's additive offset.
+        if (ast.op === '*' && ast.implicit && ast.right.type === 'ident' &&
+            Units.isOffsetUnit(ast.right.name)) {
+          const left = evaluate(ast.left, env);
+          if (!isList(left) && Units.isDimensionless(left.dim)) {
+            return Units.offsetQuantity(left.base, ast.right.name);
+          }
+        }
+
         // Accounting-friendly percentages: "300 € + 20%" means +20% *of* 300 €
         // (i.e. 360 €), not "add the number 0.2". Only kicks in when the left
         // side carries a real unit, so "20% + 30%" still adds to 50%.
@@ -385,6 +404,23 @@
         if (name === 'ou' || name === 'or') {
           for (const a of ast.args) if (truthy(evaluate(a, env))) return Units.scalar(1);
           return Units.scalar(0);
+        }
+
+        // Indexed sum:  Σ(i, 1, n, i^2)  — also spelled sigma / sommation, and
+        // accepted as somme/sum when written with the 4-argument index form.
+        if ((name === 'Σ' || name === 'sigma' || name === 'sommation' ||
+             name === 'somme' || name === 'sum') &&
+            ast.args.length === 4 && ast.args[0].type === 'ident') {
+          const varName = ast.args[0].name;
+          const from = needInt(evaluate(ast.args[1], env), 'Σ');
+          const to = needInt(evaluate(ast.args[2], env), 'Σ');
+          if (to - from > 1000000) throw new CalcError('somme trop longue');
+          let acc = null;
+          for (let i = from; i <= to; i++) {
+            const term = evaluate(ast.args[3], withLocal(env, varName, Units.scalar(i)));
+            acc = acc === null ? term : Units.add(acc, term);
+          }
+          return acc === null ? Units.scalar(0) : acc;
         }
 
         const values = evalSequence(ast.args, env);

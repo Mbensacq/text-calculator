@@ -23,6 +23,7 @@
     length: 'm',
     mass: 'kg',
     time: 's',
+    temp: 'K',
     angle: 'rad',
     data: 'o',
     EUR: '€',
@@ -106,7 +107,7 @@
     let value;
     if (Object.keys(q.unit).length) {
       unitLabel = formatUnitMap(q.unit);
-      value = q.base / Units.unitFactor(q.unit);
+      value = Units.magnitude(q.base, q.unit);
     } else if (Object.keys(q.dim).length) {
       unitLabel = formatDimAsUnits(q.dim);
       value = q.base;

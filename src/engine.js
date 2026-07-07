@@ -101,8 +101,16 @@
     return { core: raw, requested: false };
   }
 
+  // Drop a trailing "// comment". The "//" must start the line or follow
+  // whitespace, so URLs (https://…) and prose are left untouched.
+  function stripComment(raw) {
+    const m = raw.match(/(^|\s)\/\//);
+    return m ? raw.slice(0, m.index + m[1].length) : raw;
+  }
+
   function classify(rawLine) {
-    const split = splitResultRequest(rawLine);
+    const code = stripComment(rawLine);
+    const split = splitResultRequest(code);
     const core = split.core;
     let rec;
     if (core.trim() === '') rec = { kind: 'blank' };
@@ -195,11 +203,16 @@
       }
     }
 
-    // An environment resolves names against optional locals (function params),
-    // then the document's global variables. Functions are always global.
-    function makeEnv(locals) {
+    // An environment resolves names against `special` (ans / total), then the
+    // optional locals (function params), then the document's global variables.
+    function makeEnv(locals, special) {
       return {
         lookupVar: function (name) {
+          if (special && Object.prototype.hasOwnProperty.call(special, name)) {
+            const s = special[name];
+            if (s.error) throw new CalcError(s.error);
+            return s.value;
+          }
           if (locals && Object.prototype.hasOwnProperty.call(locals, name)) return locals[name];
           return defs[name] ? resolveVar(name) : null;
         },
@@ -213,30 +226,57 @@
     const globalEnv = makeEnv(null);
     const env = globalEnv;
 
+    // Sum a block of quantities for "total", keeping units compatible with the
+    // first value and skipping the odd incompatible one (e.g. a helper ratio).
+    function blockTotal(block) {
+      let acc = null;
+      for (const v of block) {
+        if (acc === null) acc = v;
+        else if (Units.sameDim(acc.dim, v.dim)) acc = Units.add(acc, v);
+      }
+      return acc || Units.scalar(0);
+    }
+
     // ---- Produce per-line results (only for lines ending in "=") -------
+    // Walk top to bottom so the positional helpers "ans" (previous value) and
+    // "total" (running sum of the current block) can be offered. A blank line,
+    // a heading or a comment starts a new block.
+    let ansVal = null;
+    let block = [];
     for (const rec of records) {
-      if (!rec.resultRequested) continue;
+      if (rec.kind === 'blank' || rec.kind === 'comment') { ansVal = null; block = []; continue; }
+
+      // ans / total are offered only when the user hasn't defined those names.
+      const special = {};
+      if (ansVal && !defs.ans && !funcs.ans) special.ans = { value: ansVal };
+      if (!defs.total && !funcs.total) special.total = { value: blockTotal(block) };
+
+      let value = null;
+      let evalErr = null;
+      let accumulate = false;
+
       if (rec.kind === 'def') {
-        if (rec.defKind === 'func') continue; // a function has no single value
-        try {
-          rec.value = resolveVar(rec.name);
-          rec.display = Fmt.formatValue(rec.value);
-        } catch (e) {
-          rec.error = e.message;
+        if (rec.defKind !== 'func') {
+          try { value = resolveVar(rec.name); accumulate = true; } catch (e) { evalErr = e; }
         }
       } else if (rec.kind === 'expr') {
-        let ast;
+        if (!rec.resultRequested) continue; // prose — no result, doesn't touch the block
+        const src = rec.source.trim();
+        const isRef = src === 'ans' || src === 'total';
         try {
-          ast = parse(tokenize(rec.source));
-        } catch (e) {
-          continue; // "=" on something that isn't an expression → ignore
-        }
-        try {
-          rec.value = evaluate(ast, env);
-          rec.display = Fmt.formatValue(rec.value);
-        } catch (e) {
-          rec.error = e.message;
-        }
+          value = evaluate(parse(tokenize(rec.source)), makeEnv(null, special));
+          accumulate = !isRef;
+        } catch (e) { evalErr = e; }
+      }
+
+      if (rec.resultRequested && !(rec.kind === 'def' && rec.defKind === 'func')) {
+        if (value != null) { rec.value = value; rec.display = Fmt.formatValue(value); }
+        else if (evalErr) rec.error = evalErr.message;
+      }
+
+      if (accumulate && value != null) {
+        ansVal = value;
+        if (!Units.isList(value)) block.push(value);
       }
     }
 

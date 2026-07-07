@@ -92,6 +92,16 @@
         continue;
       }
 
+      // Degree sign: "°C" / "°F" are a single unit; a lone "°" is the angle.
+      if (ch === '°') {
+        const start = i;
+        i++;
+        let name = '°';
+        while (i < n && IDENT_PART.test(input[i])) { name += input[i]; i++; }
+        push('ident', name, start);
+        continue;
+      }
+
       // Identifiers (variables / units / functions / labels)
       if (IDENT_START.test(ch)) {
         const start = i;
