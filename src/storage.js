@@ -37,6 +37,22 @@
     return lines.length > 1 ? lines[1].replace(/^\s*(#+|\/\/)\s*/, '') : '';
   }
 
+  function gridTitle(grid) {
+    if (grid && grid.cells) {
+      for (let r = 0; r < (grid.rows || 0); r++) {
+        for (let c = 0; c < (grid.cols || 0); c++) {
+          const v = grid.cells[r + ',' + c];
+          if (v && v.trim() && v.charAt(0) !== '=') return v.trim();
+        }
+      }
+    }
+    return 'Tableau';
+  }
+
+  function emptyGrid() {
+    return { rows: 6, cols: 4, cells: {} };
+  }
+
   function createStore(seedBody) {
     let state = read();
     if (!state) state = migrateOrSeed(seedBody);
@@ -73,8 +89,9 @@
         .sort((a, b) => b.updatedAt - a.updatedAt)
         .map((n) => ({
           id: n.id,
-          title: deriveTitle(n.body),
-          snippet: deriveSnippet(n.body),
+          type: n.type || 'text',
+          title: n.type === 'grid' ? gridTitle(n.grid) : deriveTitle(n.body),
+          snippet: n.type === 'grid' ? 'Tableau' : deriveSnippet(n.body),
           updatedAt: n.updatedAt,
           active: n.id === state.activeId,
         }));
@@ -101,10 +118,26 @@
       return note;
     }
 
+    function createGrid() {
+      const note = { id: uid(), type: 'grid', grid: emptyGrid(), updatedAt: Date.now() };
+      state.notes.push(note);
+      state.activeId = note.id;
+      persist();
+      return note;
+    }
+
     function updateBody(id, body) {
       const note = find(id);
       if (!note) return;
       note.body = body;
+      note.updatedAt = Date.now();
+      persist();
+    }
+
+    function updateGrid(id, grid) {
+      const note = find(id);
+      if (!note) return;
+      note.grid = grid;
       note.updatedAt = Date.now();
       persist();
     }
@@ -124,7 +157,9 @@
       active: active,
       setActive: setActive,
       create: create,
+      createGrid: createGrid,
       updateBody: updateBody,
+      updateGrid: updateGrid,
       remove: remove,
     };
   }

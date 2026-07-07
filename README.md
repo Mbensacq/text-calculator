@@ -45,6 +45,9 @@ temps = 2 h
 - **Tableaux façon tableur** : écrivez un tableau avec des `|`, adressez les
   cellules en `A1` (colonnes A, B, C… et lignes 1, 2, 3…), mettez des formules
   dans les cellules (`=B2*C2`) et totalisez des plages : `somme(B2:B10) =`.
+- **Grille cliquable** (type de note « Tableau ») : une vraie grille où une
+  cellule `=B1*C1` affiche son **résultat** (la formule n'apparaît qu'à
+  l'édition), avec des poignées « + » pour ajouter lignes et colonnes.
 - **Commentaires en fin de ligne** avec `//` : `loyer = 800 € // charge fixe`.
 - **Aide-mémoire** intégré (bouton « ? »).
 - **Fonctions type Excel / maths** insérables en un clic (barre ƒ) : `sum`,

@@ -117,29 +117,51 @@
     let activeId = store.active().id;
     let listTimer = null;
 
+    const textView = document.getElementById('text-view');
+    const gridView = document.getElementById('grid-view');
+
+    function bumpList() {
+      if (listTimer) clearTimeout(listTimer);
+      listTimer = setTimeout(renderList, 300);
+    }
+
     const editor = TC.createEditor({
       input: document.getElementById('input'),
       highlight: document.getElementById('highlight'),
       onChange: function (text) {
         store.updateBody(activeId, text);
-        // Refresh the sidebar title/snippet, but not on every keystroke.
-        if (listTimer) clearTimeout(listTimer);
-        listTimer = setTimeout(renderList, 300);
+        bumpList();
       },
     });
+
+    const gridEditor = TC.createGridEditor({
+      container: document.getElementById('grid'),
+      onChange: function (model) {
+        store.updateGrid(activeId, model);
+        bumpList();
+      },
+    });
+
+    let isGrid = false;
 
     function loadActive() {
       const note = store.active();
       activeId = note.id;
-      editor.setValue(note.body);
+      isGrid = note.type === 'grid';
+      textView.hidden = isGrid;
+      gridView.hidden = !isGrid;
+      if (isGrid) gridEditor.setModel(note.grid);
+      else editor.setValue(note.body);
       renderList();
     }
+
+    function focusActive() { if (isGrid) gridEditor.focus(); else editor.focus(); }
 
     function selectNote(id) {
       store.setActive(id);
       loadActive();
       closeSidebar();
-      editor.focus();
+      focusActive();
     }
 
     function newNote() {
@@ -147,6 +169,13 @@
       loadActive();
       closeSidebar();
       editor.focus();
+    }
+
+    function newGrid() {
+      store.createGrid();
+      loadActive();
+      closeSidebar();
+      gridEditor.focus();
     }
 
     function loadNote(body) {
@@ -210,6 +239,7 @@
     });
 
     document.getElementById('new-note').addEventListener('click', newNote);
+    document.getElementById('new-grid').addEventListener('click', newGrid);
     document.getElementById('load-example').addEventListener('click', loadExample);
     document.getElementById('load-sales').addEventListener('click', loadSales);
 
@@ -254,6 +284,6 @@
     });
 
     loadActive();
-    editor.focus();
+    focusActive();
   });
 })();
