@@ -4,32 +4,55 @@
 (function () {
   'use strict';
 
-  const DEFAULT_NOTE = [
-    '# Bienvenue',
-    'Écrivez librement. Pour afficher un résultat, terminez la ligne par « = ».',
+  // A wiki-style example that showcases every feature. Used as the first-run
+  // note and re-loadable at any time from the sidebar.
+  const EXAMPLE_NOTE = [
+    '# Bienvenue dans Text Calculator',
     '',
+    'Un bloc-notes qui calcule. Terminez une ligne par « = » pour voir le résultat.',
     '(2 + 3) * 4 =',
-    '90 km/h en m/s =',
     '',
-    '# Trajet',
-    'Une variable peut servir avant même sa définition :',
-    'vitesse =',
-    'vitesse = distance / temps',
-    'distance = 100 km',
-    'temps = 2 h',
+    '## Variables',
+    'Une variable peut servir avant même d’être définie.',
+    'aire = largeur * hauteur =',
+    'largeur = 4 m',
+    'hauteur = 3 m',
     '',
-    '# Courses',
-    'lait = 1.15 €',
-    'pain = 2.90 €',
-    'oeufs = 3.20 €',
-    'total = lait + pain + oeufs =',
-    'total + 20% =',
+    '## Fonctions',
+    'carre(x) = x^2',
+    'carre(9) =',
+    '// récursion, avec un cas de base',
+    'fact(n) = si(n <= 1, 1, n * fact(n - 1))',
+    'fact(6) =',
     '',
-    '# Listes',
+    '## Listes, plages, indices',
     'notes = 12, 15, 9, 17',
-    'moyenne(notes) =',
-    'sum(1, 2, ..., 10) =',
+    'moy(notes) =',
+    'notes[0] =           // premier élément (base 0)',
+    'Σ(i, 1, 10, i) =     // somme indexée',
+    '',
+    '## Logique',
+    'si(15 >= 10, 1, 0) =',
+    '',
+    '## Unités & conversions',
+    '120 km / 1.5 h =',
+    '2 Go en Mo =',
+    '20 °C en °F =',
+    '300 € + 20% =        // TVA',
+    '',
+    '## Tenir des comptes',
+    'loyer = 800 €        // charge fixe',
+    'courses = 250 €',
+    'total =',
+    '',
+    'budget = 1500 €',
+    'depenses = loyer + courses =',
+    'reste = budget - depenses =',
+    '',
+    'Constantes : pi, e, tau, phi. Ouvrez « ? » en haut pour l’aide-mémoire.',
   ].join('\n');
+
+  const DEFAULT_NOTE = EXAMPLE_NOTE;
 
   function ready(fn) {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
@@ -80,6 +103,14 @@
 
     function newNote() {
       store.create();
+      loadActive();
+      closeSidebar();
+      editor.focus();
+    }
+
+    function loadExample() {
+      const note = store.create();
+      store.updateBody(note.id, EXAMPLE_NOTE);
       loadActive();
       closeSidebar();
       editor.focus();
@@ -136,6 +167,7 @@
     });
 
     document.getElementById('new-note').addEventListener('click', newNote);
+    document.getElementById('load-example').addEventListener('click', loadExample);
 
     // Function palette: insert "name()" with the caret between the parentheses.
     document.getElementById('fnbar').addEventListener('click', function (e) {

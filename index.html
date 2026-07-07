@@ -17,7 +17,7 @@
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="styles/main.css?v=5">
+  <link rel="stylesheet" href="styles/main.css?v=6">
 </head>
 <body>
   <div class="app" id="app">
@@ -27,7 +27,9 @@
         <button id="new-note" class="icon-btn" type="button" title="Nouvelle note (Ctrl/Cmd+Entrée)" aria-label="Nouvelle note">＋</button>
       </div>
       <ul id="note-list" class="note-list"></ul>
-      <div class="sidebar__foot">Calcul littéral · unités · références en avant</div>
+      <div class="sidebar__foot">
+        <button id="load-example" class="foot-link" type="button">＋ Note d'exemple</button>
+      </div>
     </aside>
 
     <div class="scrim" id="scrim" aria-hidden="true"></div>
@@ -139,14 +141,14 @@ total =             → 4.05 €</pre>
     </aside>
   </div>
 
-  <script src="src/units.js?v=5"></script>
-  <script src="src/tokenizer.js?v=5"></script>
-  <script src="src/parser.js?v=5"></script>
-  <script src="src/evaluator.js?v=5"></script>
-  <script src="src/formatter.js?v=5"></script>
-  <script src="src/engine.js?v=5"></script>
-  <script src="src/editor.js?v=5"></script>
-  <script src="src/storage.js?v=5"></script>
-  <script src="src/app.js?v=5"></script>
+  <script src="src/units.js?v=6"></script>
+  <script src="src/tokenizer.js?v=6"></script>
+  <script src="src/parser.js?v=6"></script>
+  <script src="src/evaluator.js?v=6"></script>
+  <script src="src/formatter.js?v=6"></script>
+  <script src="src/engine.js?v=6"></script>
+  <script src="src/editor.js?v=6"></script>
+  <script src="src/storage.js?v=6"></script>
+  <script src="src/app.js?v=6"></script>
 </body>
 </html>

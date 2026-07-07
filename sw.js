@@ -5,22 +5,22 @@
  * with ?v=N). Bump CACHE and the ?v= query together when assets change; the
  * old cache is then dropped on activate.
  */
-const CACHE = 'text-calculator-v5';
+const CACHE = 'text-calculator-v6';
 
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './styles/main.css?v=5',
-  './src/units.js?v=5',
-  './src/tokenizer.js?v=5',
-  './src/parser.js?v=5',
-  './src/evaluator.js?v=5',
-  './src/formatter.js?v=5',
-  './src/engine.js?v=5',
-  './src/editor.js?v=5',
-  './src/storage.js?v=5',
-  './src/app.js?v=5',
+  './styles/main.css?v=6',
+  './src/units.js?v=6',
+  './src/tokenizer.js?v=6',
+  './src/parser.js?v=6',
+  './src/evaluator.js?v=6',
+  './src/formatter.js?v=6',
+  './src/engine.js?v=6',
+  './src/editor.js?v=6',
+  './src/storage.js?v=6',
+  './src/app.js?v=6',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',

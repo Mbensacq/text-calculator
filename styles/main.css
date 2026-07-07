@@ -178,11 +178,24 @@ body {
 .note-item__del:hover { opacity: 1; }
 
 .sidebar__foot {
-  padding: 12px 18px;
-  font-size: 11px;
-  color: var(--ink-soft);
+  padding: 8px 10px;
   border-top: 1px solid var(--rule);
 }
+
+.foot-link {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background .12s ease, color .12s ease;
+}
+.foot-link:hover { background: var(--accent-soft); color: var(--accent); }
 
 .scrim { display: none; }
 
