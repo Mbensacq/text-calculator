@@ -17,7 +17,7 @@
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="styles/main.css?v=6">
+  <link rel="stylesheet" href="styles/main.css?v=7">
 </head>
 <body>
   <div class="app" id="app">
@@ -29,6 +29,7 @@
       <ul id="note-list" class="note-list"></ul>
       <div class="sidebar__foot">
         <button id="load-example" class="foot-link" type="button">＋ Note d'exemple</button>
+        <button id="load-sales" class="foot-link" type="button">＋ Note ventes (expo)</button>
       </div>
     </aside>
 
@@ -132,6 +133,16 @@ total =             → 4.05 €</pre>
 300 € + 20% =       → 360 €</pre>
         </section>
         <section>
+          <h3>Tableaux (cellules façon tableur)</h3>
+          <p>Un tableau se fait avec des « | ». Colonnes A, B, C… et lignes 1, 2, 3…
+          Une cellule peut contenir une formule (commençant par <code>=</code>).</p>
+          <pre>| Produit | Qté | PU  | Revenu |
+| sticker | 2   | 3 € | =B2*C2 |
+| badge   | 3   | 2 € | =B3*C3 |
+somme(D2:D3) =        total de la colonne D
+B2 =                  une cellule</pre>
+        </section>
+        <section>
           <h3>Commentaires & titres</h3>
           <pre>loyer = 800 €   // charge fixe
 # Un titre de section</pre>
@@ -141,14 +152,14 @@ total =             → 4.05 €</pre>
     </aside>
   </div>
 
-  <script src="src/units.js?v=6"></script>
-  <script src="src/tokenizer.js?v=6"></script>
-  <script src="src/parser.js?v=6"></script>
-  <script src="src/evaluator.js?v=6"></script>
-  <script src="src/formatter.js?v=6"></script>
-  <script src="src/engine.js?v=6"></script>
-  <script src="src/editor.js?v=6"></script>
-  <script src="src/storage.js?v=6"></script>
-  <script src="src/app.js?v=6"></script>
+  <script src="src/units.js?v=7"></script>
+  <script src="src/tokenizer.js?v=7"></script>
+  <script src="src/parser.js?v=7"></script>
+  <script src="src/evaluator.js?v=7"></script>
+  <script src="src/formatter.js?v=7"></script>
+  <script src="src/engine.js?v=7"></script>
+  <script src="src/editor.js?v=7"></script>
+  <script src="src/storage.js?v=7"></script>
+  <script src="src/app.js?v=7"></script>
 </body>
 </html>

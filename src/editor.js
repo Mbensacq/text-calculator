@@ -78,6 +78,16 @@
     if (HEADING_RE.test(line)) { div.appendChild(span('hl-heading', line)); return; }
     if (COMMENT_RE.test(line)) { div.appendChild(span('hl-comment', line)); return; }
 
+    // Table row: draw the "|" separators discreetly.
+    if (line.indexOf('|') !== -1) {
+      const parts = line.split('|');
+      for (let i = 0; i < parts.length; i++) {
+        if (i > 0) div.appendChild(span('hl-pipe', '|'));
+        div.appendChild(textNode(parts[i]));
+      }
+      return;
+    }
+
     // Split off a trailing "// comment" and colour the code part.
     let code = line;
     let comment = '';

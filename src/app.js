@@ -54,6 +54,47 @@
 
   const DEFAULT_NOTE = EXAMPLE_NOTE;
 
+  // A ready-to-use sales log for a market/expo stand: price list, one row per
+  // order (amount paid + items), and a per-product summary with column sums.
+  const SALES_NOTE = [
+    '# Ventes — expo',
+    '',
+    '## Tarifs',
+    'sticker = 3 €',
+    'planche = 8 €',
+    'badge = 2 €',
+    'porte_cle = 5 €',
+    'charm = 4 €',
+    'print = 10 €',
+    'marque_page = 3 €',
+    '',
+    '## Commandes',
+    'Une ligne par client. La colonne « Payé » (B) se totalise plus bas.',
+    '| N° | Payé | Articles                    |',
+    '| 1  | 8 €  | 2 stickers + 1 badge        |',
+    '| 2  | 23 € | 1 planche + 3 charms + 1 mp |',
+    '| 3  | 10 € | 1 print                     |',
+    'somme(B2:B4) =        // total encaissé',
+    '',
+    '## Vérifier une commande (avec les tarifs)',
+    '2 * sticker + 1 * badge =',
+    '1 * planche + 3 * charm + 1 * marque_page =',
+    '',
+    '## Bilan par produit',
+    'La colonne Revenu (D) se calcule toute seule : =B2*C2',
+    '| Produit | Qté | PU   | Revenu |',
+    '| sticker | 2   | 3 €  | =B2*C2 |',
+    '| planche | 1   | 8 €  | =B3*C3 |',
+    '| badge   | 1   | 2 €  | =B4*C4 |',
+    '| charm   | 3   | 4 €  | =B5*C5 |',
+    '| print   | 1   | 10 € | =B6*C6 |',
+    '| mp      | 1   | 3 €  | =B7*C7 |',
+    'revenu = somme(D2:D7) =',
+    'objets = somme(B2:B7) =',
+    '',
+    'Astuce : élargissez un tableau en ajoutant des colonnes (| …) ou des lignes.',
+  ].join('\n');
+
   function ready(fn) {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
     else fn();
@@ -108,13 +149,15 @@
       editor.focus();
     }
 
-    function loadExample() {
+    function loadNote(body) {
       const note = store.create();
-      store.updateBody(note.id, EXAMPLE_NOTE);
+      store.updateBody(note.id, body);
       loadActive();
       closeSidebar();
       editor.focus();
     }
+    function loadExample() { loadNote(EXAMPLE_NOTE); }
+    function loadSales() { loadNote(SALES_NOTE); }
 
     function deleteNote(id) {
       const note = store.list().filter((n) => n.id === id)[0];
@@ -168,6 +211,7 @@
 
     document.getElementById('new-note').addEventListener('click', newNote);
     document.getElementById('load-example').addEventListener('click', loadExample);
+    document.getElementById('load-sales').addEventListener('click', loadSales);
 
     // Function palette: insert "name()" with the caret between the parentheses.
     document.getElementById('fnbar').addEventListener('click', function (e) {

@@ -373,6 +373,7 @@ body {
 .hl-heading { color: var(--heading); font-weight: 700; }
 .hl-comment { color: var(--ink-soft); font-style: italic; }
 .hl-var { color: var(--accent); font-weight: 600; }
+.hl-pipe { color: var(--rule); }
 
 /* Layer that carries the computed results, scroll-synced with the text.
    No overflow clipping here: like the highlight layer, it is clipped by the
