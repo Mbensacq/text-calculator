@@ -308,8 +308,18 @@
         if (v) return v;
         // 2) a mathematical constant
         if (CONSTANTS[name]) return CONSTANTS[name]();
-        // 3) a unit, or failing that a free-form label
+        // 3) a spreadsheet cell (B2) when a table is present
+        if (env && env.lookupCell && /^[A-Za-z]+\d+$/.test(name)) {
+          const cell = env.lookupCell(name);
+          if (cell != null) return cell;
+        }
+        // 4) a unit, or failing that a free-form label
         return Units.unitQuantity(name);
+      }
+
+      case 'range': {
+        if (!env || !env.resolveRange) throw new CalcError('plage hors d’un tableau');
+        return env.resolveRange(ast.from, ast.to);
       }
 
       case 'unary': {

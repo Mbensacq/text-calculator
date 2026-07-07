@@ -35,6 +35,35 @@
 
   const COMMENT_RE = /^\s*(#|\/\/)/;
 
+  /* ---- Spreadsheet cells (A1 notation over pipe-delimited tables) ---- */
+
+  // "B" → 1, "AA" → 26 (0-based column index).
+  function colToIndex(letters) {
+    let n = 0;
+    const s = letters.toUpperCase();
+    for (let i = 0; i < s.length; i++) n = n * 26 + (s.charCodeAt(i) - 64);
+    return n - 1;
+  }
+  function parseCoord(name) {
+    const m = /^([A-Za-z]+)(\d+)$/.exec(name);
+    if (!m) return null;
+    return { col: colToIndex(m[1]), row: parseInt(m[2], 10) };
+  }
+  // Split a table row into cells, dropping the optional border pipes.
+  function splitRow(line) {
+    return line.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|');
+  }
+  function isSeparatorRow(cells) {
+    let sawDash = false;
+    for (const c of cells) {
+      const t = c.trim();
+      if (t === '') continue;
+      if (/^:?-{2,}:?$/.test(t)) { sawDash = true; continue; }
+      return false;
+    }
+    return sawDash;
+  }
+
   // Parse the left-hand side of a definition. Returns:
   //   { kind: 'var',  name, rhs }                — "prix = 10"
   //   { kind: 'func', name, params: [...], rhs } — "f(x) = x^2 + 1"
@@ -133,8 +162,38 @@
       return c;
     });
 
+    // ---- Table blocks. Each contiguous run of "|" lines is its own A1 grid;
+    //      a reference resolves against the nearest table at or above the line.
+    const blocks = []; // { cellMap, cache, visiting, rows }
+    (function () {
+      let current = null;
+      for (const rec of records) {
+        if (rec.raw.indexOf('|') === -1) { current = null; continue; }
+        if (!current) { current = { cellMap: {}, cache: {}, visiting: {}, rows: 0 }; blocks.push(current); }
+        rec.blockIndex = blocks.length - 1;
+        const cells = splitRow(rec.raw);
+        if (isSeparatorRow(cells)) { rec.tableSeparator = true; continue; }
+        current.rows++;
+        rec.tableRow = current.rows;
+        rec.tableCells = cells;
+        cells.forEach(function (raw, col) {
+          const t = raw.trim();
+          if (t !== '') current.cellMap[col + ',' + current.rows] = t;
+        });
+      }
+    })();
+    (function () {
+      let last = -1;
+      for (const rec of records) {
+        if (rec.blockIndex != null) last = rec.blockIndex;
+        rec.activeBlock = last;
+      }
+    })();
+
     // ---- Pass 1: collect variable and function definitions -------------
-    const defs = {};  // name -> { ast | null, parseError }
+    // A variable remembers the table active on its line, so "total = somme(B2:B4)"
+    // resolves against that table.
+    const defs = {};  // name -> { ast | null, parseError, blockIndex }
     const funcs = {}; // name -> { params, ast | null, parseError }
     for (const rec of records) {
       if (rec.kind !== 'def') continue;
@@ -146,7 +205,60 @@
         parseError = e.message;
       }
       if (rec.defKind === 'func') funcs[rec.name] = { params: rec.params, ast: ast, parseError: parseError };
-      else defs[rec.name] = { ast: ast, parseError: parseError };
+      else defs[rec.name] = { ast: ast, parseError: parseError, blockIndex: rec.activeBlock };
+    }
+
+    function resolveCellIn(bi, col, row) {
+      const b = blocks[bi];
+      if (!b) return null;
+      const key = col + ',' + row;
+      if (!(key in b.cellMap)) return null; // empty cell
+      if (key in b.cache) {
+        const r = b.cache[key];
+        if (r.error) throw new CalcError(r.error);
+        return r.value;
+      }
+      if (b.visiting[key]) throw new CalcError('référence circulaire entre cellules');
+      b.visiting[key] = true;
+      try {
+        let src = b.cellMap[key];
+        if (src.charAt(0) === '=') src = src.slice(1);
+        const value = evaluate(parse(tokenize(src)), makeEnv(null, null, bi));
+        b.cache[key] = { value: value };
+        return value;
+      } catch (e) {
+        b.cache[key] = { error: e.message };
+        throw e;
+      } finally {
+        delete b.visiting[key];
+      }
+    }
+
+    function lookupCellIn(bi, name) {
+      const c = parseCoord(name);
+      return c ? resolveCellIn(bi, c.col, c.row) : null;
+    }
+
+    // A range B1:B10 → a list of the numeric cells inside the rectangle
+    // (text headers and empty cells are skipped).
+    function resolveRangeIn(bi, fromName, toName) {
+      const b = blocks[bi];
+      if (!b) throw new CalcError('plage hors d’un tableau');
+      const a = parseCoord(fromName);
+      const z = parseCoord(toName);
+      if (!a || !z) throw new CalcError('plage invalide : ' + fromName + ':' + toName);
+      const c0 = Math.min(a.col, z.col), c1 = Math.max(a.col, z.col);
+      const r0 = Math.min(a.row, z.row), r1 = Math.max(a.row, z.row);
+      const items = [];
+      for (let r = r0; r <= r1; r++) {
+        for (let col = c0; col <= c1; col++) {
+          const key = col + ',' + r;
+          if (!(key in b.cellMap)) continue;
+          if (!/^[=+\-.\d]/.test(b.cellMap[key])) continue; // skip text headers
+          items.push(resolveCellIn(bi, col, r));
+        }
+      }
+      return Units.list(items);
     }
 
     // ---- Pass 2: lazy, memoised resolution with cycle detection --------
@@ -170,7 +282,7 @@
         if (!def || !def.ast) {
           throw new CalcError('définition invalide de « ' + name + ' »');
         }
-        const value = evaluate(def.ast, globalEnv);
+        const value = evaluate(def.ast, makeEnv(null, null, def.blockIndex));
         cache[name] = { value: value };
         return value;
       } catch (e) {
@@ -205,7 +317,8 @@
 
     // An environment resolves names against `special` (ans / total), then the
     // optional locals (function params), then the document's global variables.
-    function makeEnv(locals, special) {
+    function makeEnv(locals, special, blockIndex) {
+      const bi = blockIndex == null ? -1 : blockIndex;
       return {
         lookupVar: function (name) {
           if (special && Object.prototype.hasOwnProperty.call(special, name)) {
@@ -220,6 +333,11 @@
           return funcs[name] || null;
         },
         callFunction: callFunction,
+        lookupCell: function (name) { return bi >= 0 ? lookupCellIn(bi, name) : null; },
+        resolveRange: function (from, to) {
+          if (bi < 0) throw new CalcError('plage hors d’un tableau');
+          return resolveRangeIn(bi, from, to);
+        },
       };
     }
 
@@ -244,6 +362,16 @@
     let ansVal = null;
     let block = [];
     for (const rec of records) {
+      // Table rows: show the value of the last formula cell at the row's end.
+      if (rec.tableRow) {
+        for (let col = 0; col < rec.tableCells.length; col++) {
+          if (rec.tableCells[col].trim().charAt(0) !== '=') continue;
+          try { rec.value = resolveCellIn(rec.blockIndex, col, rec.tableRow); rec.display = Fmt.formatValue(rec.value); rec.error = undefined; }
+          catch (e) { rec.error = e.message; rec.display = undefined; }
+        }
+        continue;
+      }
+      if (rec.tableSeparator) continue;
       if (rec.kind === 'blank' || rec.kind === 'comment') { ansVal = null; block = []; continue; }
 
       // ans / total are offered only when the user hasn't defined those names.
@@ -264,7 +392,7 @@
         const src = rec.source.trim();
         const isRef = src === 'ans' || src === 'total';
         try {
-          value = evaluate(parse(tokenize(rec.source)), makeEnv(null, special));
+          value = evaluate(parse(tokenize(rec.source)), makeEnv(null, special, rec.activeBlock));
           accumulate = !isRef;
         } catch (e) { evalErr = e; }
       }

@@ -135,7 +135,16 @@
     function parsePostfix() {
       let node = parsePower();
       for (;;) {
-        if (at('percent')) { next(); node = { type: 'percent', operand: node }; }
+        if (at('colon')) {
+          // Cell range B1:B10 — both sides must be plain cell references.
+          next();
+          const right = parsePower();
+          if (node.type !== 'ident' || right.type !== 'ident') {
+            throw new ParseError('une plage attend deux références de cellule, ex. B1:B10');
+          }
+          node = { type: 'range', from: node.name, to: right.name };
+        }
+        else if (at('percent')) { next(); node = { type: 'percent', operand: node }; }
         else if (at('bang')) { next(); node = { type: 'factorial', operand: node }; }
         else if (at('pow2')) { next(); node = { type: 'binary', op: '^', left: node, right: { type: 'num', value: 2 } }; }
         else if (at('pow3')) { next(); node = { type: 'binary', op: '^', left: node, right: { type: 'num', value: 3 } }; }

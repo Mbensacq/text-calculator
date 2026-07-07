@@ -178,6 +178,22 @@ check('total sums the block', run('# X\nlait = 1.15 €\npain = 2.90 €\ntotal 
 check('total resets on a blank line', run('a = 3 €\ntotal =\n\nb = 5 €\ntotal =').filter(Boolean).join(' | '), '3 € | 5 €');
 check('a user-defined total wins', run('total = 99 €\ntotal =')[1], '99 €');
 
+/* ---- spreadsheet cells & ranges ----------------------------------- */
+const TABLE = [
+  '| Article | Qté | PU   | Total  |',
+  '| sticker | 2   | 3 €  | =B2*C2 |',
+  '| badge   | 3   | 2 €  | =B3*C3 |',
+  '| print   | 1   | 10 € | =B4*C4 |',
+].join('\n');
+check('cell reference', run(TABLE + '\nB3 =')[4], '3');
+check('cell with units', run(TABLE + '\nC4 =')[4], '10 €');
+check('in-cell formula shows on the row', run(TABLE)[1], '6 €');
+check('range sum', run(TABLE + '\nsomme(D2:D4) =')[4], '22 €');
+check('range average', run(TABLE + '\nmoy(C2:C4) =')[4], '5 €');
+check('range across columns', run(TABLE + '\nsomme(B2:B4) =')[4], '6');
+check('markdown separator is skipped', run(
+  '| a | b |\n|---|---|\n| 1 | 2 |\nsomme(A2:B2) =')[3], '3');
+
 /* ---- robustness ---------------------------------------------------- */
 check('division by zero', /division par z/.test(run('1 / 0 =')[0]), true);
 check('deep recursion guarded', /récursion trop profonde/.test(run('r(n) = r(n) + 1\nr(1) =')[1]), true);

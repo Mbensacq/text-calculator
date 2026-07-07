@@ -142,6 +142,7 @@
         case '[': i++; push('lbracket', '[', start); continue;
         case ']': i++; push('rbracket', ']', start); continue;
         case ',': i++; push('comma', ',', start); continue;
+        case ':': i++; push('colon', ':', start); continue;
         case '!':
           if (input[i + 1] === '=') { i += 2; push('cmp', '!=', start); }
           else { i++; push('bang', '!', start); }
