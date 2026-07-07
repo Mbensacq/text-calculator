@@ -17,7 +17,7 @@
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="styles/main.css?v=4">
+  <link rel="stylesheet" href="styles/main.css?v=5">
 </head>
 <body>
   <div class="app" id="app">
@@ -34,11 +34,16 @@
 
     <div class="workspace">
       <header class="topbar">
-        <button id="sidebar-toggle" class="icon-btn topbar__menu" type="button" aria-label="Afficher les notes">☰</button>
-        <div class="brand">
-          <span class="brand__name">Text&nbsp;Calculator</span>
+        <div class="topbar__left">
+          <button id="sidebar-toggle" class="icon-btn topbar__menu" type="button" aria-label="Afficher les notes">☰</button>
+          <div class="brand">
+            <span class="brand__name">Text&nbsp;Calculator</span>
+          </div>
         </div>
-        <p class="topbar__hint">Terminez une ligne par « = » pour afficher le résultat.</p>
+        <div class="topbar__right">
+          <p class="topbar__hint">Terminez une ligne par « = » pour afficher le résultat.</p>
+          <button id="help-btn" class="icon-btn" type="button" title="Aide-mémoire" aria-label="Aide">?</button>
+        </div>
       </header>
 
       <div class="fnbar" id="fnbar" role="toolbar" aria-label="Fonctions">
@@ -63,16 +68,85 @@
         </div>
       </main>
     </div>
+
+    <div id="help-scrim" class="help-scrim" hidden></div>
+    <aside id="help-panel" class="help" hidden aria-label="Aide-mémoire">
+      <div class="help__head">
+        <h2>Aide-mémoire</h2>
+        <button id="help-close" class="icon-btn" type="button" aria-label="Fermer">✕</button>
+      </div>
+      <div class="help__body">
+        <section>
+          <h3>Afficher un résultat</h3>
+          <p>Terminez la ligne par <code>=</code>. Le résultat s'affiche juste après.</p>
+          <pre>(2 + 3) * 4 =       → 20
+prix =              montre la valeur de prix</pre>
+        </section>
+        <section>
+          <h3>Variables</h3>
+          <p>Utilisables même avant leur définition (toute la note = une portée).</p>
+          <pre>vitesse = distance / temps
+distance = 100 km
+temps = 2 h</pre>
+        </section>
+        <section>
+          <h3>Fonctions</h3>
+          <p>Définissez les vôtres, récursion comprise :</p>
+          <pre>f(x) = x^2 + 1      puis  f(3) = → 10
+fact(n) = si(n &lt;= 1, 1, n * fact(n-1))</pre>
+          <p>Intégrées : <code>sqrt</code>, <code>round</code>, <code>abs</code>,
+          <code>min</code>, <code>max</code>, <code>sum</code>, <code>moy</code>,
+          <code>médiane</code>, <code>variance</code>, <code>ecarttype</code>,
+          <code>produit</code>, <code>pgcd</code>, <code>ppcm</code>,
+          <code>combin</code>, <code>nPr</code>, <code>log(x, b)</code>,
+          <code>sin</code>/<code>cos</code>/<code>tan</code>, factorielle <code>5!</code>.</p>
+        </section>
+        <section>
+          <h3>Listes, plages, somme indexée</h3>
+          <pre>notes = 12, 15, 9      moy(notes) =
+notes[0] =             (indice, base 0)
+1, 2, …, 10            (plage)
+Σ(i, 1, n, i^2) =      (somme indexée)</pre>
+        </section>
+        <section>
+          <h3>Logique</h3>
+          <p>Comparateurs <code>&lt; &gt; &lt;= &gt;= == !=</code> (rendent 1 ou 0).</p>
+          <pre>si(note &gt;= 10, "ok", 0) =
+et(a, b)   ou(a, b)   non(a)</pre>
+        </section>
+        <section>
+          <h3>Comptes</h3>
+          <p><code>total</code> = somme du bloc courant, <code>ans</code> = résultat précédent.</p>
+          <pre>lait = 1.15 €
+pain = 2.90 €
+total =             → 4.05 €</pre>
+        </section>
+        <section>
+          <h3>Unités & pourcentages</h3>
+          <p>Conversion avec <code>en</code>. Longueurs, masses, durées,
+          volumes, <code>°C</code>/<code>°F</code>, données, monnaies.</p>
+          <pre>2 km + 500 m =      → 2.5 km
+20 °C en °F =       → 68 °F
+300 € + 20% =       → 360 €</pre>
+        </section>
+        <section>
+          <h3>Commentaires & titres</h3>
+          <pre>loyer = 800 €   // charge fixe
+# Un titre de section</pre>
+          <p>Constantes : <code>pi</code>, <code>e</code>, <code>tau</code>, <code>phi</code>.</p>
+        </section>
+      </div>
+    </aside>
   </div>
 
-  <script src="src/units.js?v=4"></script>
-  <script src="src/tokenizer.js?v=4"></script>
-  <script src="src/parser.js?v=4"></script>
-  <script src="src/evaluator.js?v=4"></script>
-  <script src="src/formatter.js?v=4"></script>
-  <script src="src/engine.js?v=4"></script>
-  <script src="src/editor.js?v=4"></script>
-  <script src="src/storage.js?v=4"></script>
-  <script src="src/app.js?v=4"></script>
+  <script src="src/units.js?v=5"></script>
+  <script src="src/tokenizer.js?v=5"></script>
+  <script src="src/parser.js?v=5"></script>
+  <script src="src/evaluator.js?v=5"></script>
+  <script src="src/formatter.js?v=5"></script>
+  <script src="src/engine.js?v=5"></script>
+  <script src="src/editor.js?v=5"></script>
+  <script src="src/storage.js?v=5"></script>
+  <script src="src/app.js?v=5"></script>
 </body>
 </html>

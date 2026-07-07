@@ -155,6 +155,20 @@
     }
     document.getElementById('scrim').addEventListener('click', closeSidebar);
 
+    // Help panel
+    const helpPanel = document.getElementById('help-panel');
+    const helpScrim = document.getElementById('help-scrim');
+    function setHelp(open) {
+      helpPanel.hidden = !open;
+      helpScrim.hidden = !open;
+    }
+    document.getElementById('help-btn').addEventListener('click', function () { setHelp(true); });
+    document.getElementById('help-close').addEventListener('click', function () { setHelp(false); });
+    helpScrim.addEventListener('click', function () { setHelp(false); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !helpPanel.hidden) setHelp(false);
+    });
+
     // Keyboard: Cmd/Ctrl+Enter creates a new note.
     document.addEventListener('keydown', function (e) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {

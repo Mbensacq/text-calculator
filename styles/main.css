@@ -238,6 +238,14 @@ body {
 
 .brand__name { font-size: 15px; font-weight: 650; }
 
+.topbar__left,
+.topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
 .topbar__hint {
   margin: 0;
   font-size: 13px;
@@ -399,3 +407,77 @@ body {
   font-weight: 500;
   font-size: 13.5px;
 }
+
+/* ---- Help panel --------------------------------------------------- */
+
+.help-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(0, 0, 0, .38);
+}
+
+.help {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  width: min(440px, 94vw);
+  background: var(--paper);
+  border-left: 1px solid var(--rule);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  animation: help-in .18s cubic-bezier(.2, .7, .3, 1);
+}
+
+/* An explicit display keeps [hidden] from working on its own, so restore it. */
+.help[hidden] { display: none; }
+
+@keyframes help-in {
+  from { transform: translateX(16px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.help__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 12px 14px 20px;
+  border-bottom: 1px solid var(--rule);
+}
+.help__head h2 { margin: 0; font-size: 16px; }
+
+.help__body {
+  overflow-y: auto;
+  padding: 8px 20px 28px;
+}
+.help__body section { margin-top: 18px; }
+.help__body h3 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+.help__body p { margin: 4px 0; font-size: 13.5px; color: var(--ink-soft); }
+.help__body pre {
+  margin: 6px 0;
+  padding: 10px 12px;
+  background: var(--sidebar-bg);
+  border-radius: 8px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  color: var(--ink);
+}
+.help__body code {
+  background: var(--accent-soft);
+  color: var(--accent);
+  padding: 1px 5px;
+  border-radius: 5px;
+  font-size: 12.5px;
+}
+.help__body pre code { background: none; color: inherit; padding: 0; }

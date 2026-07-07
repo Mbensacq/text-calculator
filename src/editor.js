@@ -53,25 +53,42 @@
     return s;
   }
 
-  function colourise(div, line) {
-    if (!line.trim()) { div.textContent = '​'; return; }
-    if (HEADING_RE.test(line)) { div.appendChild(span('hl-heading', line)); return; }
-    if (COMMENT_RE.test(line)) { div.appendChild(span('hl-comment', line)); return; }
-    const fm = line.match(FUNCDEF_RE);
+  const INLINE_COMMENT_RE = /(^|\s)\/\//;
+
+  function colouriseCode(div, code) {
+    const fm = code.match(FUNCDEF_RE);
     if (fm) {
       div.appendChild(textNode(fm[1]));
       div.appendChild(span('hl-var', fm[2]));
       div.appendChild(textNode(fm[3] + fm[4]));
       return;
     }
-    const m = line.match(ASSIGN_RE);
+    const m = code.match(ASSIGN_RE);
     if (m) {
       div.appendChild(textNode(m[1]));
       div.appendChild(span('hl-var', m[2]));
       div.appendChild(textNode(m[3] + m[4]));
       return;
     }
-    div.textContent = line;
+    div.appendChild(textNode(code));
+  }
+
+  function colourise(div, line) {
+    if (!line.trim()) { div.textContent = '​'; return; }
+    if (HEADING_RE.test(line)) { div.appendChild(span('hl-heading', line)); return; }
+    if (COMMENT_RE.test(line)) { div.appendChild(span('hl-comment', line)); return; }
+
+    // Split off a trailing "// comment" and colour the code part.
+    let code = line;
+    let comment = '';
+    const cm = line.match(INLINE_COMMENT_RE);
+    if (cm) {
+      const cut = cm.index + cm[1].length;
+      code = line.slice(0, cut);
+      comment = line.slice(cut);
+    }
+    colouriseCode(div, code);
+    if (comment) div.appendChild(span('hl-comment', comment));
   }
 
   function animate(el, keyframes, duration) {
@@ -197,14 +214,23 @@
       },
       // Insert text at the caret (used by the function palette). The caret is
       // left `caretOffsetFromEnd` characters before the end of the inserted
-      // text — e.g. 1 to land it between a freshly inserted "()".
+      // text — e.g. 1 to land it between a freshly inserted "()". Uses
+      // execCommand so the browser's native undo (Ctrl+Z) still works.
       insertAtCaret: function (text, caretOffsetFromEnd) {
-        const start = input.selectionStart;
-        const end = input.selectionEnd;
-        input.value = input.value.slice(0, start) + text + input.value.slice(end);
-        const pos = start + text.length - (caretOffsetFromEnd || 0);
-        input.setSelectionRange(pos, pos);
         input.focus();
+        let inserted = false;
+        try { inserted = document.execCommand && document.execCommand('insertText', false, text); }
+        catch (e) { inserted = false; }
+        if (!inserted) {
+          const start = input.selectionStart;
+          const end = input.selectionEnd;
+          input.value = input.value.slice(0, start) + text + input.value.slice(end);
+          input.setSelectionRange(start + text.length, start + text.length);
+        }
+        if (caretOffsetFromEnd) {
+          const pos = input.selectionStart - caretOffsetFromEnd;
+          input.setSelectionRange(pos, pos);
+        }
         recompute();
       },
     };
