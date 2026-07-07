@@ -17,7 +17,7 @@
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="styles/main.css?v=8">
+  <link rel="stylesheet" href="styles/main.css?v=9">
 </head>
 <body>
   <div class="app" id="app">
@@ -46,6 +46,7 @@
         </div>
         <div class="topbar__right">
           <p class="topbar__hint">Terminez une ligne par « = » pour afficher le résultat.</p>
+          <button id="sync-btn" class="icon-btn" type="button" title="Synchronisation" aria-label="Synchronisation">⇅</button>
           <button id="help-btn" class="icon-btn" type="button" title="Aide-mémoire" aria-label="Aide">?</button>
         </div>
       </header>
@@ -167,18 +168,76 @@ D3: =somme(D1:D2)</pre>
         </section>
       </div>
     </aside>
+
+    <div id="sync-scrim" class="help-scrim" hidden></div>
+    <aside id="sync-panel" class="help" hidden aria-label="Synchronisation">
+      <div class="help__head">
+        <h2>Synchronisation</h2>
+        <button id="sync-close" class="icon-btn" type="button" aria-label="Fermer">✕</button>
+      </div>
+      <div class="help__body">
+        <p class="sync-status">État : <strong id="sync-state">désactivée</strong></p>
+        <p>Optionnelle et locale par défaut. Une fois activée, vos notes sont
+        partagées en temps réel entre tous les appareils connectés au même
+        espace de travail — un outil collaboratif.</p>
+
+        <section>
+          <h3>Activer</h3>
+          <p>Il suffit d'une base <strong>Firebase Realtime Database</strong>
+          (gratuite). Collez son URL, choisissez une clé d'espace de travail
+          (secrète et partagée), puis « Activer ».</p>
+          <label class="sync-field">URL de la base
+            <input id="sync-url" type="url" spellcheck="false" autocomplete="off"
+                   placeholder="https://mon-projet-default-rtdb.firebaseio.com">
+          </label>
+          <label class="sync-field">Espace de travail (clé secrète)
+            <span class="sync-row">
+              <input id="sync-ws" type="text" spellcheck="false" autocomplete="off"
+                     placeholder="clé partagée entre vos appareils">
+              <button id="sync-gen" class="foot-link" type="button">Générer</button>
+            </span>
+          </label>
+          <div class="sync-actions">
+            <button id="sync-enable" class="sync-btn-primary" type="button">Activer</button>
+            <button id="sync-disable" class="foot-link" type="button">Désactiver</button>
+          </div>
+        </section>
+
+        <section>
+          <h3>Ajouter un appareil</h3>
+          <p>Ouvrez ce lien sur l'autre appareil : il se connecte au même
+          espace automatiquement.</p>
+          <button id="sync-copy" class="foot-link" type="button">Copier le lien de partage</button>
+          <p id="sync-share" class="sync-share"></p>
+          <p class="sync-note">La clé fait office de mot de passe : ne partagez
+          ce lien qu'avec les personnes autorisées à voir et modifier vos notes.</p>
+        </section>
+
+        <section>
+          <h3>Créer la base (une fois)</h3>
+          <ol class="sync-steps">
+            <li>Sur <code>console.firebase.google.com</code>, créez un projet.</li>
+            <li>Menu <em>Build → Realtime Database → Créer une base</em>.</li>
+            <li>Copiez l'URL affichée (elle finit par <code>firebaseio.com</code>).</li>
+            <li>Pour un partage privé, protégez-la par des règles / une
+            authentification (l'espace de travail seul reste une clé publique).</li>
+          </ol>
+        </section>
+      </div>
+    </aside>
   </div>
 
-  <script src="src/units.js?v=8"></script>
-  <script src="src/tokenizer.js?v=8"></script>
-  <script src="src/parser.js?v=8"></script>
-  <script src="src/evaluator.js?v=8"></script>
-  <script src="src/formatter.js?v=8"></script>
-  <script src="src/engine.js?v=8"></script>
-  <script src="src/editor.js?v=8"></script>
-  <script src="src/storage.js?v=8"></script>
-  <script src="src/grid.js?v=8"></script>
-  <script src="src/grid-editor.js?v=8"></script>
-  <script src="src/app.js?v=8"></script>
+  <script src="src/units.js?v=9"></script>
+  <script src="src/tokenizer.js?v=9"></script>
+  <script src="src/parser.js?v=9"></script>
+  <script src="src/evaluator.js?v=9"></script>
+  <script src="src/formatter.js?v=9"></script>
+  <script src="src/engine.js?v=9"></script>
+  <script src="src/editor.js?v=9"></script>
+  <script src="src/storage.js?v=9"></script>
+  <script src="src/grid.js?v=9"></script>
+  <script src="src/grid-editor.js?v=9"></script>
+  <script src="src/sync.js?v=9"></script>
+  <script src="src/app.js?v=9"></script>
 </body>
 </html>

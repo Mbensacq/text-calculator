@@ -59,6 +59,9 @@ temps = 2 h
 - **Pourcentages comptables** : `300 € + 20% → 360 €` (TVA, remise, pourboire).
 - **Plusieurs notes** dans une barre latérale, enregistrées automatiquement
   dans le navigateur (localStorage).
+- **Synchronisation multi-appareils** (optionnelle) : partagez vos notes en
+  temps réel entre téléphone, tablette et ordinateur, et travaillez à
+  plusieurs sur le même espace. Voir la section dédiée plus bas.
 - **Coloration légère** des titres, commentaires, variables et résultats.
 
 ## Le mini-langage
@@ -128,6 +131,44 @@ un téléphone :
 L'application s'ouvre alors en plein écran, comme une appli native, et
 fonctionne sans connexion (un *service worker* met en cache la coquille).
 
+## Synchronisation multi-appareils (optionnelle)
+
+Par défaut, l'application est **entièrement locale** : chaque note reste dans
+le navigateur. On peut, si on le souhaite, activer une synchronisation en temps
+réel pour retrouver ses notes sur tous ses appareils et **travailler à
+plusieurs** sur le même espace — le tout sans quitter l'hébergement statique
+(GitHub Pages), grâce à une base **Firebase Realtime Database** interrogée
+uniquement par son API REST (écriture `PUT`) et son flux `EventSource` (SSE).
+Aucun SDK, aucune étape de build.
+
+**Mise en place (une fois) :**
+
+1. Sur [console.firebase.google.com](https://console.firebase.google.com),
+   créez un projet, puis *Build → Realtime Database → Créer une base*.
+2. Copiez l'URL de la base (elle finit par `firebaseio.com`).
+3. Dans l'application, bouton **⇅** (en haut) → collez l'URL, cliquez
+   **Générer** pour une clé d'espace de travail, puis **Activer**.
+4. Sur un autre appareil, ouvrez le **lien de partage** (bouton *Copier le lien
+   de partage*) : il s'y connecte automatiquement au même espace.
+
+**Fonctionnement :** chaque note est écrite sous
+`…/ws/<espace>/notes/<id>`. Les modifications sont réconciliées en
+*dernière écriture gagnante* (par horodatage) ; les suppressions laissent une
+*pierre tombale* pour se propager même aux appareils qui étaient hors ligne. La
+note en cours d'édition n'est jamais écrasée sous le curseur.
+
+**Sécurité :** la clé d'espace de travail joue le rôle de mot de passe (elle
+n'est pas devinable) — ne partagez le lien qu'avec les personnes autorisées.
+Pour un cadre strictement privé, protégez la base par des *règles de sécurité*
+et/ou une authentification Firebase ; l'espace de travail seul reste une clé
+publique côté client. Le *service worker* laisse volontairement passer les
+requêtes vers Firebase (autre domaine) sans les mettre en cache.
+
+*Vous préférez un autre hébergement (nom de domaine + redirection DNS) ?* Rien
+à changer : le site reste un ensemble de fichiers statiques, et la
+synchronisation fonctionne à l'identique du moment que la base Firebase est
+joignable.
+
 ## Lancer le projet
 
 Aucune dépendance, aucune étape de build. Ouvrez `index.html` dans un
@@ -157,7 +198,10 @@ src/
   formatter.js     affichage des nombres et unités
   engine.js        portée du document et références en avant
   editor.js        surface d'écriture, surbrillance, résultats en marge
-  storage.js       collection de notes (localStorage)
+  storage.js       collection de notes (localStorage) + fusion multi-appareils
+  grid.js          calcul d'une grille de cellules (façon tableur)
+  grid-editor.js   grille cliquable (note « Tableau »)
+  sync.js          synchronisation temps réel (Firebase RTDB, REST + SSE)
   app.js           câblage de l'interface
 test/
   engine.test.js   tests du moteur

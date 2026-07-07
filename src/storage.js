@@ -142,6 +142,41 @@
       persist();
     }
 
+    function getNote(id) {
+      const n = find(id);
+      if (!n) return null;
+      const out = { id: n.id, type: n.type || 'text', updatedAt: n.updatedAt || 0 };
+      if (out.type === 'grid') out.grid = n.grid || { rows: 6, cols: 4, cells: {} };
+      else out.body = n.body || '';
+      return out;
+    }
+
+    function allNotes() {
+      return state.notes.map((n) => getNote(n.id));
+    }
+
+    // Merge a note coming from another device. Last-write-wins by updatedAt.
+    // Returns 'added' | 'updated' | 'ignored'. Never changes the active note.
+    function applyRemote(id, remote) {
+      const ts = remote.updatedAt || 0;
+      const existing = find(id);
+      if (existing) {
+        if (ts <= (existing.updatedAt || 0)) return 'ignored';
+        existing.type = remote.type || 'text';
+        if (existing.type === 'grid') { existing.grid = remote.grid || { rows: 6, cols: 4, cells: {} }; delete existing.body; }
+        else { existing.body = remote.body || ''; delete existing.grid; }
+        existing.updatedAt = ts;
+        persist();
+        return 'updated';
+      }
+      const note = { id: id, type: remote.type || 'text', updatedAt: ts };
+      if (note.type === 'grid') note.grid = remote.grid || { rows: 6, cols: 4, cells: {} };
+      else note.body = remote.body || '';
+      state.notes.push(note);
+      persist();
+      return 'added';
+    }
+
     function remove(id) {
       state.notes = state.notes.filter((n) => n.id !== id);
       if (!state.notes.length) state.notes.push({ id: uid(), body: '', updatedAt: Date.now() });
@@ -161,6 +196,9 @@
       updateBody: updateBody,
       updateGrid: updateGrid,
       remove: remove,
+      getNote: getNote,
+      allNotes: allNotes,
+      applyRemote: applyRemote,
     };
   }
 

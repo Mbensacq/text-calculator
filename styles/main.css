@@ -496,6 +496,76 @@ body {
 }
 .help__body pre code { background: none; color: inherit; padding: 0; }
 
+/* ---- Sync panel --------------------------------------------------- */
+
+.sync-status { font-size: 13.5px; }
+.sync-status strong { color: var(--accent); font-weight: 600; }
+
+.sync-field {
+  display: block;
+  margin: 10px 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+.sync-field input {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+  padding: 9px 11px;
+  font: inherit;
+  font-size: 13.5px;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--ink);
+  background: var(--sidebar-bg);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+}
+.sync-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.sync-row { display: flex; gap: 8px; align-items: stretch; }
+.sync-row input { flex: 1; }
+.sync-row .foot-link { flex: 0 0 auto; margin-top: 5px; }
+
+.sync-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 14px;
+}
+.sync-btn-primary {
+  padding: 8px 18px;
+  font: inherit;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.sync-btn-primary:hover { filter: brightness(1.05); }
+
+.sync-share {
+  margin: 8px 0;
+  padding: 9px 11px;
+  font-size: 12px;
+  word-break: break-all;
+  color: var(--ink-soft);
+  background: var(--sidebar-bg);
+  border-radius: 8px;
+  min-height: 1em;
+}
+.sync-note { font-size: 12.5px; color: var(--ink-soft); font-style: italic; }
+.sync-steps { margin: 6px 0 0; padding-left: 20px; font-size: 13px; color: var(--ink-soft); }
+.sync-steps li { margin: 4px 0; }
+
+#sync-btn.is-on { color: var(--accent); }
+
 /* ---- Interactive grid --------------------------------------------- */
 
 #text-view {

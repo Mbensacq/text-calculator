@@ -130,6 +130,7 @@
       highlight: document.getElementById('highlight'),
       onChange: function (text) {
         store.updateBody(activeId, text);
+        schedulePush(activeId);
         bumpList();
       },
     });
@@ -138,6 +139,7 @@
       container: document.getElementById('grid'),
       onChange: function (model) {
         store.updateGrid(activeId, model);
+        schedulePush(activeId);
         bumpList();
       },
     });
@@ -165,15 +167,17 @@
     }
 
     function newNote() {
-      store.create();
+      const note = store.create();
       loadActive();
+      pushNow(note.id);
       closeSidebar();
       editor.focus();
     }
 
     function newGrid() {
-      store.createGrid();
+      const note = store.createGrid();
       loadActive();
+      pushNow(note.id);
       closeSidebar();
       gridEditor.focus();
     }
@@ -182,6 +186,7 @@
       const note = store.create();
       store.updateBody(note.id, body);
       loadActive();
+      pushNow(note.id);
       closeSidebar();
       editor.focus();
     }
@@ -193,6 +198,7 @@
       const label = note ? note.title : 'cette note';
       if (!window.confirm('Supprimer « ' + label + ' » ?')) return;
       store.remove(id);
+      if (sync) sync.remove(id);
       loadActive();
     }
 
@@ -275,12 +281,156 @@
       if (e.key === 'Escape' && !helpPanel.hidden) setHelp(false);
     });
 
+    // ---- Synchronisation (optionnelle, multi-appareils) -------------------
+    // Local-first : sans configuration, l'app reste purement locale. Une fois
+    // configurée, chaque modification est poussée et les changements distants
+    // sont fusionnés (dernière écriture gagnante par horodatage).
+    let sync = null;
+    const pendingPush = {};
+    let pushTimer = null;
+
+    function schedulePush(id) {
+      pendingPush[id] = true;
+      if (pushTimer) clearTimeout(pushTimer);
+      pushTimer = setTimeout(flushPush, 600);
+    }
+    function flushPush() {
+      pushTimer = null;
+      const ids = Object.keys(pendingPush);
+      for (const id of ids) delete pendingPush[id];
+      if (!sync || !sync.isConfigured()) return;
+      for (const id of ids) {
+        const note = store.getNote(id);
+        if (note) sync.push(id, note);
+      }
+    }
+    function pushNow(id) {
+      if (!sync || !sync.isConfigured()) return;
+      const note = store.getNote(id);
+      if (note) sync.push(id, note);
+    }
+    function pushAll() {
+      if (!sync || !sync.isConfigured()) return;
+      const notes = store.allNotes();
+      for (const n of notes) sync.push(n.id, n);
+    }
+
+    function isEditingActive() {
+      const ae = document.activeElement;
+      return !!ae && (textView.contains(ae) || gridView.contains(ae));
+    }
+
+    function onRemoteNote(id, remote) {
+      const res = store.applyRemote(id, remote);
+      if (res === 'ignored') return;
+      // If the change lands on the note we're actively editing, don't yank the
+      // text from under the cursor — the next keystroke pushes and wins by
+      // timestamp. Otherwise reflect it immediately.
+      if (id === activeId && isEditingActive()) { bumpList(); return; }
+      if (id === activeId) loadActive();
+      else renderList();
+    }
+    function onRemoteDelete(id) {
+      if (!store.getNote(id)) return;
+      const wasActive = (id === activeId);
+      store.remove(id);
+      if (wasActive) loadActive();
+      else renderList();
+    }
+
+    const SYNC_LABELS = {
+      on: 'connectée', connecting: 'connexion…',
+      error: 'hors ligne (reconnexion…)', off: 'désactivée',
+    };
+    const syncPanel = document.getElementById('sync-panel');
+    const syncScrim = document.getElementById('sync-scrim');
+    const syncStateEl = document.getElementById('sync-state');
+    const syncUrlEl = document.getElementById('sync-url');
+    const syncWsEl = document.getElementById('sync-ws');
+    const syncShareEl = document.getElementById('sync-share');
+    const syncBtn = document.getElementById('sync-btn');
+
+    function renderSyncStatus(state) {
+      if (syncStateEl) syncStateEl.textContent = SYNC_LABELS[state] || state;
+      if (syncBtn) {
+        syncBtn.classList.toggle('is-on', state === 'on' || state === 'connecting');
+        syncBtn.title = 'Synchronisation : ' + (SYNC_LABELS[state] || state);
+      }
+    }
+    function shareLink() {
+      const cfg = sync.getConfig();
+      if (!cfg) return '';
+      return location.origin + location.pathname + '#sync=' + TC.Sync.encodeShare(cfg);
+    }
+    function updateShareLink() {
+      if (syncShareEl) syncShareEl.textContent = shareLink();
+    }
+    function fillSyncForm() {
+      const cfg = sync.getConfig();
+      if (cfg) { syncUrlEl.value = cfg.url || ''; syncWsEl.value = cfg.ws || ''; }
+      updateShareLink();
+    }
+    function setSync(open) {
+      syncPanel.hidden = !open;
+      syncScrim.hidden = !open;
+      if (open) fillSyncForm();
+    }
+
+    sync = TC.createSync({
+      onRemoteNote: onRemoteNote,
+      onRemoteDelete: onRemoteDelete,
+      onStatus: renderSyncStatus,
+    });
+
+    if (syncBtn) syncBtn.addEventListener('click', function () { setSync(true); });
+    document.getElementById('sync-close').addEventListener('click', function () { setSync(false); });
+    syncScrim.addEventListener('click', function () { setSync(false); });
+    document.getElementById('sync-gen').addEventListener('click', function () {
+      syncWsEl.value = TC.Sync.randomKey();
+    });
+    document.getElementById('sync-enable').addEventListener('click', function () {
+      const url = syncUrlEl.value.trim();
+      const ws = syncWsEl.value.trim();
+      if (!url || !ws) { window.alert('Renseignez l’URL de la base et une clé d’espace de travail.'); return; }
+      sync.configure({ url: url, ws: ws });
+      pushAll();
+      updateShareLink();
+    });
+    document.getElementById('sync-disable').addEventListener('click', function () {
+      sync.configure(null);
+      updateShareLink();
+    });
+    document.getElementById('sync-copy').addEventListener('click', function () {
+      const link = shareLink();
+      if (!link) { window.alert('Activez d’abord la synchronisation.'); return; }
+      if (navigator.clipboard) navigator.clipboard.writeText(link).catch(function () {});
+      if (syncShareEl) syncShareEl.textContent = link;
+    });
+
+    // Auto-connect: a shared link (#sync=…) takes priority, otherwise reuse the
+    // saved configuration.
+    (function initSync() {
+      const m = /[#&]sync=([^&]+)/.exec(location.hash || '');
+      const fromLink = m ? TC.Sync.decodeShare(m[1]) : null;
+      if (fromLink && fromLink.url && fromLink.ws) {
+        sync.configure(fromLink);
+        pushAll();
+        // Drop the secret from the address bar.
+        try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* ignore */ }
+      } else if (sync.loadSaved()) {
+        sync.start();
+      } else {
+        renderSyncStatus('off');
+      }
+    })();
+
     // Keyboard: Cmd/Ctrl+Enter creates a new note.
     document.addEventListener('keydown', function (e) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
         e.preventDefault();
         newNote();
       }
+      if (e.key === 'Escape' && !syncPanel.hidden) setSync(false);
     });
 
     loadActive();

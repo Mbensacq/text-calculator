@@ -5,24 +5,25 @@
  * with ?v=N). Bump CACHE and the ?v= query together when assets change; the
  * old cache is then dropped on activate.
  */
-const CACHE = 'text-calculator-v8';
+const CACHE = 'text-calculator-v9';
 
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './styles/main.css?v=8',
-  './src/units.js?v=8',
-  './src/tokenizer.js?v=8',
-  './src/parser.js?v=8',
-  './src/evaluator.js?v=8',
-  './src/formatter.js?v=8',
-  './src/engine.js?v=8',
-  './src/editor.js?v=8',
-  './src/storage.js?v=8',
-  './src/grid.js?v=8',
-  './src/grid-editor.js?v=8',
-  './src/app.js?v=8',
+  './styles/main.css?v=9',
+  './src/units.js?v=9',
+  './src/tokenizer.js?v=9',
+  './src/parser.js?v=9',
+  './src/evaluator.js?v=9',
+  './src/formatter.js?v=9',
+  './src/engine.js?v=9',
+  './src/editor.js?v=9',
+  './src/storage.js?v=9',
+  './src/grid.js?v=9',
+  './src/grid-editor.js?v=9',
+  './src/sync.js?v=9',
+  './src/app.js?v=9',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',
@@ -45,6 +46,10 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
+
+  // Never touch cross-origin requests: the sync layer talks to Firebase over
+  // its own domain (REST PUT + SSE stream) and must bypass the cache entirely.
+  if (new URL(req.url).origin !== self.location.origin) return;
 
   // Navigations fall back to the cached app shell when offline.
   if (req.mode === 'navigate') {
