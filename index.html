@@ -17,7 +17,7 @@
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="styles/main.css?v=9">
+  <link rel="stylesheet" href="styles/main.css?v=10">
 </head>
 <body>
   <div class="app" id="app">
@@ -183,12 +183,14 @@ D3: =somme(D1:D2)</pre>
 
         <section>
           <h3>Activer</h3>
-          <p>Il suffit d'une base <strong>Firebase Realtime Database</strong>
-          (gratuite). Collez son URL, choisissez une clé d'espace de travail
+          <p>Deux options au choix : une base <strong>Firebase Realtime
+          Database</strong> (gratuite, hébergée par Google) ou <strong>votre
+          propre serveur</strong> (dossier <code>server/</code>, à héberger sur
+          un VPS). Collez l'URL, choisissez une clé d'espace de travail
           (secrète et partagée), puis « Activer ».</p>
-          <label class="sync-field">URL de la base
+          <label class="sync-field">URL (base Firebase ou serveur)
             <input id="sync-url" type="url" spellcheck="false" autocomplete="off"
-                   placeholder="https://mon-projet-default-rtdb.firebaseio.com">
+                   placeholder="https://api.mon-domaine.com">
           </label>
           <label class="sync-field">Espace de travail (clé secrète)
             <span class="sync-row">
@@ -196,6 +198,10 @@ D3: =somme(D1:D2)</pre>
                      placeholder="clé partagée entre vos appareils">
               <button id="sync-gen" class="foot-link" type="button">Générer</button>
             </span>
+          </label>
+          <label class="sync-field">Jeton d'accès (facultatif — serveur personnel)
+            <input id="sync-auth" type="text" spellcheck="false" autocomplete="off"
+                   placeholder="si votre serveur exige SYNC_TOKEN">
           </label>
           <div class="sync-actions">
             <button id="sync-enable" class="sync-btn-primary" type="button">Activer</button>
@@ -214,7 +220,7 @@ D3: =somme(D1:D2)</pre>
         </section>
 
         <section>
-          <h3>Créer la base (une fois)</h3>
+          <h3>Option A — base Firebase (une fois)</h3>
           <ol class="sync-steps">
             <li>Sur <code>console.firebase.google.com</code>, créez un projet.</li>
             <li>Menu <em>Build → Realtime Database → Créer une base</em>.</li>
@@ -223,21 +229,32 @@ D3: =somme(D1:D2)</pre>
             authentification (l'espace de travail seul reste une clé publique).</li>
           </ol>
         </section>
+
+        <section>
+          <h3>Option B — votre serveur (données chez vous)</h3>
+          <ol class="sync-steps">
+            <li>Sur votre VPS : <code>cd server &amp;&amp; node server.js</code>
+            (aucune dépendance).</li>
+            <li>Exposez-le en HTTPS derrière un proxy (voir
+            <code>server/README.md</code> : nginx, systemd, Let's Encrypt).</li>
+            <li>Renseignez ci-dessus l'URL publique de votre serveur.</li>
+          </ol>
+        </section>
       </div>
     </aside>
   </div>
 
-  <script src="src/units.js?v=9"></script>
-  <script src="src/tokenizer.js?v=9"></script>
-  <script src="src/parser.js?v=9"></script>
-  <script src="src/evaluator.js?v=9"></script>
-  <script src="src/formatter.js?v=9"></script>
-  <script src="src/engine.js?v=9"></script>
-  <script src="src/editor.js?v=9"></script>
-  <script src="src/storage.js?v=9"></script>
-  <script src="src/grid.js?v=9"></script>
-  <script src="src/grid-editor.js?v=9"></script>
-  <script src="src/sync.js?v=9"></script>
-  <script src="src/app.js?v=9"></script>
+  <script src="src/units.js?v=10"></script>
+  <script src="src/tokenizer.js?v=10"></script>
+  <script src="src/parser.js?v=10"></script>
+  <script src="src/evaluator.js?v=10"></script>
+  <script src="src/formatter.js?v=10"></script>
+  <script src="src/engine.js?v=10"></script>
+  <script src="src/editor.js?v=10"></script>
+  <script src="src/storage.js?v=10"></script>
+  <script src="src/grid.js?v=10"></script>
+  <script src="src/grid-editor.js?v=10"></script>
+  <script src="src/sync.js?v=10"></script>
+  <script src="src/app.js?v=10"></script>
 </body>
 </html>

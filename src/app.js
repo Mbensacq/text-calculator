@@ -347,6 +347,7 @@
     const syncStateEl = document.getElementById('sync-state');
     const syncUrlEl = document.getElementById('sync-url');
     const syncWsEl = document.getElementById('sync-ws');
+    const syncAuthEl = document.getElementById('sync-auth');
     const syncShareEl = document.getElementById('sync-share');
     const syncBtn = document.getElementById('sync-btn');
 
@@ -367,7 +368,11 @@
     }
     function fillSyncForm() {
       const cfg = sync.getConfig();
-      if (cfg) { syncUrlEl.value = cfg.url || ''; syncWsEl.value = cfg.ws || ''; }
+      if (cfg) {
+        syncUrlEl.value = cfg.url || '';
+        syncWsEl.value = cfg.ws || '';
+        syncAuthEl.value = cfg.auth || '';
+      }
       updateShareLink();
     }
     function setSync(open) {
@@ -391,8 +396,11 @@
     document.getElementById('sync-enable').addEventListener('click', function () {
       const url = syncUrlEl.value.trim();
       const ws = syncWsEl.value.trim();
+      const auth = syncAuthEl.value.trim();
       if (!url || !ws) { window.alert('Renseignez l’URL de la base et une clé d’espace de travail.'); return; }
-      sync.configure({ url: url, ws: ws });
+      const cfg = { url: url, ws: ws };
+      if (auth) cfg.auth = auth;
+      sync.configure(cfg);
       pushAll();
       updateShareLink();
     });

@@ -1,0 +1,13 @@
+{
+  "name": "text-calculator-sync",
+  "version": "1.0.0",
+  "description": "Serveur de synchronisation temps réel (SSE + REST), sans dépendance, pour Text Calculator.",
+  "license": "MIT",
+  "private": true,
+  "type": "commonjs",
+  "main": "server.js",
+  "engines": { "node": ">=16" },
+  "scripts": {
+    "start": "node server.js"
+  }
+}

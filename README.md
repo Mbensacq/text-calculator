@@ -136,12 +136,18 @@ fonctionne sans connexion (un *service worker* met en cache la coquille).
 Par défaut, l'application est **entièrement locale** : chaque note reste dans
 le navigateur. On peut, si on le souhaite, activer une synchronisation en temps
 réel pour retrouver ses notes sur tous ses appareils et **travailler à
-plusieurs** sur le même espace — le tout sans quitter l'hébergement statique
-(GitHub Pages), grâce à une base **Firebase Realtime Database** interrogée
-uniquement par son API REST (écriture `PUT`) et son flux `EventSource` (SSE).
-Aucun SDK, aucune étape de build.
+plusieurs** sur le même espace. Le client parle un protocole REST (écriture
+`PUT`) + `EventSource` (SSE) minimal — aucun SDK, aucune étape de build — et
+fonctionne avec **deux back-ends au choix** :
 
-**Mise en place (une fois) :**
+- **Firebase Realtime Database** (option A) : gratuit, hébergé par Google,
+  rien à maintenir. Idéal pour rester sur un hébergement statique (GitHub
+  Pages).
+- **Votre propre serveur** (option B) : un petit serveur Node **sans
+  dépendance** (dossier [`server/`](server/)) à héberger sur un VPS. Tout reste
+  chez vous ; voir [`server/README.md`](server/README.md).
+
+**Option A — Firebase (une fois) :**
 
 1. Sur [console.firebase.google.com](https://console.firebase.google.com),
    créez un projet, puis *Build → Realtime Database → Créer une base*.
@@ -151,6 +157,11 @@ Aucun SDK, aucune étape de build.
 4. Sur un autre appareil, ouvrez le **lien de partage** (bouton *Copier le lien
    de partage*) : il s'y connecte automatiquement au même espace.
 
+**Option B — serveur self-hosted :** `cd server && node server.js`, exposez-le
+en HTTPS derrière un reverse proxy (guide complet dans
+[`server/README.md`](server/README.md) : systemd, nginx avec buffering désactivé
+pour le SSE, Let's Encrypt, DNS), puis indiquez son URL dans l'app.
+
 **Fonctionnement :** chaque note est écrite sous
 `…/ws/<espace>/notes/<id>`. Les modifications sont réconciliées en
 *dernière écriture gagnante* (par horodatage) ; les suppressions laissent une
@@ -159,15 +170,16 @@ note en cours d'édition n'est jamais écrasée sous le curseur.
 
 **Sécurité :** la clé d'espace de travail joue le rôle de mot de passe (elle
 n'est pas devinable) — ne partagez le lien qu'avec les personnes autorisées.
-Pour un cadre strictement privé, protégez la base par des *règles de sécurité*
-et/ou une authentification Firebase ; l'espace de travail seul reste une clé
-publique côté client. Le *service worker* laisse volontairement passer les
-requêtes vers Firebase (autre domaine) sans les mettre en cache.
+Avec Firebase, protégez la base par des *règles de sécurité* et/ou une
+authentification pour un cadre strictement privé. Avec le serveur self-hosted,
+définissez un jeton (`SYNC_TOKEN`) pour exiger `?auth=<token>`. Servez toujours
+en **HTTPS**. Le *service worker* laisse volontairement passer les requêtes de
+synchronisation (autre domaine, ou flux SSE) sans les mettre en cache.
 
-*Vous préférez un autre hébergement (nom de domaine + redirection DNS) ?* Rien
-à changer : le site reste un ensemble de fichiers statiques, et la
-synchronisation fonctionne à l'identique du moment que la base Firebase est
-joignable.
+*Nom de domaine :* pointez-le **directement** (enregistrement DNS `A`/`CNAME`)
+vers votre hébergement plutôt que par une *redirection* HTTP, afin que le site
+s'ouvre nativement sur votre domaine. Le front reste un ensemble de fichiers
+statiques : rien à changer selon l'hébergeur.
 
 ## Lancer le projet
 
@@ -201,8 +213,11 @@ src/
   storage.js       collection de notes (localStorage) + fusion multi-appareils
   grid.js          calcul d'une grille de cellules (façon tableur)
   grid-editor.js   grille cliquable (note « Tableau »)
-  sync.js          synchronisation temps réel (Firebase RTDB, REST + SSE)
+  sync.js          synchronisation temps réel (REST + SSE, Firebase ou serveur)
   app.js           câblage de l'interface
+server/            serveur de synchronisation self-hosted (sans dépendance)
+  server.js        serveur SSE + REST
+  deploy/          exemples systemd et nginx
 test/
   engine.test.js   tests du moteur
 ```

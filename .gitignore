@@ -11,3 +11,6 @@ Thumbs.db
 # Logs & temp
 *.log
 .cache/
+
+# Sync server runtime data
+server/data/

@@ -1,0 +1,28 @@
+# systemd unit — copy to /etc/systemd/system/text-calculator-sync.service
+# then:  sudo systemctl daemon-reload && sudo systemctl enable --now text-calculator-sync
+#
+# Adjust User, WorkingDirectory and the paths to match your VPS.
+[Unit]
+Description=Text Calculator sync server
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/text-calculator/server
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=2
+
+# --- Configuration (edit these) ---
+Environment=PORT=8090
+Environment=HOST=127.0.0.1
+Environment=DATA_FILE=/var/www/text-calculator/server/data/notes.json
+Environment=CORS_ORIGIN=https://calc.mon-domaine.com
+# Uncomment to require a shared token (recommended for a public endpoint):
+# Environment=SYNC_TOKEN=change-me-long-random-string
+# Uncomment to also serve the app itself from this server (single origin):
+# Environment=SERVE_STATIC=/var/www/text-calculator
+
+[Install]
+WantedBy=multi-user.target
