@@ -602,6 +602,39 @@ body {
 
 #sync-btn.is-on { color: var(--accent); }
 
+/* ---- Autocomplete menu -------------------------------------------- */
+
+.ac-menu {
+  position: fixed;
+  z-index: 60;
+  min-width: 150px;
+  max-width: 260px;
+  padding: 4px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  font-size: 13.5px;
+}
+.ac-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.ac-item.is-sel { background: var(--accent-soft); }
+.ac-name { color: var(--ink); font-weight: 600; }
+.ac-item.is-sel .ac-name { color: var(--accent); }
+.ac-kind {
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
 /* ---- Interactive grid --------------------------------------------- */
 
 #text-view {

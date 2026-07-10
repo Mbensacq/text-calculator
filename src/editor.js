@@ -106,16 +106,158 @@
     el.animate(keyframes, { duration: duration, easing: 'cubic-bezier(.2,.7,.3,1)' });
   }
 
+  const KIND_TAG = { func: 'ƒ', var: 'var', unit: 'unité', const: 'const', keyword: 'mot' };
+  const WORD_CHAR = /[\p{L}\p{N}_]/u;
+  const WORD_START = /[\p{L}_]/u;
+
   function createEditor(opts) {
     const input = opts.input;         // <textarea>
     const highlight = opts.highlight; // colour + measuring layer
     const onChange = opts.onChange || function () {};
+    const staticNames = opts.completions || []; // [{ name, kind }]
 
     const results = document.createElement('div');
     results.className = 'editor__results-layer';
     highlight.parentNode.appendChild(results);
 
     const pool = {}; // line index -> { el, text }
+
+    /* ---- Autocomplete ------------------------------------------------ *
+     * A menu of variable / function / unit names, filtered by the word the
+     * caret is on. Anchored to <body> with fixed positioning so the editor's
+     * own overflow:hidden can't clip it. Accept with Tab/Enter, move with the
+     * arrows, dismiss with Escape.
+     * ------------------------------------------------------------------ */
+    let docNames = [];   // names defined in the current document
+    let acItems = [];
+    let acIndex = 0;
+    let acWord = null;   // { start, end } of the word being completed
+    let acOpen = false;
+
+    const acEl = document.createElement('div');
+    acEl.className = 'ac-menu';
+    acEl.hidden = true;
+    document.body.appendChild(acEl);
+
+    // A hidden mirror of the textarea used to locate the caret in pixels.
+    const mirror = document.createElement('div');
+    mirror.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(mirror);
+
+    function caretCoords() {
+      const cs = getComputedStyle(input);
+      for (const prop of COPIED_STYLES) mirror.style[prop] = cs[prop];
+      mirror.style.position = 'fixed';
+      mirror.style.left = '-9999px';
+      mirror.style.top = '0';
+      mirror.style.visibility = 'hidden';
+      mirror.style.whiteSpace = 'pre-wrap';
+      mirror.style.overflowWrap = 'break-word';
+      mirror.style.wordBreak = 'break-word';
+      mirror.style.boxSizing = 'border-box';
+      mirror.style.width = input.clientWidth + 'px';
+      mirror.textContent = input.value.slice(0, input.selectionStart);
+      const marker = document.createElement('span');
+      marker.textContent = '​';
+      mirror.appendChild(marker);
+      const mRect = mirror.getBoundingClientRect();
+      const kRect = marker.getBoundingClientRect();
+      const rect = input.getBoundingClientRect();
+      return {
+        left: rect.left + (kRect.left - mRect.left) - input.scrollLeft,
+        top: rect.top + (kRect.top - mRect.top) - input.scrollTop,
+        lineHeight: kRect.height || parseFloat(cs.lineHeight) || 20,
+      };
+    }
+
+    function currentWord() {
+      const pos = input.selectionStart;
+      if (pos !== input.selectionEnd) return null; // a selection, not a caret
+      const text = input.value;
+      let s = pos;
+      while (s > 0 && WORD_CHAR.test(text[s - 1])) s--;
+      const word = text.slice(s, pos);
+      if (word.length < 2 || !WORD_START.test(word[0])) return null;
+      return { start: s, end: pos, text: word };
+    }
+
+    function allNames() {
+      const seen = {};
+      const out = [];
+      for (const it of docNames) if (!seen[it.name]) { seen[it.name] = 1; out.push(it); }
+      for (const it of staticNames) if (!seen[it.name]) { seen[it.name] = 1; out.push(it); }
+      return out;
+    }
+
+    function filterMatches(prefix) {
+      const p = prefix.toLowerCase();
+      const res = [];
+      for (const it of allNames()) {
+        const nl = it.name.toLowerCase();
+        if (nl === p) continue;            // already fully typed
+        if (nl.indexOf(p) === 0) res.push(it);
+        if (res.length >= 8) break;
+      }
+      return res;
+    }
+
+    function closeAc() {
+      if (!acOpen) return;
+      acOpen = false;
+      acItems = [];
+      acWord = null;
+      acEl.hidden = true;
+    }
+
+    function renderAc() {
+      acEl.textContent = '';
+      acItems.forEach(function (it, i) {
+        const row = document.createElement('div');
+        row.className = 'ac-item' + (i === acIndex ? ' is-sel' : '');
+        row.dataset.i = i;
+        const nm = span('ac-name', it.name);
+        const kd = span('ac-kind', KIND_TAG[it.kind] || '');
+        row.appendChild(nm);
+        row.appendChild(kd);
+        acEl.appendChild(row);
+      });
+      const c = caretCoords();
+      acEl.style.left = Math.round(c.left) + 'px';
+      acEl.style.top = Math.round(c.top + c.lineHeight + 2) + 'px';
+      acEl.hidden = false;
+    }
+
+    function refreshAc() {
+      const w = currentWord();
+      if (!w) { closeAc(); return; }
+      const matches = filterMatches(w.text);
+      if (!matches.length) { closeAc(); return; }
+      acItems = matches;
+      acIndex = 0;
+      acWord = w;
+      acOpen = true;
+      renderAc();
+    }
+
+    function acceptAc(i) {
+      const it = acItems[i];
+      if (!it || !acWord) return;
+      const isFunc = it.kind === 'func';
+      const insert = isFunc ? it.name + '()' : it.name;
+      input.focus();
+      input.setSelectionRange(acWord.start, acWord.end);
+      let ok = false;
+      try { ok = document.execCommand && document.execCommand('insertText', false, insert); }
+      catch (e) { ok = false; }
+      if (!ok) {
+        const caret = acWord.start + insert.length;
+        input.value = input.value.slice(0, acWord.start) + insert + input.value.slice(acWord.end);
+        input.setSelectionRange(caret, caret);
+      }
+      if (isFunc) { const p = input.selectionStart - 1; input.setSelectionRange(p, p); }
+      closeAc();
+      recompute();
+    }
 
     function copyMetrics() {
       const cs = getComputedStyle(input);
@@ -133,6 +275,11 @@
       const text = input.value;
       const lines = text.split('\n');
       const result = TC.evaluateDocument(text);
+
+      if (result.names) {
+        docNames = (result.names.vars || []).map(function (n) { return { name: n, kind: 'var' }; })
+          .concat((result.names.funcs || []).map(function (n) { return { name: n, kind: 'func' }; }));
+      }
 
       const info = {};
       for (const rec of result.lines) {
@@ -206,8 +353,27 @@
     }
 
     input.addEventListener('input', recompute);
-    input.addEventListener('scroll', syncScroll);
-    window.addEventListener('resize', function () { copyMetrics(); recompute(); });
+    input.addEventListener('input', refreshAc);
+    input.addEventListener('scroll', function () { syncScroll(); closeAc(); });
+    window.addEventListener('resize', function () { copyMetrics(); recompute(); closeAc(); });
+
+    // Autocomplete keyboard: navigation and acceptance take over only while the
+    // menu is open, so ordinary typing (and Ctrl/Cmd+Enter) is untouched.
+    input.addEventListener('keydown', function (e) {
+      if (!acOpen) return;
+      if (e.key === 'ArrowDown') { e.preventDefault(); acIndex = (acIndex + 1) % acItems.length; renderAc(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); acIndex = (acIndex - 1 + acItems.length) % acItems.length; renderAc(); }
+      else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); e.stopPropagation(); acceptAc(acIndex); }
+      else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeAc(); }
+    });
+    // Click a suggestion. mousedown + preventDefault keeps the textarea focused.
+    acEl.addEventListener('mousedown', function (e) {
+      const row = e.target.closest('.ac-item');
+      if (!row) return;
+      e.preventDefault();
+      acceptAc(+row.dataset.i);
+    });
+    input.addEventListener('blur', function () { setTimeout(closeAc, 120); });
 
     copyMetrics();
 
@@ -218,6 +384,7 @@
       setValue: function (v) {
         // Clear result elements so the new note animates in fresh.
         for (const key in pool) { pool[key].el.remove(); delete pool[key]; }
+        closeAc();
         input.value = v == null ? '' : v;
         input.scrollTop = 0;
         recompute();

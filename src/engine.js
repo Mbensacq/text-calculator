@@ -413,7 +413,7 @@
       }
     }
 
-    return { lines: records };
+    return { lines: records, names: { vars: Object.keys(defs), funcs: Object.keys(funcs) } };
   }
 
   return { evaluateDocument, splitAssignment, splitResultRequest, classify };

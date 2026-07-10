@@ -53,6 +53,9 @@ temps = 2 h
   cellule `=B1*C1` affiche son **résultat** (la formule n'apparaît qu'à
   l'édition), avec des poignées « + » pour ajouter lignes et colonnes.
 - **Commentaires en fin de ligne** avec `//` : `loyer = 800 € // charge fixe`.
+- **Autocomplétion** : en tapant un nom, une liste propose les variables et
+  fonctions de la note ainsi que les fonctions, constantes et unités intégrées
+  (Tab/Entrée pour valider, flèches pour choisir, Échap pour fermer).
 - **Aide-mémoire** intégré (bouton « ? »).
 - **Fonctions type Excel / maths** insérables en un clic (barre ƒ) : `sum`,
   `moyenne`, `médiane`, `variance`, `ecarttype`, `min`, `max`, `produit`,

@@ -130,9 +130,30 @@
       listTimer = setTimeout(renderList, 300);
     }
 
+    // The built-in names the editor can suggest. Function/constant names are
+    // read straight from the evaluator (no drift); special forms, date helpers,
+    // keywords and a handful of common units are listed by hand.
+    function builtinCompletions() {
+      const out = [];
+      const seen = {};
+      const add = function (name, kind) { if (!seen[name]) { seen[name] = 1; out.push({ name: name, kind: kind }); } };
+      const ev = TC.Evaluator;
+      if (ev) {
+        Object.keys(ev.FUNCTIONS || {}).forEach(function (n) { add(n, 'func'); });
+        Object.keys(ev.VARIADIC || {}).forEach(function (n) { add(n, 'func'); });
+        Object.keys(ev.CONSTANTS || {}).forEach(function (n) { add(n, 'const'); });
+      }
+      ['si', 'et', 'ou', 'non', 'Σ', 'sigma', 'date', 'jour', 'mois', 'annee'].forEach(function (n) { add(n, 'func'); });
+      ['aujourd\'hui', 'demain', 'hier', 'en'].forEach(function (n) { add(n, 'keyword'); });
+      ['km', 'cm', 'mm', 'kg', 'mg', 'min', 'jour', 'semaine', 'mois', 'an',
+        'km/h', '°C', '°F', 'Go', 'Mo', 'ko'].forEach(function (n) { add(n, 'unit'); });
+      return out;
+    }
+
     const editor = TC.createEditor({
       input: document.getElementById('input'),
       highlight: document.getElementById('highlight'),
+      completions: builtinCompletions(),
       onChange: function (text) {
         store.updateBody(activeId, text);
         schedulePush(activeId);
