@@ -411,6 +411,14 @@ body {
 .hl-var { color: var(--accent); font-weight: 600; }
 .hl-pipe { color: var(--rule); }
 
+/* Alt/Option held: numbers become draggable sliders (see editor.js). */
+.editor.scrub-ready .editor__input { cursor: ew-resize; }
+.editor.scrub-ready .hl-num {
+  text-decoration: underline dotted var(--accent);
+  text-underline-offset: 3px;
+}
+.editor.scrubbing .editor__input { cursor: ew-resize; }
+
 /* Layer that carries the computed results, scroll-synced with the text.
    No overflow clipping here: like the highlight layer, it is clipped by the
    .editor box. Clipping on this layer would move with its translateY() and

@@ -33,6 +33,8 @@
 
   const HEADING_RE = /^\s*#/;
   const COMMENT_RE = /^\s*\/\//;
+  const NUM_RE = /\d+(?:[.,]\d+)?/g;
+  const LETTER_RE = /[\p{L}_]/u;
   const ASSIGN_RE = /^(\s*)([\p{L}_][\p{L}\p{N}_]*)(\s*=)([\s\S]*)$/u;
   const FUNCDEF_RE = /^(\s*)([\p{L}_][\p{L}\p{N}_]*)(\([^)]*\)\s*=)([\s\S]*)$/u;
 
@@ -55,35 +57,56 @@
 
   const INLINE_COMMENT_RE = /(^|\s)\/\//;
 
-  function colouriseCode(div, code) {
+  // Append text, wrapping bare numbers in <span class="hl-num"> tagged with
+  // their absolute character offset in the document (so a drag can splice the
+  // right slice of the textarea). A number glued to a letter — "m2", "taux2" —
+  // is part of an identifier/unit and is left alone.
+  function appendNums(div, text, abs) {
+    NUM_RE.lastIndex = 0;
+    let last = 0;
+    let m;
+    while ((m = NUM_RE.exec(text))) {
+      if (m.index > 0 && LETTER_RE.test(text[m.index - 1])) continue;
+      if (m.index > last) div.appendChild(textNode(text.slice(last, m.index)));
+      const s = span('hl-num', m[0]);
+      s.dataset.abs = abs + m.index;
+      div.appendChild(s);
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) div.appendChild(textNode(text.slice(last)));
+  }
+
+  function colouriseCode(div, code, abs) {
     const fm = code.match(FUNCDEF_RE);
     if (fm) {
       div.appendChild(textNode(fm[1]));
       div.appendChild(span('hl-var', fm[2]));
-      div.appendChild(textNode(fm[3] + fm[4]));
+      appendNums(div, fm[3] + fm[4], abs + fm[1].length + fm[2].length);
       return;
     }
     const m = code.match(ASSIGN_RE);
     if (m) {
       div.appendChild(textNode(m[1]));
       div.appendChild(span('hl-var', m[2]));
-      div.appendChild(textNode(m[3] + m[4]));
+      appendNums(div, m[3] + m[4], abs + m[1].length + m[2].length);
       return;
     }
-    div.appendChild(textNode(code));
+    appendNums(div, code, abs);
   }
 
-  function colourise(div, line) {
+  function colourise(div, line, abs) {
     if (!line.trim()) { div.textContent = '​'; return; }
     if (HEADING_RE.test(line)) { div.appendChild(span('hl-heading', line)); return; }
     if (COMMENT_RE.test(line)) { div.appendChild(span('hl-comment', line)); return; }
 
-    // Table row: draw the "|" separators discreetly.
+    // Table row: draw the "|" separators discreetly, numbers stay scrubbable.
     if (line.indexOf('|') !== -1) {
       const parts = line.split('|');
+      let col = 0;
       for (let i = 0; i < parts.length; i++) {
-        if (i > 0) div.appendChild(span('hl-pipe', '|'));
-        div.appendChild(textNode(parts[i]));
+        if (i > 0) { div.appendChild(span('hl-pipe', '|')); col += 1; }
+        appendNums(div, parts[i], abs + col);
+        col += parts[i].length;
       }
       return;
     }
@@ -97,7 +120,7 @@
       code = line.slice(0, cut);
       comment = line.slice(cut);
     }
-    colouriseCode(div, code);
+    colouriseCode(div, code, abs);
     if (comment) div.appendChild(span('hl-comment', comment));
   }
 
@@ -291,10 +314,12 @@
       highlight.textContent = '';
       const frag = document.createDocumentFragment();
       const markers = {};
+      let abs = 0;
       for (let i = 0; i < lines.length; i++) {
         const div = document.createElement('div');
         div.className = 'hl-line';
-        colourise(div, lines[i]);
+        colourise(div, lines[i], abs);
+        abs += lines[i].length + 1; // + newline
         if (info[i]) {
           const marker = span('hl-end', '​');
           div.appendChild(marker);
@@ -374,6 +399,74 @@
       acceptAc(+row.dataset.i);
     });
     input.addEventListener('blur', function () { setTimeout(closeAc, 120); });
+
+    /* ---- Drag a number to adjust it (Alt/Option + drag) -------------- *
+     * Numbers are already wrapped in .hl-num spans with their absolute offset,
+     * so we hit-test the pointer against those spans, then splice a new value
+     * into the textarea as the pointer moves. Alt-gated so ordinary clicks,
+     * caret placement and text selection are untouched.
+     * ------------------------------------------------------------------ */
+    const editorBox = highlight.parentNode;
+    let scrub = null;
+
+    function parseNumText(t) {
+      const sep = t.indexOf(',') >= 0 ? ',' : '.';
+      const frac = t.split(/[.,]/)[1] || '';
+      return { value: parseFloat(t.replace(',', '.')), decimals: frac.length, sep: sep };
+    }
+
+    function numberSpanAt(x, y) {
+      const spans = highlight.getElementsByClassName('hl-num');
+      for (let i = 0; i < spans.length; i++) {
+        const r = spans[i].getBoundingClientRect();
+        if (x >= r.left - 1 && x <= r.right + 1 && y >= r.top && y <= r.bottom) return spans[i];
+      }
+      return null;
+    }
+
+    input.addEventListener('pointerdown', function (e) {
+      if (!e.altKey || scrub) return;
+      const sp = numberSpanAt(e.clientX, e.clientY);
+      if (!sp) return;
+      const info = parseNumText(sp.textContent);
+      if (!isFinite(info.value)) return;
+      e.preventDefault();
+      closeAc();
+      scrub = { abs: +sp.dataset.abs, len: sp.textContent.length, startX: e.clientX,
+        orig: info.value, decimals: info.decimals, sep: info.sep };
+      try { input.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+      editorBox.classList.add('scrubbing');
+    });
+
+    input.addEventListener('pointermove', function (e) {
+      if (!scrub) return;
+      e.preventDefault();
+      const step = Math.pow(10, -scrub.decimals) * (e.shiftKey ? 10 : 1);
+      const val = scrub.orig + Math.round((e.clientX - scrub.startX) / 5) * step;
+      let str = val.toFixed(scrub.decimals);
+      if (scrub.sep === ',') str = str.replace('.', ',');
+      input.value = input.value.slice(0, scrub.abs) + str + input.value.slice(scrub.abs + scrub.len);
+      scrub.len = str.length;
+      const caret = scrub.abs + str.length;
+      try { input.setSelectionRange(caret, caret); } catch (err) { /* ignore */ }
+      recompute();
+    });
+
+    function endScrub(e) {
+      if (!scrub) return;
+      try { input.releasePointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+      scrub = null;
+      editorBox.classList.remove('scrubbing');
+    }
+    input.addEventListener('pointerup', endScrub);
+    input.addEventListener('pointercancel', endScrub);
+
+    // Underline numbers and switch the cursor while Alt is held, to hint that
+    // they can be dragged.
+    function altHint(on) { editorBox.classList.toggle('scrub-ready', on); }
+    document.addEventListener('keydown', function (e) { if (e.key === 'Alt') altHint(true); });
+    document.addEventListener('keyup', function (e) { if (e.key === 'Alt') altHint(false); });
+    window.addEventListener('blur', function () { altHint(false); });
 
     copyMetrics();
 

@@ -53,6 +53,9 @@ temps = 2 h
   cellule `=B1*C1` affiche son **résultat** (la formule n'apparaît qu'à
   l'édition), avec des poignées « + » pour ajouter lignes et colonnes.
 - **Commentaires en fin de ligne** avec `//` : `loyer = 800 € // charge fixe`.
+- **Ajuster un nombre à la souris** : maintenez **Alt** (Option) et glissez sur
+  un nombre pour le faire varier — tous les résultats se recalculent en direct
+  (**Maj** pour de plus grands pas ; le pas suit les décimales écrites).
 - **Autocomplétion** : en tapant un nom, une liste propose les variables et
   fonctions de la note ainsi que les fonctions, constantes et unités intégrées
   (Tab/Entrée pour valider, flèches pour choisir, Échap pour fermer).
