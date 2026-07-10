@@ -217,6 +217,8 @@ src/
   app.js           câblage de l'interface
 server/            serveur de synchronisation self-hosted (sans dépendance)
   server.js        serveur SSE + REST
+  store.js         choix du stockage (fichier / MySQL / PostgreSQL)
+  store-*.js       backends : fichier JSON, mysql2, pg
   deploy/          exemples systemd et nginx
 test/
   engine.test.js   tests du moteur

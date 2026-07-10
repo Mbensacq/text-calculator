@@ -1,7 +1,7 @@
 {
   "name": "text-calculator-sync",
   "version": "1.0.0",
-  "description": "Serveur de synchronisation temps réel (SSE + REST), sans dépendance, pour Text Calculator.",
+  "description": "Serveur de synchronisation temps réel (SSE + REST) pour Text Calculator. Stockage fichier sans dépendance, ou MySQL/MariaDB/PostgreSQL.",
   "license": "MIT",
   "private": true,
   "type": "commonjs",
@@ -9,5 +9,9 @@
   "engines": { "node": ">=16" },
   "scripts": {
     "start": "node server.js"
+  },
+  "optionalDependencies": {
+    "mysql2": "^3.11.0",
+    "pg": "^8.12.0"
   }
 }

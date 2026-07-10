@@ -25,12 +25,55 @@ Puis, dans l'application (bouton ⇅), renseignez l'URL du serveur
 | -------------------- | -------------------- | ----------------------------------------------------------- |
 | `PORT`               | `8090`               | Port d'écoute.                                              |
 | `HOST`               | `0.0.0.0`            | Interface. Mettez `127.0.0.1` derrière un proxy.           |
-| `DATA_FILE`          | `./data/notes.json`  | Fichier de persistance (écrit de façon atomique).          |
 | `CORS_ORIGIN`        | `*`                  | Origine autorisée. Mettez `https://votre-domaine`.         |
 | `SYNC_TOKEN`         | *(vide)*             | Si défini, exige `?auth=<token>` (jeton d'accès).          |
 | `SERVE_STATIC`       | *(vide)*             | Chemin du site à servir aussi (une seule origine).         |
 | `HEARTBEAT_MS`       | `25000`              | Battement pour garder les flux SSE ouverts.                |
 | `TOMBSTONE_TTL_DAYS` | `90`                 | Purge des suppressions plus vieilles (0 = jamais).         |
+| `DATA_FILE`          | `./data/notes.json`  | Stockage fichier (utilisé si aucune base n'est configurée). |
+| `DATABASE_URL`       | *(vide)*             | Connexion à une base (voir ci-dessous). Prioritaire sur le fichier. |
+| `DB_SSL`             | *(vide)*             | `1` pour activer TLS (souvent requis pour une base managée). |
+
+## Stockage : fichier ou base de données
+
+Sans configuration, les notes vivent dans un **fichier JSON** (`DATA_FILE`),
+écrit de façon atomique — zéro dépendance, parfait pour démarrer. Pour tout
+mettre dans **votre base de données**, définissez `DATABASE_URL` : le fichier
+est alors ignoré et la table est **créée automatiquement** au démarrage.
+
+**1. Installer le pilote** (une seule fois, selon votre moteur) :
+
+```sh
+cd server
+npm install mysql2      # MySQL / MariaDB  (le cas courant chez Infomaniak)
+# ou
+npm install pg          # PostgreSQL
+```
+
+**2. Renseigner la connexion.** Le moteur est déduit du schéma de l'URL
+(`mysql://`, `mariadb://`, `postgres://`) :
+
+```sh
+# MySQL / MariaDB
+DATABASE_URL='mysql://utilisateur:motdepasse@hote:3306/nom_base'
+# PostgreSQL
+DATABASE_URL='postgres://utilisateur:motdepasse@hote:5432/nom_base'
+# TLS (bases managées) :
+DB_SSL=1
+```
+
+On peut aussi passer les paramètres séparément (`DB_CLIENT`, `DB_HOST`,
+`DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`) au lieu de `DATABASE_URL` — utile
+si le mot de passe contient des caractères spéciaux.
+
+> **Sécurité :** ne mettez jamais l'URL avec le mot de passe dans le dépôt.
+> Placez-la dans l'unité systemd (`Environment=DATABASE_URL=…`, fichier lisible
+> par `root` seulement) ou un fichier d'environnement protégé.
+
+**Schéma** (créé pour vous) : une table `notes(ws, id, data, updated_at,
+deleted)` avec clé primaire `(ws, id)`. `data` contient la note en JSON ;
+`updated_at` et `deleted` servent à la réconciliation et à la purge des
+suppressions.
 
 ## Déploiement sur un VPS Infomaniak
 

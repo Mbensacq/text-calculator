@@ -17,8 +17,19 @@ RestartSec=2
 # --- Configuration (edit these) ---
 Environment=PORT=8090
 Environment=HOST=127.0.0.1
-Environment=DATA_FILE=/var/www/text-calculator/server/data/notes.json
 Environment=CORS_ORIGIN=https://calc.mon-domaine.com
+
+# --- Stockage ---
+# Par défaut : fichier JSON (aucune base requise).
+Environment=DATA_FILE=/var/www/text-calculator/server/data/notes.json
+# OU une base de données (le fichier est alors ignoré) :
+#   MySQL / MariaDB (Infomaniak) :
+# Environment=DATABASE_URL=mysql://utilisateur:motdepasse@hote:3306/nom_base
+#   PostgreSQL :
+# Environment=DATABASE_URL=postgres://utilisateur:motdepasse@hote:5432/nom_base
+#   TLS (souvent requis pour une base managée) :
+# Environment=DB_SSL=1
+
 # Uncomment to require a shared token (recommended for a public endpoint):
 # Environment=SYNC_TOKEN=change-me-long-random-string
 # Uncomment to also serve the app itself from this server (single origin):

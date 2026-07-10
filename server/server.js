@@ -1,9 +1,8 @@
 /*
- * server.js — a small, dependency-free real-time sync server for
- * Text Calculator. It is a drop-in replacement for Firebase Realtime
- * Database: it speaks the same subset of the REST + SSE protocol the app's
- * sync layer already uses, so the browser code is unchanged — only the URL
- * you configure in the app points here instead of Firebase.
+ * server.js — a small real-time sync server for Text Calculator. It is a
+ * drop-in replacement for Firebase Realtime Database: it speaks the same subset
+ * of the REST + SSE protocol the app's sync layer already uses, so the browser
+ * code is unchanged — only the URL you configure in the app points here.
  *
  * Endpoints (per workspace <ws>):
  *   GET  /ws/<ws>/notes.json           (Accept: text/event-stream) → live stream
@@ -12,69 +11,30 @@
  *
  * Data model: notes[ws][id] = { type, body?, grid?, updatedAt, deleted? }.
  * Deletions are tombstones ({ deleted:true, updatedAt }) so they reach devices
- * that were offline. Persistence is a single JSON file, written atomically.
+ * that were offline. Reconciliation is last-write-wins by `updatedAt`, applied
+ * on the client.
  *
- * No external dependencies — only Node's standard library. Run with any Node
- * ≥ 16. Configuration is entirely through environment variables (see below).
+ * Storage is pluggable (see store.js): a zero-dependency JSON file by default,
+ * or MySQL/MariaDB / PostgreSQL when a database is configured. The core server
+ * has no external dependencies; a database backend needs its driver.
  */
 'use strict';
 
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const createStore = require('./store');
 
 // ---- Configuration (env) --------------------------------------------------
 const PORT = Number(process.env.PORT || 8090);
 const HOST = process.env.HOST || '0.0.0.0';
-const DATA_FILE = process.env.DATA_FILE || path.join(__dirname, 'data', 'notes.json');
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 const TOKEN = process.env.SYNC_TOKEN || '';           // if set, required as ?auth=
 const SERVE_STATIC = process.env.SERVE_STATIC || '';  // optional: absolute path to the site
 const HEARTBEAT_MS = Number(process.env.HEARTBEAT_MS || 25000);
-const TOMBSTONE_TTL_DAYS = Number(process.env.TOMBSTONE_TTL_DAYS || 90); // 0 = keep forever
 
-// ---- Persistence ----------------------------------------------------------
-let db = {};                 // { ws: { id: note } }
+const store = createStore(process.env);
 const streams = {};          // ws -> Set(res)
-let saveTimer = null;
-
-function loadDb() {
-  try {
-    const raw = fs.readFileSync(DATA_FILE, 'utf8');
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === 'object') db = parsed;
-  } catch (e) { db = {}; }
-  pruneTombstones();
-}
-
-function pruneTombstones() {
-  if (!TOMBSTONE_TTL_DAYS) return;
-  const cutoff = Date.now() - TOMBSTONE_TTL_DAYS * 86400000;
-  for (const ws in db) {
-    const notes = db[ws];
-    for (const id in notes) {
-      const n = notes[id];
-      if (n && n.deleted && (n.updatedAt || 0) < cutoff) delete notes[id];
-    }
-  }
-}
-
-function scheduleSave() {
-  if (saveTimer) return;
-  saveTimer = setTimeout(saveDb, 500);
-}
-
-function saveDb() {
-  saveTimer = null;
-  try {
-    fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
-    const tmp = DATA_FILE + '.tmp';
-    fs.writeFileSync(tmp, JSON.stringify(db));
-    fs.renameSync(tmp, DATA_FILE); // atomic on the same filesystem
-  } catch (e) {
-    console.error('save failed:', e.message);
-  }
-}
 
 // ---- Helpers --------------------------------------------------------------
 function cors(res) {
@@ -96,10 +56,7 @@ function broadcast(ws, path_, data) {
   for (const res of set) { try { res.write(frame); } catch (e) { /* dropped */ } }
 }
 
-function snapshot(ws) {
-  const notes = db[ws];
-  return notes && Object.keys(notes).length ? notes : null;
-}
+function nonEmpty(map) { return map && Object.keys(map).length ? map : null; }
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
@@ -116,7 +73,6 @@ function serveStatic(req, res, pathname) {
   if (full !== root && !full.startsWith(root + path.sep)) { res.writeHead(403); res.end(); return; }
   fs.readFile(full, (err, buf) => {
     if (err) {
-      // SPA-style fallback to the app shell.
       fs.readFile(path.join(root, 'index.html'), (e2, shell) => {
         if (e2) { res.writeHead(404); res.end('Not found'); return; }
         res.writeHead(200, { 'Content-Type': MIME['.html'] });
@@ -151,17 +107,22 @@ const server = http.createServer((req, res) => {
         'X-Accel-Buffering': 'no', // ask nginx not to buffer the stream
       });
       res.write('retry: 3000\n\n');
-      res.write('event: put\ndata: ' + JSON.stringify({ path: '/', data: snapshot(ws) }) + '\n\n');
       (streams[ws] = streams[ws] || new Set()).add(res);
       const beat = setInterval(() => { try { res.write(':\n\n'); } catch (e) {} }, HEARTBEAT_MS);
       req.on('close', () => { clearInterval(beat); if (streams[ws]) streams[ws].delete(res); });
+      // Send the initial snapshot (after registering, so no write is missed).
+      store.all(ws).then((snap) => {
+        try { res.write('event: put\ndata: ' + JSON.stringify({ path: '/', data: nonEmpty(snap) }) + '\n\n'); } catch (e) {}
+      }).catch((e) => console.error('snapshot failed:', e.message));
       return;
     }
 
     // --- JSON snapshot (debugging / non-SSE clients) ---
     if (req.method === 'GET' && !id) {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(snapshot(ws)));
+      store.all(ws).then((snap) => {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(nonEmpty(snap)));
+      }).catch((e) => { res.writeHead(500); res.end('{"error":"read failed"}'); console.error(e.message); });
       return;
     }
 
@@ -171,11 +132,11 @@ const server = http.createServer((req, res) => {
       req.on('data', (c) => { body += c; if (body.length > 1e6) req.destroy(); });
       req.on('end', () => {
         let note; try { note = JSON.parse(body); } catch (e) { res.writeHead(400); res.end('{"error":"bad json"}'); return; }
-        (db[ws] = db[ws] || {})[id] = note;
-        scheduleSave();
-        broadcast(ws, '/' + id, note);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(body);
+        store.put(ws, id, note).then(() => {
+          broadcast(ws, '/' + id, note);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(body);
+        }).catch((e) => { res.writeHead(500); res.end('{"error":"write failed"}'); console.error(e.message); });
       });
       return;
     }
@@ -191,18 +152,24 @@ const server = http.createServer((req, res) => {
 });
 
 // ---- Lifecycle ------------------------------------------------------------
+let closing = false;
 function shutdown() {
-  if (saveTimer) { clearTimeout(saveTimer); }
-  saveDb();
-  process.exit(0);
+  if (closing) return;
+  closing = true;
+  store.close().catch(() => {}).then(() => process.exit(0));
+  setTimeout(() => process.exit(0), 2000); // hard stop if a driver hangs
 }
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
-loadDb();
-server.listen(PORT, HOST, () => {
-  console.log('text-calculator sync server on http://' + HOST + ':' + PORT);
-  console.log('  data file : ' + DATA_FILE);
-  console.log('  auth      : ' + (TOKEN ? 'token required' : 'open (workspace key only)'));
-  console.log('  static    : ' + (SERVE_STATIC || 'disabled'));
+store.init().then(() => {
+  server.listen(PORT, HOST, () => {
+    console.log('text-calculator sync server on http://' + HOST + ':' + PORT);
+    console.log('  storage : ' + store.kind + ' (' + store.describe() + ')');
+    console.log('  auth    : ' + (TOKEN ? 'token required' : 'open (workspace key only)'));
+    console.log('  static  : ' + (SERVE_STATIC || 'disabled'));
+  });
+}).catch((e) => {
+  console.error('storage init failed:', e.message);
+  process.exit(1);
 });
