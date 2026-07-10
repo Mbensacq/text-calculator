@@ -155,6 +155,9 @@
     hypot: (args) => Units.pow(addAll(args.map((a) => Units.pow(a, Units.scalar(2))), 'hypot'), Units.scalar(0.5)),
     pow: (args) => { need2(args, 'pow'); return Units.pow(args[0], args[1]); },
     mod: (args) => { need2(args, 'mod'); return Units.mod(args[0], args[1]); },
+    // Cash register: change to give = amount paid − amount due.
+    rendu: (args) => { need2(args, 'rendu'); return Units.sub(args[0], args[1]); },
+    monnaie: (args) => { need2(args, 'monnaie'); return Units.sub(args[0], args[1]); },
     root: (args) => { need2(args, 'root'); return Units.pow(args[0], Units.div(Units.scalar(1), args[1])); },
     racine: (args) => { need2(args, 'racine'); return Units.pow(args[0], Units.div(Units.scalar(1), args[1])); },
     atan2: (args) => { need2(args, 'atan2'); return Units.scalar(Math.atan2(needDimensionless(args[0], 'atan2'), needDimensionless(args[1], 'atan2'))); },

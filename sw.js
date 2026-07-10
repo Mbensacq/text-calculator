@@ -5,25 +5,25 @@
  * with ?v=N). Bump CACHE and the ?v= query together when assets change; the
  * old cache is then dropped on activate.
  */
-const CACHE = 'text-calculator-v14';
+const CACHE = 'text-calculator-v15';
 
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './styles/main.css?v=14',
-  './src/units.js?v=14',
-  './src/tokenizer.js?v=14',
-  './src/parser.js?v=14',
-  './src/evaluator.js?v=14',
-  './src/formatter.js?v=14',
-  './src/engine.js?v=14',
-  './src/editor.js?v=14',
-  './src/storage.js?v=14',
-  './src/grid.js?v=14',
-  './src/grid-editor.js?v=14',
-  './src/sync.js?v=14',
-  './src/app.js?v=14',
+  './styles/main.css?v=15',
+  './src/units.js?v=15',
+  './src/tokenizer.js?v=15',
+  './src/parser.js?v=15',
+  './src/evaluator.js?v=15',
+  './src/formatter.js?v=15',
+  './src/engine.js?v=15',
+  './src/editor.js?v=15',
+  './src/storage.js?v=15',
+  './src/grid.js?v=15',
+  './src/grid-editor.js?v=15',
+  './src/sync.js?v=15',
+  './src/app.js?v=15',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',

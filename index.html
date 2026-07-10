@@ -17,7 +17,7 @@
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="styles/main.css?v=14">
+  <link rel="stylesheet" href="styles/main.css?v=15">
 </head>
 <body>
   <div class="app" id="app">
@@ -35,6 +35,7 @@
         <button id="new-grid" class="foot-link" type="button">＋ Tableau (grille)</button>
         <button id="load-example" class="foot-link" type="button">＋ Note d'exemple</button>
         <button id="load-sales" class="foot-link" type="button">＋ Note ventes (expo)</button>
+        <button id="load-caisse" class="foot-link" type="button">＋ Note caisse (expo)</button>
         <button id="trash-toggle" class="foot-link" type="button">🗑 Corbeille</button>
       </div>
     </aside>
@@ -144,6 +145,15 @@ total =             → 4.05 €</pre>
           <pre>2 km + 500 m =      → 2.5 km
 20 °C en °F =       → 68 °F
 300 € + 20% =       → 360 €</pre>
+        </section>
+        <section>
+          <h3>Caisse (marché / expo)</h3>
+          <p>Note « Caisse » prête à l'emploi (barre latérale) : recette du jour,
+          nombre de ventes, panier moyen, et la monnaie à rendre.</p>
+          <pre>ventes = 8 €, 23 €, 10 €, 6 €
+somme(ventes) =      recette      count(ventes) = ventes
+moy(ventes) =        panier moyen
+rendu(20 €, 17 €) =  → 3 € à rendre</pre>
         </section>
         <section>
           <h3>Ajuster un nombre à la souris</h3>
@@ -266,17 +276,17 @@ D3: =somme(D1:D2)</pre>
     </aside>
   </div>
 
-  <script src="src/units.js?v=14"></script>
-  <script src="src/tokenizer.js?v=14"></script>
-  <script src="src/parser.js?v=14"></script>
-  <script src="src/evaluator.js?v=14"></script>
-  <script src="src/formatter.js?v=14"></script>
-  <script src="src/engine.js?v=14"></script>
-  <script src="src/editor.js?v=14"></script>
-  <script src="src/storage.js?v=14"></script>
-  <script src="src/grid.js?v=14"></script>
-  <script src="src/grid-editor.js?v=14"></script>
-  <script src="src/sync.js?v=14"></script>
-  <script src="src/app.js?v=14"></script>
+  <script src="src/units.js?v=15"></script>
+  <script src="src/tokenizer.js?v=15"></script>
+  <script src="src/parser.js?v=15"></script>
+  <script src="src/evaluator.js?v=15"></script>
+  <script src="src/formatter.js?v=15"></script>
+  <script src="src/engine.js?v=15"></script>
+  <script src="src/editor.js?v=15"></script>
+  <script src="src/storage.js?v=15"></script>
+  <script src="src/grid.js?v=15"></script>
+  <script src="src/grid-editor.js?v=15"></script>
+  <script src="src/sync.js?v=15"></script>
+  <script src="src/app.js?v=15"></script>
 </body>
 </html>

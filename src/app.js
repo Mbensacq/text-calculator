@@ -95,6 +95,47 @@
     'Astuce : élargissez un tableau en ajoutant des colonnes (| …) ou des lignes.',
   ].join('\n');
 
+  // A ready-to-run cash-register note for a market/expo day: live daily takings,
+  // number of sales, average basket, change-to-give, quick order checks and a
+  // per-product revenue table (quantities are Alt-draggable).
+  const CAISSE_NOTE = [
+    '# Caisse',
+    'aujourd\'hui =',
+    '',
+    '## Tarifs',
+    'sticker = 3 €',
+    'planche = 8 €',
+    'badge = 2 €',
+    'porte_cle = 5 €',
+    'print = 10 €',
+    '',
+    '## Ventes du jour',
+    '// Ajoutez le montant encaissé à chaque vente, séparé par des virgules.',
+    'ventes = 8 €, 23 €, 10 €, 6 €',
+    '',
+    'recette = somme(ventes) =        // total encaissé',
+    'nb_ventes = count(ventes) =      // nombre de ventes',
+    'panier_moyen = moy(ventes) =     // panier moyen',
+    '',
+    '## Rendre la monnaie',
+    '// rendu(montant donné, montant dû)',
+    'rendu(20 €, 17 €) =',
+    '',
+    '## Vérifier une commande',
+    '2 * sticker + 1 * badge =',
+    '1 * planche + 2 * print =',
+    '',
+    '## Revenu par produit',
+    '// Astuce : Alt + glisser sur une quantité pour l’ajuster en direct.',
+    '| Produit | Qté | PU   | Revenu |',
+    '| sticker | 12  | 3 €  | =B2*C2 |',
+    '| planche | 3   | 8 €  | =B3*C3 |',
+    '| badge   | 7   | 2 €  | =B4*C4 |',
+    '| print   | 2   | 10 € | =B5*C5 |',
+    'revenu_total = somme(D2:D5) =',
+    'objets_vendus = somme(B2:B5) =',
+  ].join('\n');
+
   function ready(fn) {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
     else fn();
@@ -221,6 +262,7 @@
     }
     function loadExample() { loadNote(EXAMPLE_NOTE); }
     function loadSales() { loadNote(SALES_NOTE); }
+    function loadCaisse() { loadNote(CAISSE_NOTE); }
 
     function togglePinNote(id) {
       store.togglePin(id);
@@ -354,6 +396,7 @@
     document.getElementById('new-grid').addEventListener('click', newGrid);
     document.getElementById('load-example').addEventListener('click', loadExample);
     document.getElementById('load-sales').addEventListener('click', loadSales);
+    document.getElementById('load-caisse').addEventListener('click', loadCaisse);
 
     // Function palette: insert "name()" with the caret between the parentheses.
     document.getElementById('fnbar').addEventListener('click', function (e) {

@@ -248,6 +248,12 @@ expr('1/2/4', '0.125');
 expr('2026 - 3', '2 023');
 check('invalid date op', /date/.test(run('15/03/2026 + 10/01/2026 =')[0]), true);
 
+/* ---- cash register ------------------------------------------------ */
+expr('rendu(20 €, 17 €)', '3 €');
+expr('monnaie(50 €, 42.50 €)', '7.5 €');
+check('caisse daily total', run('v = 8 €, 23 €, 10 €, 6 €\nsomme(v) =')[1], '47 €');
+check('caisse count', run('v = 8 €, 23 €, 10 €, 6 €\ncount(v) =')[1], '4');
+
 /* ---- report ------------------------------------------------------- */
 console.log('');
 console.log(passed + ' réussis, ' + failed + ' échoués');

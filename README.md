@@ -67,6 +67,9 @@ temps = 2 h
   `tau`, `phi`).
 - **Étiquettes libres** pour compter : `3 pommes + 2 pommes → 5 pommes`.
 - **Pourcentages comptables** : `300 € + 20% → 360 €` (TVA, remise, pourboire).
+- **Mode caisse (marché / expo)** : une note « Caisse » prête à l'emploi
+  (recette du jour, nombre de ventes, panier moyen, revenu par produit) avec la
+  fonction `rendu(donné, dû)` pour la monnaie à rendre.
 - **Plusieurs notes** dans une barre latérale, enregistrées automatiquement
   dans le navigateur (localStorage).
 - **Synchronisation multi-appareils** (optionnelle) : partagez vos notes en
