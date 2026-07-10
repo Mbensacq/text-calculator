@@ -42,6 +42,10 @@ temps = 2 h
 - **Somme indexée** : `Σ(i, 1, n, i^2) =` (aussi `sigma`).
 - **Comptes** : `total` (somme du bloc courant) et `ans` (résultat précédent).
 - **Températures** `°C` / `°F` / `K` : `20 °C en °F =` → `68 °F`.
+- **Dates & durées** : dates `JJ/MM/AAAA` (ou ISO `AAAA-MM-JJ`), mots-clés
+  `aujourd'hui` / `demain` / `hier`, et arithmétique du calendrier —
+  `15/03/2026 - 10/01/2026 =` → `64 jours`, `aujourd'hui + 3 jours =`,
+  comparaisons de dates, `date(j, m, a)`, `jour()` / `mois()` / `annee()`.
 - **Tableaux façon tableur** : écrivez un tableau avec des `|`, adressez les
   cellules en `A1` (colonnes A, B, C… et lignes 1, 2, 3…), mettez des formules
   dans les cellules (`=B2*C2`) et totalisez des plages : `somme(B2:B10) =`.

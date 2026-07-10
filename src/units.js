@@ -174,6 +174,34 @@
     return !!(v && v.list === true);
   }
 
+  /* ------------------------------------------------------------------ *
+   * Dates. A date is a calendar day (or instant) stored as an epoch in
+   * milliseconds, kept distinct from Quantities via the `date` flag.
+   * `hasTime` records whether a sub-day component is worth showing.
+   * ------------------------------------------------------------------ */
+
+  const DAY_MS = 86400000;
+
+  function makeDate(t, hasTime) { return { date: true, t: t, hasTime: !!hasTime }; }
+  function isDate(v) { return !!(v && v.date === true); }
+  // Build a date from calendar components. Stored at UTC midnight so the same
+  // day always maps to the same instant regardless of the viewer's timezone.
+  function makeDateYMD(year, month, day) {
+    return makeDate(Date.UTC(year, month - 1, day), false);
+  }
+
+  // date − date → a duration (seconds), displayed in days.
+  function dateDiff(a, b) {
+    return quantity((a.t - b.t) / 1000, { time: 1 }, { jours: 1 });
+  }
+  // Shift a date by a duration quantity (whose base is in seconds). The result
+  // shows a time-of-day only when it no longer lands on a whole day.
+  function dateShift(dateVal, timeQ, sign) {
+    const t = dateVal.t + sign * timeQ.base * 1000;
+    const onDay = ((t % DAY_MS) + DAY_MS) % DAY_MS === 0;
+    return makeDate(t, dateVal.hasTime || !onDay);
+  }
+
   // Resolve a unit token to its definition, or synthesise a label unit.
   function lookupUnit(name) {
     if (Object.prototype.hasOwnProperty.call(UNITS, name)) return UNITS[name];
@@ -302,6 +330,11 @@
     scalar,
     list,
     isList,
+    makeDate,
+    isDate,
+    makeDateYMD,
+    dateDiff,
+    dateShift,
     unitQuantity,
     unitFactor,
     lookupUnit,

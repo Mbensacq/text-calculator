@@ -35,6 +35,31 @@
 
   function isDigit(ch) { return ch >= '0' && ch <= '9'; }
 
+  // Recognise a date literal starting at position i:
+  //   ISO   yyyy-mm-dd
+  //   DMY   d/m/yyyy or d/m/yy  (French day-first; a 2–4 digit year is required
+  //         so plain divisions like "1/2/3" are left as arithmetic).
+  // Dates are stored at UTC midnight. Returns { end, ms } or null.
+  function matchDate(s, i) {
+    const rest = s.slice(i, i + 11);
+    let m = /^(\d{4})-(\d{1,2})-(\d{1,2})(?![\d/-])/.exec(rest);
+    if (m) {
+      const y = +m[1], mo = +m[2], d = +m[3];
+      if (mo >= 1 && mo <= 12 && d >= 1 && d <= 31) return { end: i + m[0].length, ms: Date.UTC(y, mo - 1, d) };
+    }
+    m = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?![\d/])/.exec(rest);
+    if (m) {
+      let d = +m[1]; const mo = +m[2]; let y = +m[3];
+      if (y < 100) y += 2000;
+      if (mo >= 1 && mo <= 12 && d >= 1 && d <= 31) return { end: i + m[0].length, ms: Date.UTC(y, mo - 1, d) };
+    }
+    return null;
+  }
+
+  // "aujourd'hui" (straight or curly apostrophe) — a single date keyword whose
+  // apostrophe would otherwise split it into two identifiers.
+  const AUJOURDHUI_RE = /^aujourd['’]hui/i;
+
   function tokenize(input) {
     const tokens = [];
     let i = 0;
@@ -57,6 +82,12 @@
       if (ch === '…') { const s = i; i++; push('ellipsis', '…', s); continue; }
       if (ch === '.' && input[i + 1] === '.' && input[i + 2] === '.') {
         const s = i; i += 3; push('ellipsis', '...', s); continue;
+      }
+
+      // Date literals take priority over plain numbers (they start with a digit).
+      if (isDigit(ch)) {
+        const dm = matchDate(input, i);
+        if (dm) { const s = i; i = dm.end; push('date', dm.ms, s); continue; }
       }
 
       // Numbers, including grouping spaces between digits (1 000 000) and a
@@ -99,6 +130,15 @@
         let name = '°';
         while (i < n && IDENT_PART.test(input[i])) { name += input[i]; i++; }
         push('ident', name, start);
+        continue;
+      }
+
+      // "aujourd'hui" — normalise to a single identifier the evaluator knows.
+      // ("aujourd" + apostrophe + "hui" is exactly 11 characters.)
+      if ((ch === 'a' || ch === 'A') && AUJOURDHUI_RE.test(input.slice(i, i + 11))) {
+        const start = i;
+        i += 11;
+        push('ident', 'aujourdhui', start);
         continue;
       }
 

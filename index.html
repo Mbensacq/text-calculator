@@ -17,7 +17,7 @@
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="styles/main.css?v=11">
+  <link rel="stylesheet" href="styles/main.css?v=12">
 </head>
 <body>
   <div class="app" id="app">
@@ -146,6 +146,16 @@ total =             → 4.05 €</pre>
 300 € + 20% =       → 360 €</pre>
         </section>
         <section>
+          <h3>Dates &amp; durées</h3>
+          <p>Écrivez une date <code>JJ/MM/AAAA</code> (ou <code>AAAA-MM-JJ</code>).
+          Mots-clés : <code>aujourd'hui</code>, <code>demain</code>, <code>hier</code>.</p>
+          <pre>15/03/2026 - 10/01/2026 =   → 64 jours
+aujourd'hui + 3 jours =
+10/01/2026 + 2 semaines =
+demain &gt; aujourd'hui =         → 1
+date(25, 12, 2026)          jour(d), mois(d), annee(d)</pre>
+        </section>
+        <section>
           <h3>Tableaux (cellules façon tableur)</h3>
           <p>Un tableau se fait avec des « | ». Colonnes A, B, C… et lignes 1, 2, 3…
           Une cellule peut contenir une formule (commençant par <code>=</code>).</p>
@@ -249,17 +259,17 @@ D3: =somme(D1:D2)</pre>
     </aside>
   </div>
 
-  <script src="src/units.js?v=11"></script>
-  <script src="src/tokenizer.js?v=11"></script>
-  <script src="src/parser.js?v=11"></script>
-  <script src="src/evaluator.js?v=11"></script>
-  <script src="src/formatter.js?v=11"></script>
-  <script src="src/engine.js?v=11"></script>
-  <script src="src/editor.js?v=11"></script>
-  <script src="src/storage.js?v=11"></script>
-  <script src="src/grid.js?v=11"></script>
-  <script src="src/grid-editor.js?v=11"></script>
-  <script src="src/sync.js?v=11"></script>
-  <script src="src/app.js?v=11"></script>
+  <script src="src/units.js?v=12"></script>
+  <script src="src/tokenizer.js?v=12"></script>
+  <script src="src/parser.js?v=12"></script>
+  <script src="src/evaluator.js?v=12"></script>
+  <script src="src/formatter.js?v=12"></script>
+  <script src="src/engine.js?v=12"></script>
+  <script src="src/editor.js?v=12"></script>
+  <script src="src/storage.js?v=12"></script>
+  <script src="src/grid.js?v=12"></script>
+  <script src="src/grid-editor.js?v=12"></script>
+  <script src="src/sync.js?v=12"></script>
+  <script src="src/app.js?v=12"></script>
 </body>
 </html>

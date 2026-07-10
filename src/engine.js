@@ -154,6 +154,9 @@
   }
 
   function evaluateDocument(text) {
+    // A single reference instant for the whole document, so "aujourd'hui",
+    // "demain" and friends all agree within one evaluation.
+    const NOW = Date.now();
     const rawLines = text.split('\n');
     const records = rawLines.map((line, index) => {
       const c = classify(line);
@@ -338,6 +341,7 @@
           if (bi < 0) throw new CalcError('plage hors d’un tableau');
           return resolveRangeIn(bi, from, to);
         },
+        now: NOW,
       };
     }
 
@@ -349,6 +353,7 @@
     function blockTotal(block) {
       let acc = null;
       for (const v of block) {
+        if (Units.isDate(v)) continue; // dates aren't summable
         if (acc === null) acc = v;
         else if (Units.sameDim(acc.dim, v.dim)) acc = Units.add(acc, v);
       }
@@ -404,7 +409,7 @@
 
       if (accumulate && value != null) {
         ansVal = value;
-        if (!Units.isList(value)) block.push(value);
+        if (!Units.isList(value) && !Units.isDate(value)) block.push(value);
       }
     }
 

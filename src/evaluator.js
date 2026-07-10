@@ -183,6 +183,54 @@
   };
 
   const isList = Units.isList;
+  const isDate = Units.isDate;
+  const TIME_DIM = { time: 1 };
+
+  // Relative-day keywords. Resolved against the document's reference "now".
+  const DATE_WORDS = { aujourdhui: 0, today: 0, demain: 1, tomorrow: 1, hier: -1, yesterday: -1 };
+
+  function isTimeQuantity(q) {
+    return !isDate(q) && !isList(q) && Units.sameDim(q.dim, TIME_DIM);
+  }
+
+  function dateFromWord(name, env) {
+    const now = (env && env.now) || Date.now();
+    const d = new Date(now);
+    // "Today" is the viewer's calendar day, stored at UTC midnight.
+    const midnight = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+    return Units.makeDate(midnight + DATE_WORDS[name] * 86400000, false);
+  }
+
+  // Functions that produce or read dates. Operate on already-evaluated args, so
+  // they sit after user-defined functions in precedence.
+  function needDate(v, name) {
+    if (!isDate(v)) throw new CalcError(name + ' attend une date');
+    return new Date(v.t);
+  }
+  const DATE_CALLS = {
+    date: (v) => {
+      if (v.length !== 3) throw new CalcError('date attend jour, mois, année');
+      return Units.makeDateYMD(needInt(v[2], 'date'), needInt(v[1], 'date'), needInt(v[0], 'date'));
+    },
+    annee: (v) => { if (v.length !== 1) throw new CalcError('annee attend une date'); return Units.scalar(needDate(v[0], 'annee').getUTCFullYear()); },
+    année: (v) => { if (v.length !== 1) throw new CalcError('année attend une date'); return Units.scalar(needDate(v[0], 'année').getUTCFullYear()); },
+    mois: (v) => { if (v.length !== 1) throw new CalcError('mois attend une date'); return Units.scalar(needDate(v[0], 'mois').getUTCMonth() + 1); },
+    jour: (v) => { if (v.length !== 1) throw new CalcError('jour attend une date'); return Units.scalar(needDate(v[0], 'jour').getUTCDate()); },
+  };
+
+  // Date-aware binary operation (date ± duration, date − date).
+  function dateBinary(op, a, b) {
+    if (isDate(a) && isDate(b)) {
+      if (op === '-') return Units.dateDiff(a, b);
+      throw new CalcError('entre deux dates, seule la soustraction a un sens');
+    }
+    if (isDate(a) && isTimeQuantity(b)) {
+      if (op === '+' || op === '-') return Units.dateShift(a, b, op === '+' ? 1 : -1);
+      throw new CalcError('avec une date, utilisez + ou −');
+    }
+    if (isDate(b) && isTimeQuantity(a) && op === '+') return Units.dateShift(b, a, 1);
+    throw new CalcError('opération invalide avec une date');
+  }
 
   // A condition is true when it is a non-zero number. Comparisons and the
   // logical helpers all return 1 (true) or 0 (false).
@@ -193,6 +241,19 @@
 
   function compareOp(op, a, b) {
     if (isList(a) || isList(b)) throw new CalcError('comparaison de listes non supportée');
+    if (isDate(a) || isDate(b)) {
+      if (!isDate(a) || !isDate(b)) throw new CalcError('comparaison entre une date et autre chose');
+      const d = a.t - b.t;
+      switch (op) {
+        case '==': return Math.abs(d) < 1000;
+        case '!=': return Math.abs(d) >= 1000;
+        case '<': return d < 0;
+        case '>': return d > 0;
+        case '<=': return d <= 0;
+        case '>=': return d >= 0;
+        default: throw new CalcError('comparaison inconnue: ' + op);
+      }
+    }
     const sameDim = Units.sameDim(a.dim, b.dim);
     if (op === '==' || op === '!=') {
       const equal = sameDim &&
@@ -221,6 +282,7 @@
 
   // Apply a plain binary operator to two scalar quantities.
   function scalarBinary(op, a, b) {
+    if (isDate(a) || isDate(b)) return dateBinary(op, a, b);
     switch (op) {
       case '+': return Units.add(a, b);
       case '-': return Units.sub(a, b);
@@ -298,6 +360,9 @@
       case 'num':
         return Units.scalar(ast.value);
 
+      case 'date':
+        return Units.makeDate(ast.t, false);
+
       case 'list':
         return Units.list(flatten(evalSequence(ast.items, env)));
 
@@ -306,6 +371,9 @@
         // 1) a variable defined anywhere in the document
         const v = env && env.lookupVar ? env.lookupVar(name) : null;
         if (v) return v;
+        // 1b) a relative-day keyword (aujourd'hui / demain / hier)
+        const low = name.toLowerCase();
+        if (Object.prototype.hasOwnProperty.call(DATE_WORDS, low)) return dateFromWord(low, env);
         // 2) a mathematical constant
         if (CONSTANTS[name]) return CONSTANTS[name]();
         // 3) a spreadsheet cell (B2) when a table is present
@@ -356,7 +424,7 @@
         if (ast.op === '*' && ast.implicit && ast.right.type === 'ident' &&
             Units.isOffsetUnit(ast.right.name)) {
           const left = evaluate(ast.left, env);
-          if (!isList(left) && Units.isDimensionless(left.dim)) {
+          if (!isList(left) && !isDate(left) && Units.isDimensionless(left.dim)) {
             return Units.offsetQuantity(left.base, ast.right.name);
           }
         }
@@ -366,7 +434,7 @@
         // side carries a real unit, so "20% + 30%" still adds to 50%.
         if ((ast.op === '+' || ast.op === '-') && ast.right.type === 'percent') {
           const base = evaluate(ast.left, env);
-          if (!isList(base) && !Units.isDimensionless(base.dim)) {
+          if (!isList(base) && !isDate(base) && !Units.isDimensionless(base.dim)) {
             const frac = Units.div(evaluate(ast.right.operand, env), Units.scalar(100));
             const factor = ast.op === '+'
               ? Units.add(Units.scalar(1), frac)
@@ -438,6 +506,7 @@
         if (env && env.lookupFunc && env.lookupFunc(name)) {
           return env.callFunction(name, values);
         }
+        if (DATE_CALLS[name]) return DATE_CALLS[name](values);
         if (FUNCTIONS[name]) {
           if (values.length !== 1) throw new CalcError(name + ' attend 1 argument');
           const v = values[0];

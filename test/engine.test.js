@@ -228,6 +228,26 @@ check('heading silent', run('# Mes comptes')[0], null);
 /* ---- incompatible units error ------------------------------------- */
 check('incompatible units', /incompatibles/.test(run('1 km + 1 kg =')[0]), true);
 
+/* ---- dates & durations -------------------------------------------- */
+expr('15/03/2026 - 10/01/2026', '64 jours');
+expr('2026-03-15 - 2026-03-10', '5 jours');       // ISO form
+expr('10/01/2026 + 30 jours', '09/02/2026');
+expr('10/01/2026 - 1 semaine', '03/01/2026');
+expr('1 semaine + 10/01/2026', '17/01/2026');     // duration + date commutes
+expr('10/01/2026 + 12 h', '10/01/2026 12:00');    // sub-day component shows time
+expr('date(25, 12, 2026)', '25/12/2026');
+expr('mois(15/03/2026)', '3');
+expr('jour(15/03/2026)', '15');
+// Relative-day keywords are deterministic *relative to each other*.
+expr('demain - aujourd\'hui', '1 jours');
+expr('aujourd\'hui - hier', '1 jours');
+expr('demain > aujourdhui', '1');
+expr('hier >= demain', '0');
+// Date literals must not clobber ordinary arithmetic.
+expr('1/2/4', '0.125');
+expr('2026 - 3', '2 023');
+check('invalid date op', /date/.test(run('15/03/2026 + 10/01/2026 =')[0]), true);
+
 /* ---- report ------------------------------------------------------- */
 console.log('');
 console.log(passed + ' réussis, ' + failed + ' échoués');

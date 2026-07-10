@@ -131,8 +131,20 @@
     return n;
   }
 
-  // Format any value — a Quantity or a list of values.
+  function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+
+  // A date shows as JJ/MM/AAAA (French, day-first), with HH:MM appended only
+  // when a sub-day component is present.
+  function formatDate(v) {
+    const d = new Date(v.t);
+    const s = pad2(d.getUTCDate()) + '/' + pad2(d.getUTCMonth() + 1) + '/' + d.getUTCFullYear();
+    if (v.hasTime) return s + ' ' + pad2(d.getUTCHours()) + ':' + pad2(d.getUTCMinutes());
+    return s;
+  }
+
+  // Format any value — a date, a Quantity or a list of values.
   function formatValue(v) {
+    if (Units.isDate(v)) return formatDate(v);
     if (Units.isList(v)) return v.items.map(formatValue).join(', ');
     return formatQuantity(v);
   }
