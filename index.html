@@ -17,7 +17,7 @@
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="styles/main.css?v=10">
+  <link rel="stylesheet" href="styles/main.css?v=11">
 </head>
 <body>
   <div class="app" id="app">
@@ -26,11 +26,16 @@
         <span class="sidebar__title">Notes</span>
         <button id="new-note" class="icon-btn" type="button" title="Nouvelle note (Ctrl/Cmd+Entrée)" aria-label="Nouvelle note">＋</button>
       </div>
+      <div class="sidebar__search">
+        <input id="note-search" type="search" class="search-input" placeholder="Rechercher…"
+               spellcheck="false" autocomplete="off" aria-label="Rechercher dans les notes">
+      </div>
       <ul id="note-list" class="note-list"></ul>
       <div class="sidebar__foot">
         <button id="new-grid" class="foot-link" type="button">＋ Tableau (grille)</button>
         <button id="load-example" class="foot-link" type="button">＋ Note d'exemple</button>
         <button id="load-sales" class="foot-link" type="button">＋ Note ventes (expo)</button>
+        <button id="trash-toggle" class="foot-link" type="button">🗑 Corbeille</button>
       </div>
     </aside>
 
@@ -244,17 +249,17 @@ D3: =somme(D1:D2)</pre>
     </aside>
   </div>
 
-  <script src="src/units.js?v=10"></script>
-  <script src="src/tokenizer.js?v=10"></script>
-  <script src="src/parser.js?v=10"></script>
-  <script src="src/evaluator.js?v=10"></script>
-  <script src="src/formatter.js?v=10"></script>
-  <script src="src/engine.js?v=10"></script>
-  <script src="src/editor.js?v=10"></script>
-  <script src="src/storage.js?v=10"></script>
-  <script src="src/grid.js?v=10"></script>
-  <script src="src/grid-editor.js?v=10"></script>
-  <script src="src/sync.js?v=10"></script>
-  <script src="src/app.js?v=10"></script>
+  <script src="src/units.js?v=11"></script>
+  <script src="src/tokenizer.js?v=11"></script>
+  <script src="src/parser.js?v=11"></script>
+  <script src="src/evaluator.js?v=11"></script>
+  <script src="src/formatter.js?v=11"></script>
+  <script src="src/engine.js?v=11"></script>
+  <script src="src/editor.js?v=11"></script>
+  <script src="src/storage.js?v=11"></script>
+  <script src="src/grid.js?v=11"></script>
+  <script src="src/grid-editor.js?v=11"></script>
+  <script src="src/sync.js?v=11"></script>
+  <script src="src/app.js?v=11"></script>
 </body>
 </html>

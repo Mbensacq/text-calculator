@@ -132,7 +132,7 @@ body {
 
 .note-item {
   position: relative;
-  padding: 9px 34px 9px 12px;
+  padding: 9px 56px 9px 12px;
   border-radius: 10px;
   cursor: pointer;
   margin-bottom: 2px;
@@ -140,6 +140,7 @@ body {
 }
 .note-item:hover { background: var(--accent-soft); }
 .note-item.is-active { background: var(--active-bg); }
+.note-item.is-pinned { box-shadow: inset 2px 0 0 var(--accent); }
 
 .note-item__title {
   font-size: 14px;
@@ -159,23 +160,58 @@ body {
   margin-top: 1px;
 }
 
-.note-item__del {
+.note-item__actions {
   position: absolute;
   top: 50%;
-  right: 6px;
+  right: 4px;
   transform: translateY(-50%);
+  display: flex;
+  gap: 1px;
+}
+.note-item__act {
   border: 0;
   background: transparent;
   cursor: pointer;
   font-size: 13px;
+  line-height: 1;
   opacity: 0;
   border-radius: 6px;
-  padding: 4px;
-  transition: opacity .12s ease;
+  padding: 4px 5px;
+  transition: opacity .12s ease, background .12s ease;
 }
-.note-item:hover .note-item__del,
-.note-item.is-active .note-item__del { opacity: 0.55; }
-.note-item__del:hover { opacity: 1; }
+.note-item:hover .note-item__act,
+.note-item.is-active .note-item__act { opacity: 0.5; }
+.note-item__act:hover { opacity: 1; background: var(--accent-soft); }
+/* A pinned note keeps its pin visible even without hover. */
+.note-item__act.is-on { opacity: 0.9; }
+.note-item.is-pinned .note-item__act.is-on { opacity: 0.9; }
+
+.note-empty {
+  padding: 16px 12px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+.sidebar__search {
+  padding: 0 12px 8px;
+}
+.search-input {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 10px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+}
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
 
 .sidebar__foot {
   padding: 8px 10px;

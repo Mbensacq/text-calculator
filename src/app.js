@@ -116,9 +116,14 @@
 
     let activeId = store.active().id;
     let listTimer = null;
+    let viewingTrash = false;
+    let query = '';
 
     const textView = document.getElementById('text-view');
     const gridView = document.getElementById('grid-view');
+    const sidebarTitle = document.querySelector('.sidebar__title');
+    const searchInput = document.getElementById('note-search');
+    const trashToggle = document.getElementById('trash-toggle');
 
     function bumpList() {
       if (listTimer) clearTimeout(listTimer);
@@ -167,6 +172,7 @@
     }
 
     function newNote() {
+      viewingTrash = false;
       const note = store.create();
       loadActive();
       pushNow(note.id);
@@ -175,6 +181,7 @@
     }
 
     function newGrid() {
+      viewingTrash = false;
       const note = store.createGrid();
       loadActive();
       pushNow(note.id);
@@ -183,6 +190,7 @@
     }
 
     function loadNote(body) {
+      viewingTrash = false;
       const note = store.create();
       store.updateBody(note.id, body);
       loadActive();
@@ -193,21 +201,72 @@
     function loadExample() { loadNote(EXAMPLE_NOTE); }
     function loadSales() { loadNote(SALES_NOTE); }
 
-    function deleteNote(id) {
-      const note = store.list().filter((n) => n.id === id)[0];
+    function togglePinNote(id) {
+      store.togglePin(id);
+      pushNow(id);
+      renderList();
+    }
+
+    // Delete = move to the trash (recoverable). It syncs as a flag, so the note
+    // is hidden on other devices too but can be restored anywhere.
+    function trashNote(id) {
+      store.setTrashed(id, true);
+      pushNow(id);
+      if (id === activeId) loadActive();
+      else renderList();
+    }
+
+    function restoreNote(id) {
+      store.setTrashed(id, false);
+      pushNow(id);
+      renderList();
+    }
+
+    // Permanent, irreversible delete from the trash — this sends a tombstone so
+    // the deletion propagates to every device.
+    function deleteForever(id) {
+      const note = store.trashList().filter((n) => n.id === id)[0];
       const label = note ? note.title : 'cette note';
-      if (!window.confirm('Supprimer « ' + label + ' » ?')) return;
+      if (!window.confirm('Supprimer définitivement « ' + label + ' » ? Cette action est irréversible.')) return;
       store.remove(id);
       if (sync) sync.remove(id);
-      loadActive();
+      if (id === activeId) loadActive();
+      renderList();
+    }
+
+    function actBtn(action, glyph, label) {
+      const b = document.createElement('button');
+      b.className = 'note-item__act';
+      b.type = 'button';
+      b.dataset.action = action;
+      b.title = label;
+      b.setAttribute('aria-label', label);
+      b.textContent = glyph;
+      return b;
+    }
+
+    function matchesQuery(item) {
+      return !query || item.search.indexOf(query) !== -1;
     }
 
     function renderList() {
-      const notes = store.list();
+      const items = (viewingTrash ? store.trashList() : store.list()).filter(matchesQuery);
+      if (sidebarTitle) sidebarTitle.textContent = viewingTrash ? 'Corbeille' : 'Notes';
+      if (trashToggle) trashToggle.textContent = viewingTrash ? '← Retour aux notes' : '🗑 Corbeille';
+
       const frag = document.createDocumentFragment();
-      for (const n of notes) {
+      if (!items.length) {
+        const empty = document.createElement('li');
+        empty.className = 'note-empty';
+        empty.textContent = viewingTrash ? 'Corbeille vide'
+          : (query ? 'Aucun résultat' : 'Aucune note');
+        frag.appendChild(empty);
+      }
+      for (const n of items) {
         const li = document.createElement('li');
-        li.className = 'note-item' + (n.id === activeId ? ' is-active' : '');
+        li.className = 'note-item'
+          + (!viewingTrash && n.id === activeId ? ' is-active' : '')
+          + (n.pinned ? ' is-pinned' : '');
         li.dataset.id = n.id;
 
         const title = document.createElement('div');
@@ -218,16 +277,21 @@
         snippet.className = 'note-item__snippet';
         snippet.textContent = n.snippet || 'Note vide';
 
-        const del = document.createElement('button');
-        del.className = 'note-item__del';
-        del.type = 'button';
-        del.title = 'Supprimer';
-        del.setAttribute('aria-label', 'Supprimer la note');
-        del.textContent = '🗑';
+        const actions = document.createElement('div');
+        actions.className = 'note-item__actions';
+        if (viewingTrash) {
+          actions.appendChild(actBtn('restore', '↩', 'Restaurer'));
+          actions.appendChild(actBtn('purge', '✕', 'Supprimer définitivement'));
+        } else {
+          const pin = actBtn('pin', '📌', n.pinned ? 'Détacher' : 'Épingler');
+          if (n.pinned) pin.classList.add('is-on');
+          actions.appendChild(pin);
+          actions.appendChild(actBtn('trash', '🗑', 'Mettre à la corbeille'));
+        }
 
         li.appendChild(title);
         li.appendChild(snippet);
-        li.appendChild(del);
+        li.appendChild(actions);
         frag.appendChild(li);
       }
       listEl.textContent = '';
@@ -236,13 +300,34 @@
 
     // Event delegation for the note list.
     listEl.addEventListener('click', function (e) {
-      const del = e.target.closest('.note-item__del');
+      const btn = e.target.closest('.note-item__act');
       const item = e.target.closest('.note-item');
       if (!item) return;
       const id = item.dataset.id;
-      if (del) { e.stopPropagation(); deleteNote(id); }
-      else selectNote(id);
+      if (btn) {
+        e.stopPropagation();
+        const action = btn.dataset.action;
+        if (action === 'pin') togglePinNote(id);
+        else if (action === 'trash') trashNote(id);
+        else if (action === 'restore') restoreNote(id);
+        else if (action === 'purge') deleteForever(id);
+        return;
+      }
+      if (!viewingTrash) selectNote(id);
     });
+
+    if (searchInput) {
+      searchInput.addEventListener('input', function () {
+        query = searchInput.value.trim().toLowerCase();
+        renderList();
+      });
+    }
+    if (trashToggle) {
+      trashToggle.addEventListener('click', function () {
+        viewingTrash = !viewingTrash;
+        renderList();
+      });
+    }
 
     document.getElementById('new-note').addEventListener('click', newNote);
     document.getElementById('new-grid').addEventListener('click', newGrid);

@@ -83,26 +83,53 @@
       try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* full/disabled */ }
     }
 
+    // Pinned notes float to the top; within a group, most-recent first.
+    function sortNotes(a, b) {
+      const pa = a.pinned ? 1 : 0;
+      const pb = b.pinned ? 1 : 0;
+      if (pa !== pb) return pb - pa;
+      return b.updatedAt - a.updatedAt;
+    }
+
+    function toItem(n) {
+      const title = n.type === 'grid' ? gridTitle(n.grid) : deriveTitle(n.body);
+      const snippet = n.type === 'grid' ? 'Tableau' : deriveSnippet(n.body);
+      const bodyText = n.type === 'grid' ? '' : (n.body || '');
+      return {
+        id: n.id,
+        type: n.type || 'text',
+        title: title,
+        snippet: snippet,
+        updatedAt: n.updatedAt,
+        pinned: !!n.pinned,
+        active: n.id === state.activeId,
+        search: (title + ' ' + snippet + ' ' + bodyText).toLowerCase(),
+      };
+    }
+
+    function visibleNotes() { return state.notes.filter((n) => !n.trashed); }
+
     function list() {
-      return state.notes
-        .slice()
-        .sort((a, b) => b.updatedAt - a.updatedAt)
-        .map((n) => ({
-          id: n.id,
-          type: n.type || 'text',
-          title: n.type === 'grid' ? gridTitle(n.grid) : deriveTitle(n.body),
-          snippet: n.type === 'grid' ? 'Tableau' : deriveSnippet(n.body),
-          updatedAt: n.updatedAt,
-          active: n.id === state.activeId,
-        }));
+      return visibleNotes().slice().sort(sortNotes).map(toItem);
+    }
+
+    // Notes currently in the trash (most-recent first).
+    function trashList() {
+      return state.notes.filter((n) => n.trashed)
+        .slice().sort((a, b) => b.updatedAt - a.updatedAt).map(toItem);
     }
 
     function find(id) {
       return state.notes.filter((n) => n.id === id)[0] || null;
     }
 
+    // The active note, unless it has been trashed — then fall back to the most
+    // relevant visible note (creating an empty one only if the trash is all).
     function active() {
-      return find(state.activeId) || state.notes[0] || null;
+      const a = find(state.activeId);
+      if (a && !a.trashed) return a;
+      const visible = visibleNotes().slice().sort(sortNotes);
+      return visible[0] || state.notes[0] || null;
     }
 
     function setActive(id) {
@@ -148,6 +175,10 @@
       const out = { id: n.id, type: n.type || 'text', updatedAt: n.updatedAt || 0 };
       if (out.type === 'grid') out.grid = n.grid || { rows: 6, cols: 4, cells: {} };
       else out.body = n.body || '';
+      // Only carry the flags when set, to keep the synced payload lean. Absent
+      // means false, so older payloads stay compatible.
+      if (n.pinned) out.pinned = true;
+      if (n.trashed) out.trashed = true;
       return out;
     }
 
@@ -165,6 +196,8 @@
         existing.type = remote.type || 'text';
         if (existing.type === 'grid') { existing.grid = remote.grid || { rows: 6, cols: 4, cells: {} }; delete existing.body; }
         else { existing.body = remote.body || ''; delete existing.grid; }
+        existing.pinned = !!remote.pinned;
+        existing.trashed = !!remote.trashed;
         existing.updatedAt = ts;
         persist();
         return 'updated';
@@ -172,16 +205,53 @@
       const note = { id: id, type: remote.type || 'text', updatedAt: ts };
       if (note.type === 'grid') note.grid = remote.grid || { rows: 6, cols: 4, cells: {} };
       else note.body = remote.body || '';
+      if (remote.pinned) note.pinned = true;
+      if (remote.trashed) note.trashed = true;
       state.notes.push(note);
       persist();
       return 'added';
     }
 
+    // Pin / unpin. Bumps updatedAt so the change also propagates over sync.
+    function togglePin(id) {
+      const n = find(id);
+      if (!n) return false;
+      n.pinned = !n.pinned;
+      n.updatedAt = Date.now();
+      persist();
+      return n.pinned;
+    }
+
+    // Soft delete: move to (or out of) the trash. Recoverable, and it syncs.
+    // Trashing the active note hands the focus to the next visible note.
+    function setTrashed(id, val) {
+      const n = find(id);
+      if (!n) return;
+      n.trashed = !!val;
+      n.updatedAt = Date.now();
+      if (val && state.activeId === id) {
+        const next = visibleNotes().slice().sort(sortNotes)[0];
+        if (next) state.activeId = next.id;
+        else {
+          const fresh = { id: uid(), body: '', updatedAt: Date.now() };
+          state.notes.push(fresh);
+          state.activeId = fresh.id;
+        }
+      }
+      persist();
+    }
+
+    // Permanent delete (from the trash). The caller is expected to also send a
+    // sync tombstone so the deletion reaches other devices.
     function remove(id) {
       state.notes = state.notes.filter((n) => n.id !== id);
-      if (!state.notes.length) state.notes.push({ id: uid(), body: '', updatedAt: Date.now() });
-      if (!find(state.activeId)) {
-        state.activeId = list()[0].id; // most recent
+      if (!visibleNotes().length) {
+        const fresh = { id: uid(), body: '', updatedAt: Date.now() };
+        state.notes.push(fresh);
+        state.activeId = fresh.id;
+      } else {
+        const cur = find(state.activeId);
+        if (!cur || cur.trashed) state.activeId = list()[0].id; // most relevant visible
       }
       persist();
       return active();
@@ -189,6 +259,9 @@
 
     return {
       list: list,
+      trashList: trashList,
+      togglePin: togglePin,
+      setTrashed: setTrashed,
       active: active,
       setActive: setActive,
       create: create,
