@@ -400,14 +400,20 @@
     });
     input.addEventListener('blur', function () { setTimeout(closeAc, 120); });
 
-    /* ---- Drag a number to adjust it (Alt/Option + drag) -------------- *
-     * Numbers are already wrapped in .hl-num spans with their absolute offset,
-     * so we hit-test the pointer against those spans, then splice a new value
-     * into the textarea as the pointer moves. Alt-gated so ordinary clicks,
-     * caret placement and text selection are untouched.
+    /* ---- Drag a number to adjust it --------------------------------- *
+     * Numbers are wrapped in .hl-num spans carrying their absolute offset, so
+     * we hit-test the pointer against those spans and splice a new value into
+     * the textarea as it moves. Two ways in, both leaving ordinary editing
+     * untouched:
+     *   • desktop — Alt/Option + drag (immediate);
+     *   • touch   — long-press a number, then drag (so a plain swipe still
+     *     scrolls the note and a tap still places the caret).
      * ------------------------------------------------------------------ */
     const editorBox = highlight.parentNode;
+    const LONG_PRESS_MS = 400;
+    const MOVE_CANCEL = 10;
     let scrub = null;
+    let touchArm = null;
 
     function parseNumText(t) {
       const sep = t.indexOf(',') >= 0 ? ',' : '.';
@@ -419,30 +425,24 @@
       const spans = highlight.getElementsByClassName('hl-num');
       for (let i = 0; i < spans.length; i++) {
         const r = spans[i].getBoundingClientRect();
-        if (x >= r.left - 1 && x <= r.right + 1 && y >= r.top && y <= r.bottom) return spans[i];
+        if (x >= r.left - 2 && x <= r.right + 2 && y >= r.top - 2 && y <= r.bottom + 2) return spans[i];
       }
       return null;
     }
 
-    input.addEventListener('pointerdown', function (e) {
-      if (!e.altKey || scrub) return;
-      const sp = numberSpanAt(e.clientX, e.clientY);
-      if (!sp) return;
-      const info = parseNumText(sp.textContent);
-      if (!isFinite(info.value)) return;
-      e.preventDefault();
+    function beginScrub(sp, info, startX, isTouch, pointerId) {
       closeAc();
-      scrub = { abs: +sp.dataset.abs, len: sp.textContent.length, startX: e.clientX,
-        orig: info.value, decimals: info.decimals, sep: info.sep };
-      try { input.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+      scrub = { abs: +sp.dataset.abs, len: sp.textContent.length, startX: startX,
+        orig: info.value, decimals: info.decimals, sep: info.sep, touch: isTouch };
+      try { input.setPointerCapture(pointerId); } catch (err) { /* ignore */ }
       editorBox.classList.add('scrubbing');
-    });
+      if (isTouch) editorBox.classList.add('scrubbing-touch');
+    }
 
-    input.addEventListener('pointermove', function (e) {
-      if (!scrub) return;
-      e.preventDefault();
-      const step = Math.pow(10, -scrub.decimals) * (e.shiftKey ? 10 : 1);
-      const val = scrub.orig + Math.round((e.clientX - scrub.startX) / 5) * step;
+    function applyScrub(clientX, bigStep) {
+      const step = Math.pow(10, -scrub.decimals) * (bigStep ? 10 : 1);
+      const px = scrub.touch ? 8 : 5; // a touch drag travels a little farther
+      const val = scrub.orig + Math.round((clientX - scrub.startX) / px) * step;
       let str = val.toFixed(scrub.decimals);
       if (scrub.sep === ',') str = str.replace('.', ',');
       input.value = input.value.slice(0, scrub.abs) + str + input.value.slice(scrub.abs + scrub.len);
@@ -450,19 +450,63 @@
       const caret = scrub.abs + str.length;
       try { input.setSelectionRange(caret, caret); } catch (err) { /* ignore */ }
       recompute();
+    }
+
+    function cancelArm() { if (touchArm) { clearTimeout(touchArm.timer); touchArm = null; } }
+
+    input.addEventListener('pointerdown', function (e) {
+      if (scrub) return;
+      const sp = numberSpanAt(e.clientX, e.clientY);
+      if (!sp) return;
+      const info = parseNumText(sp.textContent);
+      if (!isFinite(info.value)) return;
+
+      if (e.pointerType === 'mouse') {
+        if (!e.altKey) return;
+        e.preventDefault();
+        beginScrub(sp, info, e.clientX, false, e.pointerId);
+      } else {
+        // Touch / pen: arm a long-press. Moving before it fires means the user
+        // is scrolling, so the timer is cancelled and the swipe scrolls as usual.
+        const pid = e.pointerId, sx = e.clientX, sy = e.clientY;
+        cancelArm();
+        touchArm = { pid: pid, sx: sx, sy: sy, timer: setTimeout(function () {
+          touchArm = null;
+          beginScrub(sp, info, sx, true, pid);
+          if (navigator.vibrate) { try { navigator.vibrate(12); } catch (err) { /* ignore */ } }
+        }, LONG_PRESS_MS) };
+      }
     });
 
+    input.addEventListener('pointermove', function (e) {
+      if (touchArm && e.pointerId === touchArm.pid) {
+        if (Math.abs(e.clientX - touchArm.sx) > MOVE_CANCEL ||
+            Math.abs(e.clientY - touchArm.sy) > MOVE_CANCEL) cancelArm();
+        return;
+      }
+      if (!scrub) return;
+      e.preventDefault();
+      applyScrub(e.clientX, e.shiftKey);
+    });
+
+    // While a touch scrub is active, stop the page/textarea from scrolling.
+    input.addEventListener('touchmove', function (e) {
+      if (scrub && scrub.touch) e.preventDefault();
+    }, { passive: false });
+
     function endScrub(e) {
+      cancelArm();
       if (!scrub) return;
       try { input.releasePointerCapture(e.pointerId); } catch (err) { /* ignore */ }
       scrub = null;
       editorBox.classList.remove('scrubbing');
+      editorBox.classList.remove('scrubbing-touch');
     }
     input.addEventListener('pointerup', endScrub);
     input.addEventListener('pointercancel', endScrub);
 
     // Underline numbers and switch the cursor while Alt is held, to hint that
-    // they can be dragged.
+    // they can be dragged (desktop).
     function altHint(on) { editorBox.classList.toggle('scrub-ready', on); }
     document.addEventListener('keydown', function (e) { if (e.key === 'Alt') altHint(true); });
     document.addEventListener('keyup', function (e) { if (e.key === 'Alt') altHint(false); });

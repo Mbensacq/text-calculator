@@ -418,6 +418,12 @@ body {
   text-underline-offset: 3px;
 }
 .editor.scrubbing .editor__input { cursor: ew-resize; }
+/* During a touch scrub, suppress the native selection / magnifier callout. */
+.editor.scrubbing-touch .editor__input {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
 
 /* Layer that carries the computed results, scroll-synced with the text.
    No overflow clipping here: like the highlight layer, it is clipped by the
