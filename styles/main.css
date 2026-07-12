@@ -305,26 +305,67 @@ body {
   .topbar__hint { display: none; }
 }
 
-/* ---- Function palette --------------------------------------------- */
+/* ---- Toolbar ------------------------------------------------------- */
 
 .fnbar {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 20px;
+  gap: 10px;
+  padding: 7px 16px;
   overflow-x: auto;
   border-bottom: 1px solid var(--rule);
   background: var(--paper);
   scrollbar-width: thin;
+}
+.fnbar__group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+.fnbar__group--lead { flex: 0 0 auto; }
+
+.fnbar__sep {
+  flex: 0 0 auto;
+  width: 1px;
+  align-self: stretch;
+  margin: 2px 2px;
+  background: var(--rule);
 }
 
 .fnbar__label {
   font-style: italic;
   font-weight: 700;
   color: var(--ink-soft);
-  margin-right: 4px;
+  margin-right: 2px;
   font-size: 15px;
 }
+
+/* Primary toolbar action (insert a table) */
+.tb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  border: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 13px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background .12s ease, border-color .12s ease, color .12s ease, box-shadow .12s ease;
+}
+.tb-btn__ico { font-size: 15px; line-height: 1; }
+.tb-btn--primary {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.tb-btn--primary:hover { filter: brightness(1.06); box-shadow: 0 1px 4px rgba(0, 0, 0, .12); }
+.tb-btn--primary:active { transform: translateY(1px); }
 
 .fn {
   flex: 0 0 auto;
@@ -333,7 +374,7 @@ body {
   color: var(--ink);
   font-family: var(--font-sans);
   font-size: 13px;
-  padding: 4px 11px;
+  padding: 5px 12px;
   border-radius: 999px;
   cursor: pointer;
   transition: background .12s ease, border-color .12s ease, color .12s ease;
@@ -679,16 +720,78 @@ body {
 .grid tr:first-child th { border-top: 1px solid var(--rule); }
 
 .grid__corner, .grid__colh, .grid__rowh {
+  position: relative;
   background: var(--sidebar-bg);
   color: var(--ink-soft);
   font-size: 12px;
   font-weight: 600;
   text-align: center;
   padding: 3px 6px;
+  cursor: pointer;
+  user-select: none;
+  transition: background .12s ease, color .12s ease;
 }
+.grid__colh:hover, .grid__rowh:hover { background: var(--accent-soft); color: var(--accent); }
 .grid__colh { position: sticky; top: 0; z-index: 2; }
 .grid__rowh, .grid__corner { position: sticky; left: 0; z-index: 1; min-width: 36px; }
-.grid__corner { z-index: 3; top: 0; }
+.grid__corner { z-index: 3; top: 0; cursor: default; }
+
+/* Selected column / row */
+.grid__colh.is-sel, .grid__rowh.is-sel { background: var(--accent); color: #fff; }
+.grid__cell.is-sel { background: var(--accent-soft); }
+.grid__cell.is-sel input:focus { background: var(--accent-soft); }
+
+/* The "×" delete affordance on a header, revealed on hover or when selected. */
+.grid__del {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  line-height: 1;
+  padding: 1px 3px;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .12s ease, background .12s ease;
+}
+.grid__colh:hover .grid__del, .grid__rowh:hover .grid__del,
+.grid__colh.is-sel .grid__del, .grid__rowh.is-sel .grid__del { opacity: .85; }
+.grid__del:hover { opacity: 1; background: rgba(0, 0, 0, .14); }
+
+/* Status bar under the grid: live sum / average / count of the selection. */
+.grid-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 12px;
+  padding: 9px 14px;
+  background: var(--sidebar-bg);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  font-size: 13px;
+}
+.grid-status__label { font-weight: 700; color: var(--accent); }
+.grid-status__stat { display: inline-flex; align-items: baseline; gap: 5px; }
+.grid-status__k { color: var(--ink-soft); font-size: 11.5px; text-transform: uppercase; letter-spacing: .03em; }
+.grid-status__v { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.grid-status__muted { color: var(--ink-soft); font-style: italic; }
+.grid-status__btn {
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  padding: 4px 11px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background .12s ease, border-color .12s ease, color .12s ease;
+}
+.grid-status__btn:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.grid-status__btn--danger:hover { background: var(--error); border-color: var(--error); color: #fff; }
 
 .grid__cell { padding: 0; }
 .grid__cell input {

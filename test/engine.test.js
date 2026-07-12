@@ -254,6 +254,28 @@ expr('monnaie(50 €, 42.50 €)', '7.5 €');
 check('caisse daily total', run('v = 8 €, 23 €, 10 €, 6 €\nsomme(v) =')[1], '47 €');
 check('caisse count', run('v = 8 €, 23 €, 10 €, 6 €\ncount(v) =')[1], '4');
 
+/* ---- interactive grid: delete column/row & aggregates ------------- */
+const Grid = require('../src/grid.js');
+const gm = {
+  rows: 4, cols: 3, cells: {
+    '0,0': 'qte', '1,0': '2', '2,0': '3',
+    '0,1': 'pu', '1,1': '3 €', '2,1': '4 €',
+    '0,2': 'tot', '1,2': '=A2*B2', '2,2': '=A3*B3',
+  },
+};
+check('grid aggregate sum of a column', norm(Grid.evalExpr(gm, 'somme(A1:A4)').display), '5');
+check('grid aggregate count skips text header', Grid.evalExpr(gm, 'count(A1:A4)').display, '2');
+check('grid aggregate average', norm(Grid.evalExpr(gm, 'moy(B1:B4)').display), '3.5 €');
+
+const delA = Grid.deleteColumn(gm, 0);
+check('delete column shrinks width', delA.cols, 2);
+check('delete column shifts B header to A', delA.cells['0,0'], 'pu');
+check('delete column rewrites refs (B→A, A→#REF)', delA.cells['1,1'], '=#REF*A2');
+
+const delRow0 = Grid.deleteRow(gm, 0);
+check('delete row shrinks height', delRow0.rows, 3);
+check('delete row rewrites refs upward', delRow0.cells['0,2'], '=A1*B1');
+
 /* ---- report ------------------------------------------------------- */
 console.log('');
 console.log(passed + ' réussis, ' + failed + ' échoués');

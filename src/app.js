@@ -394,6 +394,7 @@
 
     document.getElementById('new-note').addEventListener('click', newNote);
     document.getElementById('new-grid').addEventListener('click', newGrid);
+    document.getElementById('tb-grid').addEventListener('click', newGrid);
     document.getElementById('load-example').addEventListener('click', loadExample);
     document.getElementById('load-sales').addEventListener('click', loadSales);
     document.getElementById('load-caisse').addEventListener('click', loadCaisse);

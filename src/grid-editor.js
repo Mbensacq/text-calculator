@@ -5,6 +5,11 @@
  * *computed value* (Excel-style: "=B2*C2" displays "6 €"); clicking it reveals
  * the raw text/formula for editing. Enter moves down, Tab moves right, and
  * discreet "+" handles on the right/bottom grow the grid.
+ *
+ * Column and row headers are clickable: selecting one highlights the line and
+ * shows a live sum / average / count in the status bar, from where the range
+ * can be dropped into a cell as "=somme(…)". Headers also carry a "×" to
+ * delete that column or row (references in formulas are adjusted).
  */
 (function (root, factory) {
   const mod = factory();
@@ -17,12 +22,18 @@
   function createGridEditor(opts) {
     const container = opts.container;
     const onChange = opts.onChange || function () {};
-    const colName = TC.Grid.colName;
+    const Grid = TC.Grid;
+    const colName = Grid.colName;
 
     let model = { rows: 6, cols: 4, cells: {} };
     let computed = {};
     let inputs = {};       // "r,c" -> <input>
+    let cellTds = {};      // "r,c" -> <td>
+    let colHeads = [];     // c -> <th>
+    let rowHeads = [];     // r -> <th>
     let focusedKey = null;
+    let selection = null;  // { axis: 'col'|'row', index }
+    let statusEl = null;
     let saveTimer = null;
 
     const key = (r, c) => r + ',' + c;
@@ -75,6 +86,7 @@
 
     function wireCell(input, r, c) {
       input.addEventListener('focus', function () {
+        if (selection) clearSelection();
         focusedKey = key(r, c);
         input.value = raw(r, c);
         input.classList.remove('is-error');
@@ -96,9 +108,173 @@
       });
     }
 
+    /* ---- Selection & aggregates ------------------------------------- */
+
+    function clearSelection() {
+      selection = null;
+      applySelection();
+    }
+
+    function selectAxis(axis, index) {
+      selection = (selection && selection.axis === axis && selection.index === index)
+        ? null : { axis: axis, index: index };
+      applySelection();
+    }
+
+    function applySelection() {
+      for (const k in cellTds) cellTds[k].classList.remove('is-sel');
+      colHeads.forEach((h) => h.classList.remove('is-sel'));
+      rowHeads.forEach((h) => h.classList.remove('is-sel'));
+      if (selection) {
+        if (selection.axis === 'col') {
+          if (colHeads[selection.index]) colHeads[selection.index].classList.add('is-sel');
+          for (let r = 0; r < model.rows; r++) { const td = cellTds[key(r, selection.index)]; if (td) td.classList.add('is-sel'); }
+        } else {
+          if (rowHeads[selection.index]) rowHeads[selection.index].classList.add('is-sel');
+          for (let c = 0; c < model.cols; c++) { const td = cellTds[key(selection.index, c)]; if (td) td.classList.add('is-sel'); }
+        }
+      }
+      renderStatus();
+    }
+
+    function selectionRange() {
+      if (!selection) return null;
+      if (selection.axis === 'col') {
+        const a = colName(selection.index);
+        return a + '1:' + a + model.rows;
+      }
+      const rowNum = selection.index + 1;
+      return 'A' + rowNum + ':' + colName(model.cols - 1) + rowNum;
+    }
+
+    function renderStatus() {
+      if (!statusEl) return;
+      statusEl.textContent = '';
+      if (!selection) { statusEl.hidden = true; return; }
+      statusEl.hidden = false;
+
+      const label = document.createElement('span');
+      label.className = 'grid-status__label';
+      label.textContent = selection.axis === 'col'
+        ? 'Colonne ' + colName(selection.index)
+        : 'Ligne ' + (selection.index + 1);
+      statusEl.appendChild(label);
+
+      const range = selectionRange();
+      const cnt = Grid.evalExpr(model, 'count(' + range + ')');
+      const hasNums = !cnt.error && cnt.display !== '0' && cnt.display !== '';
+
+      if (hasNums) {
+        const sum = Grid.evalExpr(model, 'somme(' + range + ')');
+        const avg = Grid.evalExpr(model, 'moy(' + range + ')');
+        statusEl.appendChild(stat('Σ', sum.error ? '—' : sum.display));
+        statusEl.appendChild(stat('moy', avg.error ? '—' : avg.display));
+        statusEl.appendChild(stat('n', cnt.display));
+
+        const insert = document.createElement('button');
+        insert.type = 'button';
+        insert.className = 'grid-status__btn';
+        insert.textContent = selection.axis === 'col' ? 'Insérer Σ ↓' : 'Insérer Σ →';
+        insert.title = 'Placer =somme(' + range + ') dans une cellule';
+        insert.addEventListener('click', function () { insertSum(); });
+        statusEl.appendChild(insert);
+      } else {
+        const none = document.createElement('span');
+        none.className = 'grid-status__muted';
+        none.textContent = 'aucune valeur numérique';
+        statusEl.appendChild(none);
+      }
+
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'grid-status__btn grid-status__btn--danger';
+      del.textContent = selection.axis === 'col' ? 'Supprimer la colonne' : 'Supprimer la ligne';
+      del.addEventListener('click', function () { deleteAxis(selection.axis, selection.index); });
+      statusEl.appendChild(del);
+    }
+
+    function stat(label, value) {
+      const s = document.createElement('span');
+      s.className = 'grid-status__stat';
+      const l = document.createElement('span'); l.className = 'grid-status__k'; l.textContent = label;
+      const v = document.createElement('span'); v.className = 'grid-status__v'; v.textContent = value;
+      s.appendChild(l); s.appendChild(v);
+      return s;
+    }
+
+    // Drop "=somme(range)" just past the selected line's data.
+    function insertSum() {
+      if (!selection) return;
+      const range = selectionRange();
+      if (selection.axis === 'col') {
+        const c = selection.index;
+        let last = -1;
+        for (let r = 0; r < model.rows; r++) if (raw(r, c).trim() !== '') last = r;
+        if (last < 0) return;
+        const target = last + 1;
+        if (target >= model.rows) model.rows = target + 1;
+        model.cells[key(target, c)] = '=somme(' + colName(c) + '1:' + colName(c) + (last + 1) + ')';
+      } else {
+        const r = selection.index;
+        let last = -1;
+        for (let c = 0; c < model.cols; c++) if (raw(r, c).trim() !== '') last = c;
+        if (last < 0) return;
+        const target = last + 1;
+        if (target >= model.cols) model.cols = target + 1;
+        model.cells[key(r, target)] = '=somme(A' + (r + 1) + ':' + colName(last) + (r + 1) + ')';
+      }
+      selection = null;
+      scheduleSave();
+      build();
+    }
+
+    function axisHasContent(axis, index) {
+      if (axis === 'col') {
+        for (let r = 0; r < model.rows; r++) if (raw(r, index).trim() !== '') return true;
+      } else {
+        for (let c = 0; c < model.cols; c++) if (raw(index, c).trim() !== '') return true;
+      }
+      return false;
+    }
+
+    function deleteAxis(axis, index) {
+      const min = axis === 'col' ? model.cols : model.rows;
+      if (min <= 1) return; // keep at least one line
+      if (axisHasContent(axis, index)) {
+        const what = axis === 'col' ? 'la colonne ' + colName(index) : 'la ligne ' + (index + 1);
+        if (!window.confirm('Supprimer ' + what + ' et son contenu ?')) return;
+      }
+      model = axis === 'col' ? Grid.deleteColumn(model, index) : Grid.deleteRow(model, index);
+      selection = null;
+      scheduleSave();
+      build();
+    }
+
+    /* ---- Rendering -------------------------------------------------- */
+
+    function headerLabel(text) {
+      const s = document.createElement('span');
+      s.className = 'grid__hlabel';
+      s.textContent = text;
+      return s;
+    }
+    function delBtn(title, onClick) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'grid__del';
+      b.textContent = '×';
+      b.title = title;
+      b.setAttribute('aria-label', title);
+      b.addEventListener('click', function (e) { e.stopPropagation(); onClick(); });
+      return b;
+    }
+
     function build() {
       container.textContent = '';
       inputs = {};
+      cellTds = {};
+      colHeads = [];
+      rowHeads = [];
       const table = document.createElement('table');
       table.className = 'grid';
 
@@ -109,7 +285,10 @@
       for (let c = 0; c < model.cols; c++) {
         const th = document.createElement('th');
         th.className = 'grid__colh';
-        th.textContent = colName(c);
+        th.appendChild(headerLabel(colName(c)));
+        th.appendChild(delBtn('Supprimer la colonne ' + colName(c), (function (col) { return function () { deleteAxis('col', col); }; })(c)));
+        th.addEventListener('click', (function (col) { return function () { selectAxis('col', col); }; })(c));
+        colHeads[c] = th;
         head.appendChild(th);
       }
       const addCol = document.createElement('th');
@@ -124,7 +303,10 @@
         const tr = document.createElement('tr');
         const rh = document.createElement('th');
         rh.className = 'grid__rowh';
-        rh.textContent = r + 1;
+        rh.appendChild(headerLabel(String(r + 1)));
+        rh.appendChild(delBtn('Supprimer la ligne ' + (r + 1), (function (row) { return function () { deleteAxis('row', row); }; })(r)));
+        rh.addEventListener('click', (function (row) { return function () { selectAxis('row', row); }; })(r));
+        rowHeads[r] = rh;
         tr.appendChild(rh);
         for (let c = 0; c < model.cols; c++) {
           const td = document.createElement('td');
@@ -135,6 +317,7 @@
           input.autocomplete = 'off';
           wireCell(input, r, c);
           inputs[key(r, c)] = input;
+          cellTds[key(r, c)] = td;
           td.appendChild(input);
           tr.appendChild(td);
         }
@@ -155,7 +338,14 @@
       table.appendChild(addRowTr);
 
       container.appendChild(table);
+
+      statusEl = document.createElement('div');
+      statusEl.className = 'grid-status';
+      statusEl.hidden = true;
+      container.appendChild(statusEl);
+
       recompute();
+      applySelection();
     }
 
     return {
@@ -163,6 +353,7 @@
         model = m && m.cells
           ? { rows: m.rows || 6, cols: m.cols || 4, cells: Object.assign({}, m.cells) }
           : { rows: 6, cols: 4, cells: {} };
+        selection = null;
         build();
       },
       getModel: function () { return model; },

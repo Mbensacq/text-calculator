@@ -52,6 +52,9 @@ temps = 2 h
 - **Grille cliquable** (type de note « Tableau ») : une vraie grille où une
   cellule `=B1*C1` affiche son **résultat** (la formule n'apparaît qu'à
   l'édition), avec des poignées « + » pour ajouter lignes et colonnes.
+  **En-têtes cliquables** : sélectionnez une colonne (ou une ligne) pour voir sa
+  somme / moyenne / nombre de valeurs et insérer `=somme(…)` en un clic ;
+  le « × » de l'en-tête supprime la colonne/ligne (les formules sont réajustées).
 - **Commentaires en fin de ligne** avec `//` : `loyer = 800 € // charge fixe`.
 - **Ajuster un nombre en glissant** : sur ordinateur, **Alt** (Option) + glisser
   sur un nombre ; sur mobile, **appui long** puis glisser. Tous les résultats se

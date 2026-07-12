@@ -17,7 +17,7 @@
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="styles/main.css?v=16">
+  <link rel="stylesheet" href="styles/main.css?v=17">
 </head>
 <body>
   <div class="app" id="app">
@@ -58,17 +58,26 @@
       </header>
 
       <div id="text-view">
-      <div class="fnbar" id="fnbar" role="toolbar" aria-label="Fonctions">
-        <span class="fnbar__label">ƒ</span>
-        <button type="button" class="fn" data-insert="sum()" title="Somme d'une liste : sum(1, 2, 3)">somme</button>
-        <button type="button" class="fn" data-insert="moy()" title="Moyenne : moy(12, 15, 9)">moy</button>
-        <button type="button" class="fn" data-insert="median()" title="Médiane">médiane</button>
-        <button type="button" class="fn" data-insert="min()" title="Minimum">min</button>
-        <button type="button" class="fn" data-insert="max()" title="Maximum">max</button>
-        <button type="button" class="fn" data-insert="sqrt()" title="Racine carrée">√</button>
-        <button type="button" class="fn" data-insert="round()" title="Arrondi à l'entier">arrondi</button>
-        <button type="button" class="fn" data-insert="abs()" title="Valeur absolue">|x|</button>
-        <button type="button" class="fn" data-insert="si()" title="Condition : si(condition, alors, sinon)">si…</button>
+      <div class="fnbar" id="fnbar" role="toolbar" aria-label="Barre d'outils">
+        <div class="fnbar__group fnbar__group--lead">
+          <button type="button" id="tb-grid" class="tb-btn tb-btn--primary" title="Nouveau tableau (grille cliquable)">
+            <span class="tb-btn__ico" aria-hidden="true">▦</span>
+            <span class="tb-btn__txt">Tableau</span>
+          </button>
+        </div>
+        <span class="fnbar__sep" role="separator" aria-orientation="vertical"></span>
+        <div class="fnbar__group">
+          <span class="fnbar__label" aria-hidden="true">ƒ</span>
+          <button type="button" class="fn" data-insert="sum()" title="Somme d'une liste : sum(1, 2, 3)">somme</button>
+          <button type="button" class="fn" data-insert="moy()" title="Moyenne : moy(12, 15, 9)">moy</button>
+          <button type="button" class="fn" data-insert="median()" title="Médiane">médiane</button>
+          <button type="button" class="fn" data-insert="min()" title="Minimum">min</button>
+          <button type="button" class="fn" data-insert="max()" title="Maximum">max</button>
+          <button type="button" class="fn" data-insert="sqrt()" title="Racine carrée">√</button>
+          <button type="button" class="fn" data-insert="round()" title="Arrondi à l'entier">arrondi</button>
+          <button type="button" class="fn" data-insert="abs()" title="Valeur absolue">|x|</button>
+          <button type="button" class="fn" data-insert="si()" title="Condition : si(condition, alors, sinon)">si…</button>
+        </div>
       </div>
 
       <main class="sheet">
@@ -185,11 +194,16 @@ B2 =                  une cellule</pre>
         </section>
         <section>
           <h3>Grille cliquable (façon Excel)</h3>
-          <p>Créez un <strong>Tableau (grille)</strong> depuis la barre latérale.
-          Cliquez une cellule pour la saisir ; une cellule commençant par
-          <code>=</code> affiche son <em>résultat</em> (la formule n'apparaît
-          qu'à l'édition). Entrée descend, Tab va à droite, les « + »
-          agrandissent la grille.</p>
+          <p>Créez un <strong>Tableau</strong> avec le bouton à gauche de la
+          barre d'outils. Cliquez une cellule pour la saisir ; une cellule
+          commençant par <code>=</code> affiche son <em>résultat</em>. Entrée
+          descend, Tab va à droite, les « + » agrandissent la grille.</p>
+          <p><strong>En-têtes cliquables :</strong> cliquez une lettre de
+          colonne (ou un numéro de ligne) pour la <em>sélectionner</em> — la
+          somme, la moyenne et le nombre de valeurs s'affichent en bas, et le
+          bouton <em>Insérer Σ</em> place <code>=somme(…)</code> dans une cellule.
+          Le « × » de l'en-tête <strong>supprime</strong> la colonne ou la ligne
+          (les formules sont réajustées).</p>
           <pre>A1: sticker   B1: 10   C1: 3 €   D1: =B1*C1  → 30 €
 D3: =somme(D1:D2)</pre>
         </section>
@@ -277,17 +291,17 @@ D3: =somme(D1:D2)</pre>
     </aside>
   </div>
 
-  <script src="src/units.js?v=16"></script>
-  <script src="src/tokenizer.js?v=16"></script>
-  <script src="src/parser.js?v=16"></script>
-  <script src="src/evaluator.js?v=16"></script>
-  <script src="src/formatter.js?v=16"></script>
-  <script src="src/engine.js?v=16"></script>
-  <script src="src/editor.js?v=16"></script>
-  <script src="src/storage.js?v=16"></script>
-  <script src="src/grid.js?v=16"></script>
-  <script src="src/grid-editor.js?v=16"></script>
-  <script src="src/sync.js?v=16"></script>
-  <script src="src/app.js?v=16"></script>
+  <script src="src/units.js?v=17"></script>
+  <script src="src/tokenizer.js?v=17"></script>
+  <script src="src/parser.js?v=17"></script>
+  <script src="src/evaluator.js?v=17"></script>
+  <script src="src/formatter.js?v=17"></script>
+  <script src="src/engine.js?v=17"></script>
+  <script src="src/editor.js?v=17"></script>
+  <script src="src/storage.js?v=17"></script>
+  <script src="src/grid.js?v=17"></script>
+  <script src="src/grid-editor.js?v=17"></script>
+  <script src="src/sync.js?v=17"></script>
+  <script src="src/app.js?v=17"></script>
 </body>
 </html>

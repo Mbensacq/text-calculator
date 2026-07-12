@@ -50,8 +50,10 @@
     return { col: colToIndex(m[1]), row: parseInt(m[2], 10) - 1 }; // 0-based row
   }
 
-  // Compute every non-empty cell. Returns "r,c" -> { display, error, formula }.
-  function computeGrid(model) {
+  // Build a shared evaluation context over a model: A1 cell/range resolution
+  // with lazy memoisation and cycle detection. Reused by whole-grid computation
+  // and by one-off expression evaluation (the selection aggregates).
+  function createContext(model) {
     const cache = {};
     const visiting = {};
 
@@ -72,7 +74,7 @@
       if (visiting[key]) throw new CalcError('référence circulaire');
       visiting[key] = true;
       try {
-        let s = src.charAt(0) === '=' ? src.slice(1) : src;
+        const s = src.charAt(0) === '=' ? src.slice(1) : src;
         const value = evaluate(parse(tokenize(s)), env);
         cache[key] = { value: value };
         return value;
@@ -113,16 +115,22 @@
       },
     };
 
+    return { env: env, resolve: resolve, rawAt: rawAt };
+  }
+
+  // Compute every non-empty cell. Returns "r,c" -> { display, error, formula }.
+  function computeGrid(model) {
+    const ctx = createContext(model);
     const out = {};
     for (let r = 0; r < model.rows; r++) {
       for (let c = 0; c < model.cols; c++) {
-        const raw = rawAt(r, c).trim();
+        const raw = ctx.rawAt(r, c).trim();
         if (raw === '') continue;
         // Excel-style: a formula cell shows its computed value; any other cell
         // shows exactly what was typed ("sticker", "3 €", "2").
         if (raw.charAt(0) === '=') {
           try {
-            const v = resolve(r, c);
+            const v = ctx.resolve(r, c);
             out[r + ',' + c] = { display: v == null ? '' : Fmt.formatValue(v), formula: true, error: false };
           } catch (e) {
             out[r + ',' + c] = { display: '', error: true, message: e.message, formula: true };
@@ -135,5 +143,66 @@
     return out;
   }
 
-  return { computeGrid: computeGrid, colName: colName, parseCoord: parseCoord, colToIndex: colToIndex };
+  // Evaluate one expression (e.g. "somme(B1:B6)") against the model. Returns
+  // { display } or { error }. Used for live selection aggregates.
+  function evalExpr(model, expr) {
+    try {
+      const ctx = createContext(model);
+      const v = evaluate(parse(tokenize(expr)), ctx.env);
+      return { display: v == null ? '' : Fmt.formatValue(v) };
+    } catch (e) {
+      return { error: e.message };
+    }
+  }
+
+  // Rewrite the A1 references inside a formula after a row/column is removed.
+  // Only references that actually fall inside the (pre-deletion) grid are
+  // touched, so words and units are left alone. A reference to the deleted line
+  // becomes "#REF" (an error, as in a spreadsheet).
+  function rewriteRefs(src, axis, index, cols, rows) {
+    if (src.charAt(0) !== '=') return src; // only formulas carry references
+    return src.replace(/([A-Za-z]{1,2})(\d{1,3})/g, function (whole, letters, digits) {
+      const col = colToIndex(letters);
+      const row = parseInt(digits, 10) - 1;
+      if (col < 0 || col >= cols || row < 0 || row >= rows) return whole; // not a grid ref
+      if (axis === 'col') {
+        if (col === index) return '#REF';
+        return col > index ? colName(col - 1) + digits : whole;
+      }
+      if (row === index) return '#REF';
+      return row > index ? letters + row : whole; // (row-1)+1 === row
+    });
+  }
+
+  function shiftedModel(model, axis, index) {
+    const cells = {};
+    for (const k in model.cells) {
+      const parts = k.split(',');
+      const r = +parts[0], c = +parts[1];
+      if (axis === 'col') {
+        if (c === index) continue;
+        cells[r + ',' + (c > index ? c - 1 : c)] = model.cells[k];
+      } else {
+        if (r === index) continue;
+        cells[(r > index ? r - 1 : r) + ',' + c] = model.cells[k];
+      }
+    }
+    for (const k in cells) cells[k] = rewriteRefs(cells[k], axis, index, model.cols, model.rows);
+    return axis === 'col'
+      ? { rows: model.rows, cols: Math.max(1, model.cols - 1), cells: cells }
+      : { rows: Math.max(1, model.rows - 1), cols: model.cols, cells: cells };
+  }
+
+  function deleteColumn(model, c) { return shiftedModel(model, 'col', c); }
+  function deleteRow(model, r) { return shiftedModel(model, 'row', r); }
+
+  return {
+    computeGrid: computeGrid,
+    evalExpr: evalExpr,
+    deleteColumn: deleteColumn,
+    deleteRow: deleteRow,
+    colName: colName,
+    parseCoord: parseCoord,
+    colToIndex: colToIndex,
+  };
 });
