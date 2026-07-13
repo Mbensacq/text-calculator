@@ -209,6 +209,15 @@
         schedulePush(activeId);
         bumpList();
       },
+      // Clicking the top-left corner deletes the whole table (its note). It goes
+      // to the trash, so it stays recoverable — but confirm, since it clears the
+      // entire grid in one click.
+      onDeleteTable: function () {
+        const note = store.list().filter(function (n) { return n.id === activeId; })[0];
+        const label = note ? note.title : 'ce tableau';
+        if (!window.confirm('Supprimer « ' + label + ' » ? (récupérable dans la corbeille)')) return;
+        trashNote(activeId);
+      },
     });
 
     let isGrid = false;

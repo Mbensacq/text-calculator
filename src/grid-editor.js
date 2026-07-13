@@ -22,6 +22,7 @@
   function createGridEditor(opts) {
     const container = opts.container;
     const onChange = opts.onChange || function () {};
+    const onDeleteTable = opts.onDeleteTable || function () {};
     const Grid = TC.Grid;
     const colName = Grid.colName;
 
@@ -281,6 +282,11 @@
       const head = document.createElement('tr');
       const corner = document.createElement('th');
       corner.className = 'grid__corner';
+      corner.textContent = '🗑';
+      corner.title = 'Supprimer ce tableau';
+      corner.setAttribute('role', 'button');
+      corner.setAttribute('aria-label', 'Supprimer ce tableau');
+      corner.addEventListener('click', function () { onDeleteTable(); });
       head.appendChild(corner);
       for (let c = 0; c < model.cols; c++) {
         const th = document.createElement('th');

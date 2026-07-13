@@ -734,7 +734,14 @@ body {
 .grid__colh:hover, .grid__rowh:hover { background: var(--accent-soft); color: var(--accent); }
 .grid__colh { position: sticky; top: 0; z-index: 2; }
 .grid__rowh, .grid__corner { position: sticky; left: 0; z-index: 1; min-width: 36px; }
-.grid__corner { z-index: 3; top: 0; cursor: default; }
+.grid__corner {
+  z-index: 3;
+  top: 0;
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1;
+}
+.grid__corner:hover { background: var(--error); color: #fff; }
 
 /* Selected column / row */
 .grid__colh.is-sel, .grid__rowh.is-sel { background: var(--accent); color: #fff; }
