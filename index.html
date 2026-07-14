@@ -17,7 +17,7 @@
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="styles/main.css?v=19">
+  <link rel="stylesheet" href="styles/main.css?v=20">
 </head>
 <body>
   <div class="app" id="app">
@@ -94,6 +94,21 @@
         <div id="grid" class="gridwrap"></div>
       </div>
     </div>
+
+    <nav class="mobilebar" aria-label="Actions rapides">
+      <button id="mb-notes" class="mobilebar__btn" type="button">
+        <span class="mobilebar__ico" aria-hidden="true">☰</span><span class="mobilebar__lbl">Notes</span>
+      </button>
+      <button id="mb-note" class="mobilebar__btn" type="button">
+        <span class="mobilebar__ico" aria-hidden="true">＋</span><span class="mobilebar__lbl">Note</span>
+      </button>
+      <button id="mb-grid" class="mobilebar__btn" type="button">
+        <span class="mobilebar__ico" aria-hidden="true">▦</span><span class="mobilebar__lbl">Tableau</span>
+      </button>
+      <button id="mb-help" class="mobilebar__btn" type="button">
+        <span class="mobilebar__ico" aria-hidden="true">?</span><span class="mobilebar__lbl">Aide</span>
+      </button>
+    </nav>
 
     <div id="help-scrim" class="help-scrim" hidden></div>
     <aside id="help-panel" class="help" hidden aria-label="Aide-mémoire">
@@ -292,17 +307,17 @@ D3: =somme(D1:D2)</pre>
     </aside>
   </div>
 
-  <script src="src/units.js?v=19"></script>
-  <script src="src/tokenizer.js?v=19"></script>
-  <script src="src/parser.js?v=19"></script>
-  <script src="src/evaluator.js?v=19"></script>
-  <script src="src/formatter.js?v=19"></script>
-  <script src="src/engine.js?v=19"></script>
-  <script src="src/editor.js?v=19"></script>
-  <script src="src/storage.js?v=19"></script>
-  <script src="src/grid.js?v=19"></script>
-  <script src="src/grid-editor.js?v=19"></script>
-  <script src="src/sync.js?v=19"></script>
-  <script src="src/app.js?v=19"></script>
+  <script src="src/units.js?v=20"></script>
+  <script src="src/tokenizer.js?v=20"></script>
+  <script src="src/parser.js?v=20"></script>
+  <script src="src/evaluator.js?v=20"></script>
+  <script src="src/formatter.js?v=20"></script>
+  <script src="src/engine.js?v=20"></script>
+  <script src="src/editor.js?v=20"></script>
+  <script src="src/storage.js?v=20"></script>
+  <script src="src/grid.js?v=20"></script>
+  <script src="src/grid-editor.js?v=20"></script>
+  <script src="src/sync.js?v=20"></script>
+  <script src="src/app.js?v=20"></script>
 </body>
 </html>

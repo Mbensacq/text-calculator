@@ -235,9 +235,19 @@
 
     function focusActive() { if (isGrid) gridEditor.focus(); else editor.focus(); }
 
+    // A short slide-in when the visible note changes (user-initiated switches).
+    function animateSwitch() {
+      const el = isGrid ? gridView : textView;
+      if (!el) return;
+      el.classList.remove('note-anim');
+      void el.offsetWidth; // force reflow so the animation restarts
+      el.classList.add('note-anim');
+    }
+
     function selectNote(id) {
       store.setActive(id);
       loadActive();
+      animateSwitch();
       closeSidebar();
       focusActive();
     }
@@ -246,6 +256,7 @@
       viewingTrash = false;
       const note = store.create();
       loadActive();
+      animateSwitch();
       pushNow(note.id);
       closeSidebar();
       editor.focus();
@@ -255,6 +266,7 @@
       viewingTrash = false;
       const note = store.createGrid();
       loadActive();
+      animateSwitch();
       pushNow(note.id);
       closeSidebar();
       gridEditor.focus();
@@ -265,6 +277,7 @@
       const note = store.create();
       store.updateBody(note.id, body);
       loadActive();
+      animateSwitch();
       pushNow(note.id);
       closeSidebar();
       editor.focus();
@@ -425,6 +438,12 @@
       });
     }
     document.getElementById('scrim').addEventListener('click', closeSidebar);
+
+    // Mobile bottom action bar (thumb zone).
+    document.getElementById('mb-notes').addEventListener('click', function () { layoutEl.classList.toggle('sidebar-open'); });
+    document.getElementById('mb-note').addEventListener('click', newNote);
+    document.getElementById('mb-grid').addEventListener('click', newGrid);
+    document.getElementById('mb-help').addEventListener('click', function () { setHelp(true); });
 
     // Help panel
     const helpPanel = document.getElementById('help-panel');
