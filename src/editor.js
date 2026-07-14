@@ -329,12 +329,33 @@
       }
       highlight.appendChild(frag);
 
+      // Measure every marker in one read pass. getBoundingClientRect is
+      // wrap-aware — it reports the marker's *actual* visual row — so a result
+      // on a line that wraps lands after the trailing "=", not stranded on the
+      // first row (the previous parent.offsetTop approach broke on wrap). We
+      // anchor by the marker's vertical centre to sidestep inline half-leading,
+      // then centre the (line-tall) chip on it. Reads are batched before writes
+      // to avoid layout thrash.
+      const hlRect = highlight.getBoundingClientRect();
+      const lineH = parseFloat(getComputedStyle(input).lineHeight) || 27;
+      const posById = {};
+      for (const key in info) {
+        const m = markers[key];
+        if (!m) continue;
+        const r = m.getBoundingClientRect();
+        posById[key] = {
+          left: r.left - hlRect.left,
+          top: r.top + r.height / 2 - hlRect.top - lineH / 2,
+        };
+      }
+
       // Reconcile the persistent result elements against the fresh markers.
       const seen = {};
       for (const key in info) {
         const i = +key;
         const inf = info[i];
-        const marker = markers[i];
+        const p = posById[key];
+        if (!p) continue;
         seen[i] = true;
 
         let entry = pool[i];
@@ -348,10 +369,9 @@
           entry = pool[i] = { el: el, pill: pill, text: null };
           isNew = true;
         }
-        // Horizontal: end of the text (the marker). Vertical: the top of the
-        // block line — an inline marker's offsetTop sits half a leading too low.
-        entry.el.style.left = marker.offsetLeft + 'px';
-        entry.el.style.top = marker.parentNode.offsetTop + 'px';
+        entry.el.style.left = p.left + 'px';
+        entry.el.style.top = p.top + 'px';
+        entry.el.style.height = lineH + 'px';
         entry.el.classList.toggle('calc-result--error', !!inf.error);
 
         if (isNew) {
