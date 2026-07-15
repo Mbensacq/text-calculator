@@ -349,6 +349,16 @@ const fAsc = Grid.sortByColumn(fm, 0, 'asc');
 check('sort by money column is numeric', [fAsc.cells['0,0'], fAsc.cells['1,0'], fAsc.cells['2,0']].join(','), '1 €,5 €,20 €');
 check('sort shifts formula row refs', [fAsc.cells['0,1'], fAsc.cells['1,1'], fAsc.cells['2,1']].join(','), '=A1*2,=A2*2,=A3*2');
 
+/* ---- grid: per-column display formats ----------------------------- */
+const fmtM = { rows: 1, cols: 5, cells: { '0,0': '3', '0,1': '3', '0,2': '0.2', '0,3': '5', '0,4': '10 €' },
+  formats: { 0: 'f2', 1: 'int', 2: 'pct', 3: 'eur', 4: 'f2' } };
+const fmtC = Grid.computeGrid(fmtM);
+check('format f2 adds two decimals', fmtC['0,0'].display, '3.00');
+check('format pct multiplies by 100', fmtC['0,2'].display, '20 %');
+check('format eur appends the symbol', fmtC['0,3'].display, '5.00 €');
+check('format keeps a literal unit', fmtC['0,4'].display, '10.00 €');
+check('unformatted text is untouched', Grid.computeGrid({ rows: 1, cols: 1, cells: { '0,0': 'prix' }, formats: { 0: 'eur' } })['0,0'].display, 'prix');
+
 /* ---- cross-block cell refs: plain (single table) & qualified ------ */
 const t1 = { rows: 6, cols: 2, cells: { '0,0': '10', '0,1': '=A1*2' }, name: 'T1' };
 const t2 = { rows: 6, cols: 2, cells: { '0,0': '100', '0,1': '=A1*2' }, name: 'T2' };

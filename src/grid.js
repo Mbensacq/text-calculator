@@ -118,25 +118,70 @@
     return { env: env, resolve: resolve, rawAt: rawAt };
   }
 
+  // Fixed-decimals helper reusing the formatter's thousands grouping.
+  function fixedDecimals(x, d) {
+    const s = (Math.abs(x)).toFixed(d);
+    const dot = s.indexOf('.');
+    const intPart = dot === -1 ? s : s.slice(0, dot);
+    const grouped = Fmt.formatNumber(parseInt(intPart, 10) || 0);
+    const frac = dot === -1 ? '' : s.slice(dot);
+    return (x < 0 ? '-' : '') + grouped + frac;
+  }
+
+  // Apply a column format to a numeric value. valueQ is a Quantity (formula
+  // result) or null; rawText is the literal otherwise. Returns a display string,
+  // or null when the value isn't a plain number (then the default display wins).
+  function formatWith(spec, valueQ, rawText) {
+    let x, unitLabel = '';
+    if (valueQ != null) {
+      if (valueQ.list || valueQ.date) return null;
+      x = Object.keys(valueQ.unit).length ? Units.magnitude(valueQ.base, valueQ.unit) : valueQ.base;
+      unitLabel = Fmt.formatUnitMap(valueQ.unit);
+    } else {
+      const t = String(rawText).trim();
+      const m = /^-?\d[\d\s]*(?:[.,]\d+)?/.exec(t);
+      if (!m) return null;
+      x = parseFloat(m[0].replace(/\s/g, '').replace(',', '.'));
+      if (isNaN(x)) return null;
+      unitLabel = t.slice(m[0].length).trim(); // keep a trailing unit ("10 €" → "€")
+    }
+    const suffix = unitLabel ? ' ' + unitLabel : '';
+    switch (spec) {
+      case 'int': return Fmt.formatNumber(Math.round(x)) + suffix;
+      case 'f2': return fixedDecimals(x, 2) + suffix;
+      case 'pct': return Fmt.formatNumber(x * 100) + ' %';
+      case 'eur': return fixedDecimals(x, 2) + ' €';
+      case 'usd': return fixedDecimals(x, 2) + ' $';
+      default: return null;
+    }
+  }
+
   // Compute every non-empty cell. Returns "r,c" -> { display, error, formula }.
+  // A per-column format (model.formats[col]) reshapes numeric display only.
   function computeGrid(model) {
     const ctx = createContext(model);
+    const formats = model.formats || null;
     const out = {};
     for (let r = 0; r < model.rows; r++) {
       for (let c = 0; c < model.cols; c++) {
         const raw = ctx.rawAt(r, c).trim();
         if (raw === '') continue;
+        const spec = formats && formats[c];
         // Excel-style: a formula cell shows its computed value; any other cell
         // shows exactly what was typed ("sticker", "3 €", "2").
         if (raw.charAt(0) === '=') {
           try {
             const v = ctx.resolve(r, c);
-            out[r + ',' + c] = { display: v == null ? '' : Fmt.formatValue(v), formula: true, error: false };
+            let disp = v == null ? '' : Fmt.formatValue(v);
+            if (spec && v != null) { const f = formatWith(spec, v, null); if (f != null) disp = f; }
+            out[r + ',' + c] = { display: disp, formula: true, error: false };
           } catch (e) {
             out[r + ',' + c] = { display: '', error: true, message: e.message, formula: true };
           }
         } else {
-          out[r + ',' + c] = { display: raw, formula: false, error: false };
+          let disp = raw;
+          if (spec) { const f = formatWith(spec, null, raw); if (f != null) disp = f; }
+          out[r + ',' + c] = { display: disp, formula: false, error: false };
         }
       }
     }

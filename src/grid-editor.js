@@ -242,9 +242,10 @@
         statusEl.appendChild(none);
       }
 
-      // Column-only tools: sort the rows and fill a formula down.
+      // Column-only tools: format, sort the rows and fill a formula down.
       if (selection.axis === 'col') {
         const col = selection.index;
+        statusEl.appendChild(formatControl(col));
         statusEl.appendChild(actionBtn('Trier ↑', 'Trier les lignes par cette colonne (croissant)', function () { sortColumn(col, 'asc'); }));
         statusEl.appendChild(actionBtn('Trier ↓', 'Trier les lignes par cette colonne (décroissant)', function () { sortColumn(col, 'desc'); }));
         if (firstDataIsFormula(col)) {
@@ -268,6 +269,31 @@
       b.title = title;
       b.addEventListener('click', onClick);
       return b;
+    }
+
+    const FORMATS = [['', 'Général'], ['int', 'Entier'], ['f2', '2 déc.'], ['pct', '%'], ['eur', '€'], ['usd', '$']];
+    function formatControl(col) {
+      const wrap = document.createElement('label');
+      wrap.className = 'grid-status__fmt';
+      wrap.textContent = 'Format ';
+      const sel = document.createElement('select');
+      sel.className = 'grid-status__select';
+      sel.title = 'Format d’affichage de la colonne';
+      FORMATS.forEach(function (o) {
+        const opt = document.createElement('option');
+        opt.value = o[0]; opt.textContent = o[1];
+        sel.appendChild(opt);
+      });
+      sel.value = (model.formats && model.formats[col]) || '';
+      sel.addEventListener('change', function () { setColumnFormat(col, sel.value); });
+      wrap.appendChild(sel);
+      return wrap;
+    }
+    function setColumnFormat(col, spec) {
+      if (!model.formats) model.formats = {};
+      if (spec) model.formats[col] = spec; else delete model.formats[col];
+      scheduleSave();
+      build();
     }
 
     function stat(label, value) {
@@ -446,8 +472,8 @@
     return {
       setModel: function (m) {
         model = m && m.cells
-          ? { rows: m.rows || 6, cols: m.cols || 4, cells: Object.assign({}, m.cells), name: m.name || '' }
-          : { rows: 6, cols: 4, cells: {}, name: '' };
+          ? { rows: m.rows || 6, cols: m.cols || 4, cells: Object.assign({}, m.cells), name: m.name || '', formats: m.formats ? Object.assign({}, m.formats) : {} }
+          : { rows: 6, cols: 4, cells: {}, name: '', formats: {} };
         selection = null;
         build();
       },
