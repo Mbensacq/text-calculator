@@ -70,7 +70,13 @@ temps = 2 h
   sont réduites automatiquement avant stockage. Un bloc texte peut référencer
   une cellule d'un tableau par sa case : `total = B1`, `somme(A1:A6)`. Quand la
   note contient plusieurs tableaux, chacun porte un nom (T1, T2…, éditable) et
-  l'on lève l'ambiguïté avec `T2!B1` ; avec un seul tableau, `B1` suffit.
+  l'on lève l'ambiguïté avec `T2!B1` (aussi pour les plages : `somme(T2!A1:A6)`) ;
+  avec un seul tableau, `B1` suffit.
+- **Confort d'écriture** : palette de commandes **Ctrl/Cmd+K**, **annuler/
+  rétablir** au niveau de la note (**Ctrl/Cmd+Z**), **glisser-déposer** des blocs
+  (poignée ⠿), **autocomplétion** (variables, noms de tableaux, cases `Nom!B1`),
+  **coloration** des unités/fonctions et **Markdown léger** (`#` titres,
+  `-` listes, `[ ]` cases, `**gras**`, `*italique*`).
 - **Grille cliquable** : une vraie grille où une cellule `=B1*C1` affiche son
   **résultat** (la formule n'apparaît qu'à l'édition), avec des poignées « + »
   pour ajouter lignes et colonnes.
