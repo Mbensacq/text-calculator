@@ -24,6 +24,7 @@ const ASSETS = [
   './src/grid-editor.js?v=28',
   './src/simplify.js?v=28',
   './src/command-palette.js?v=28',
+  './src/undo.js?v=28',
   './src/note-editor.js?v=28',
   './src/sync.js?v=28',
   './src/app.js?v=28',

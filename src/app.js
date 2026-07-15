@@ -511,6 +511,24 @@
       });
     }
 
+    // Note-level undo / redo (Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z or Ctrl+Y) — active
+    // only while the note editor holds focus, so other inputs keep native undo.
+    document.addEventListener('keydown', function (e) {
+      if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
+      const k = (e.key || '').toLowerCase();
+      const inNote = noteView.contains(document.activeElement) || document.activeElement === document.body || document.activeElement === noteView;
+      if (k === 'z') {
+        if (!inNote) return;
+        e.preventDefault();
+        if (e.shiftKey) { if (noteEditor.redo) noteEditor.redo(); }
+        else if (noteEditor.undo) noteEditor.undo();
+      } else if (k === 'y') {
+        if (!inNote) return;
+        e.preventDefault();
+        if (noteEditor.redo) noteEditor.redo();
+      }
+    });
+
     // Sidebar toggle (mobile)
     const toggle = document.getElementById('sidebar-toggle');
     function openSidebar() { layoutEl.classList.add('sidebar-open'); }

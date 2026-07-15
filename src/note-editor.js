@@ -149,7 +149,52 @@
 
     /* ---- Change handlers -------------------------------------------- */
 
-    function save() { onChange(getBlocks()); }
+    function save() { onChange(getBlocks()); recordHistory(); }
+
+    /* ---- Undo / redo (note-level, debounced snapshots) -------------- */
+
+    const history = TC.createUndo ? TC.createUndo({ limit: 120 }) : null;
+    let restoring = false;
+    let histTimer = null;
+
+    function snapshot() { return JSON.stringify(getBlocks()); }
+    function recordHistory() {
+      if (!history || restoring) return;
+      if (histTimer) clearTimeout(histTimer);
+      histTimer = setTimeout(function () { histTimer = null; history.push(snapshot()); }, 500);
+    }
+    function flushHistory() {
+      if (!history) return;
+      if (histTimer) { clearTimeout(histTimer); histTimer = null; }
+      history.push(snapshot());
+    }
+    // Build the internal block list from a stored/serialised shape (shared by
+    // setNote and undo restore).
+    function loadBlocks(src) {
+      const arr = (src || []).map(function (b) {
+        if (b.type === 'grid') return { type: 'grid', grid: b.grid ? JSON.parse(JSON.stringify(b.grid)) : newGridModel() };
+        if (b.type === 'image') return { type: 'image', src: b.src || '', caption: b.caption || '' };
+        return { type: 'text', body: b.body || '' };
+      });
+      return arr.length ? arr : [{ type: 'text', body: '' }];
+    }
+    function applySnapshot(json) {
+      if (json == null) return;
+      restoring = true;
+      const scrollTop = container.scrollTop;
+      blocks = loadBlocks(JSON.parse(json));
+      assignTableNames();
+      activeCtx = null;
+      activeTextEditor = null;
+      render();
+      container.scrollTop = scrollTop;
+      save(); // persist restored state (the restoring guard skips re-recording)
+      restoring = false;
+      const first = ctx[0];
+      if (first) { if (first.type === 'text') first.editor.focus(); else if (first.gridEditor) first.gridEditor.focus(); }
+    }
+    function undo() { if (history) { flushHistory(); applySnapshot(history.undo()); } }
+    function redo() { if (history) applySnapshot(history.redo()); }
 
     function textChanged(i, text) {
       blocks[i].body = text;
@@ -482,19 +527,16 @@
 
     return {
       setNote: function (note) {
-        const src = (note && note.blocks) || [];
-        blocks = src.map(function (b) {
-          if (b.type === 'grid') return { type: 'grid', grid: b.grid ? JSON.parse(JSON.stringify(b.grid)) : newGridModel() };
-          if (b.type === 'image') return { type: 'image', src: b.src || '', caption: b.caption || '' };
-          return { type: 'text', body: b.body || '' };
-        });
-        if (!blocks.length) blocks = [{ type: 'text', body: '' }];
+        blocks = loadBlocks((note && note.blocks) || []);
         assignTableNames();
         activeCtx = null;
         activeTextEditor = null;
         render();
+        if (history) history.reset(snapshot());
       },
       getBlocks: getBlocks,
+      undo: undo,
+      redo: redo,
       insertTable: insertTable,
       focus: function () {
         const first = ctx[0];
