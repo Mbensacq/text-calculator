@@ -77,6 +77,11 @@ temps = 2 h
   (poignée ⠿), **autocomplétion** (variables, noms de tableaux, cases `Nom!B1`),
   **coloration** des unités/fonctions et **Markdown léger** (`#` titres,
   `-` listes, `[ ]` cases, `**gras**`, `*italique*`).
+- **Organisation** : **classeurs** (dossiers) et **étiquettes** avec filtres,
+  **recherche** multi-termes insensible aux accents (surlignage), **modèles**
+  (devis, note de frais, budget, recette), **sélection multiple** avec actions
+  groupées, **historique de version** par note, **export/import** JSON de secours,
+  et **navigation par glissement** entre les notes sur mobile.
 - **Grille cliquable** : une vraie grille où une cellule `=B1*C1` affiche son
   **résultat** (la formule n'apparaît qu'à l'édition), avec des poignées « + »
   pour ajouter lignes et colonnes.
