@@ -277,9 +277,72 @@
       onChange: function (blocks) {
         store.updateBlocks(activeId, blocks);
         schedulePush(activeId);
+        scheduleVersion(activeId, blocks);
         bumpList();
       },
     });
+
+    // ---- Version history (persisted, time-spaced snapshots per note) -------
+    const noteHistory = TC.createHistory
+      ? TC.createHistory({ key: demo ? 'tc-history:demo' : 'tc-history' })
+      : null;
+    let versionTimer = null;
+    function scheduleVersion(id, blocks) {
+      if (!noteHistory) return;
+      if (versionTimer) clearTimeout(versionTimer);
+      versionTimer = setTimeout(function () { noteHistory.record(id, blocks); }, 2500);
+    }
+    function openHistory() {
+      if (!noteHistory) return;
+      const list = noteHistory.versions(activeId);
+      const overlay = document.createElement('div');
+      overlay.className = 'hist';
+      const box = document.createElement('div');
+      box.className = 'hist__box';
+      const head = document.createElement('div');
+      head.className = 'hist__head';
+      head.appendChild(document.createTextNode('Historique de la note'));
+      const close = document.createElement('button');
+      close.className = 'hist__close';
+      close.type = 'button';
+      close.textContent = '✕';
+      close.addEventListener('click', function () { overlay.remove(); });
+      head.appendChild(close);
+      box.appendChild(head);
+      const listEl2 = document.createElement('div');
+      listEl2.className = 'hist__list';
+      if (!list.length) {
+        const empty = document.createElement('div');
+        empty.className = 'hist__empty';
+        empty.textContent = 'Aucune version enregistrée pour l’instant (les versions s’ajoutent au fil de l’écriture).';
+        listEl2.appendChild(empty);
+      }
+      list.forEach(function (v) {
+        const row = document.createElement('div');
+        row.className = 'hist__row';
+        const label = document.createElement('span');
+        label.className = 'hist__when';
+        label.textContent = new Date(v.t).toLocaleString('fr-FR');
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'hist__restore';
+        btn.textContent = 'Restaurer';
+        btn.addEventListener('click', function () {
+          store.updateBlocks(activeId, v.blocks);
+          loadActive();
+          animateSwitch();
+          schedulePush(activeId);
+          overlay.remove();
+        });
+        row.appendChild(label);
+        row.appendChild(btn);
+        listEl2.appendChild(row);
+      });
+      box.appendChild(listEl2);
+      overlay.appendChild(box);
+      overlay.addEventListener('mousedown', function (e) { if (e.target === overlay) overlay.remove(); });
+      document.body.appendChild(overlay);
+    }
 
     function loadActive() {
       const note = store.active();
@@ -349,6 +412,16 @@
         afterMetaChange();
       });
       meta.appendChild(add);
+
+      if (noteHistory) {
+        const hist = document.createElement('button');
+        hist.type = 'button';
+        hist.className = 'note-meta__hist';
+        hist.textContent = '🕘 Historique';
+        hist.title = 'Voir et restaurer les versions précédentes';
+        hist.addEventListener('click', openHistory);
+        meta.appendChild(hist);
+      }
     }
     function renderFilters() {
       const box = document.getElementById('note-filters');
@@ -769,6 +842,7 @@
         { label: 'Note caisse (expo)', run: loadCaisse },
         { label: 'Aide-mémoire', run: function () { setHelp(true); } },
         { label: 'Synchronisation…', run: function () { setSync(true); } },
+        { label: 'Historique de la note (versions)', run: openHistory },
         { label: 'Exporter toutes les notes (sauvegarde)', run: exportNotes },
         { label: 'Importer des notes…', run: function () { const f = document.getElementById('import-file'); if (f) f.click(); } },
         { label: viewingTrash ? 'Revenir aux notes' : 'Corbeille', run: function () { viewingTrash = !viewingTrash; renderList(); } },
