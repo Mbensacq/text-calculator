@@ -160,6 +160,12 @@ body {
   text-overflow: ellipsis;
   margin-top: 1px;
 }
+.note-hit {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 3px;
+  padding: 0 1px;
+}
 
 .note-item__actions {
   position: absolute;

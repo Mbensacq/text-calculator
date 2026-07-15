@@ -233,6 +233,7 @@
     let listTimer = null;
     let viewingTrash = false;
     let query = '';
+    let queryTerms = [];
 
     const noteView = document.getElementById('note-view');
     const sidebarTitle = document.querySelector('.sidebar__title');
@@ -386,8 +387,56 @@
       return b;
     }
 
+    // Accent-insensitive search. Terms are matched with AND semantics, so
+    // "café mars" finds a note mentioning both, however they're accented.
+    function deburr(s) { return s.normalize('NFD').replace(/[̀-ͯ]/g, ''); }
     function matchesQuery(item) {
-      return !query || item.search.indexOf(query) !== -1;
+      if (!queryTerms.length) return true;
+      const hay = deburr(item.search);
+      return queryTerms.every(function (t) { return hay.indexOf(t) !== -1; });
+    }
+
+    // A deburred, lowercased copy of `s` plus a map from each deburred index
+    // back to the original index — so a match found on the folded text can be
+    // highlighted on the original characters.
+    function deburrMap(s) {
+      let out = '';
+      const map = [];
+      for (let i = 0; i < s.length; i++) {
+        const d = s[i].normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+        for (let j = 0; j < d.length; j++) { out += d[j]; map.push(i); }
+      }
+      map.push(s.length);
+      return { out: out, map: map };
+    }
+    function highlightInto(el, text, terms) {
+      el.textContent = '';
+      if (!terms.length) { el.textContent = text; return; }
+      const dm = deburrMap(text);
+      const ranges = [];
+      for (const t of terms) {
+        if (!t) continue;
+        let idx = 0;
+        while ((idx = dm.out.indexOf(t, idx)) !== -1) { ranges.push([dm.map[idx], dm.map[idx + t.length]]); idx += t.length; }
+      }
+      if (!ranges.length) { el.textContent = text; return; }
+      ranges.sort(function (a, b) { return a[0] - b[0]; });
+      const merged = [];
+      for (const r of ranges) {
+        const last = merged[merged.length - 1];
+        if (last && r[0] <= last[1]) last[1] = Math.max(last[1], r[1]);
+        else merged.push(r.slice());
+      }
+      let pos = 0;
+      for (const r of merged) {
+        if (r[0] > pos) el.appendChild(document.createTextNode(text.slice(pos, r[0])));
+        const mark = document.createElement('mark');
+        mark.className = 'note-hit';
+        mark.textContent = text.slice(r[0], r[1]);
+        el.appendChild(mark);
+        pos = r[1];
+      }
+      if (pos < text.length) el.appendChild(document.createTextNode(text.slice(pos)));
     }
 
     function renderList() {
@@ -412,11 +461,11 @@
 
         const title = document.createElement('div');
         title.className = 'note-item__title';
-        title.textContent = n.title;
+        highlightInto(title, n.title, queryTerms);
 
         const snippet = document.createElement('div');
         snippet.className = 'note-item__snippet';
-        snippet.textContent = n.snippet || 'Note vide';
+        highlightInto(snippet, n.snippet || 'Note vide', queryTerms);
 
         const actions = document.createElement('div');
         actions.className = 'note-item__actions';
@@ -460,6 +509,7 @@
     if (searchInput) {
       searchInput.addEventListener('input', function () {
         query = searchInput.value.trim().toLowerCase();
+        queryTerms = deburr(query).split(/\s+/).filter(Boolean);
         renderList();
       });
     }
