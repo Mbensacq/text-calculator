@@ -215,6 +215,15 @@
       return note;
     }
 
+    // Create a note from a template's block list.
+    function createFrom(blocks) {
+      const note = normalise({ id: uid(), blocks: toBlocks({ blocks: blocks }) });
+      state.notes.push(note);
+      state.activeId = note.id;
+      persist();
+      return note;
+    }
+
     // Replace a note's blocks wholesale (the note editor owns the block array).
     function updateBlocks(id, blocks) {
       const note = find(id);
@@ -332,6 +341,7 @@
       setActive: setActive,
       create: create,
       createGrid: createGrid,
+      createFrom: createFrom,
       updateBlocks: updateBlocks,
       remove: remove,
       getNote: getNote,

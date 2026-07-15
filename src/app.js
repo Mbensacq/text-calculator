@@ -341,6 +341,16 @@
       closeSidebar();
       focusActive();
     }
+    function newFromTemplate(tpl) {
+      viewingTrash = false;
+      const note = store.createFrom(tpl.blocks);
+      loadActive();
+      animateSwitch();
+      pushNow(note.id);
+      closeSidebar();
+      focusActive();
+    }
+
     function loadExample() { loadNote(EXAMPLE_NOTE); }
     function loadSales() { loadNote(SALES_NOTE); }
     function loadCaisse() { loadNote(CAISSE_NOTE); }
@@ -602,6 +612,24 @@
     if (bulkExportBtn) bulkExportBtn.addEventListener('click', exportSelection);
     if (bulkCancelBtn) bulkCancelBtn.addEventListener('click', function () { setSelectMode(false); });
 
+    // ---- Templates menu ---------------------------------------------------
+    const tplBtn = document.getElementById('tpl-btn');
+    const tplMenu = document.getElementById('tpl-menu');
+    if (tplBtn && tplMenu && TC.TEMPLATES) {
+      TC.TEMPLATES.forEach(function (t) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'tpl-menu__opt';
+        b.textContent = t.emoji + ' ' + t.label;
+        b.addEventListener('click', function () { tplMenu.hidden = true; newFromTemplate(t); });
+        tplMenu.appendChild(b);
+      });
+      tplBtn.addEventListener('click', function (e) { e.stopPropagation(); tplMenu.hidden = !tplMenu.hidden; });
+      document.addEventListener('click', function (e) {
+        if (!tplBtn.contains(e.target) && !tplMenu.contains(e.target)) tplMenu.hidden = true;
+      });
+    }
+
     const exportBtn = document.getElementById('export-notes');
     const importBtn = document.getElementById('import-notes');
     const importFile = document.getElementById('import-file');
@@ -646,6 +674,9 @@
         { label: 'Importer des notes…', run: function () { const f = document.getElementById('import-file'); if (f) f.click(); } },
         { label: viewingTrash ? 'Revenir aux notes' : 'Corbeille', run: function () { viewingTrash = !viewingTrash; renderList(); } },
       ];
+      (TC.TEMPLATES || []).forEach(function (t) {
+        cmds.push({ label: 'Modèle : ' + t.label, hint: 'nouvelle note', run: function () { newFromTemplate(t); } });
+      });
       store.list().slice(0, 12).forEach(function (it) {
         cmds.push({ label: 'Aller à : ' + (it.title || 'Sans titre'), hint: 'note', run: function () { viewingTrash = false; selectNote(it.id); } });
       });

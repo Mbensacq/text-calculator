@@ -203,6 +203,36 @@ body {
 .app.is-selecting .note-item.is-selected { background: var(--accent-soft); }
 .app.is-selecting .note-item__actions { display: none; }
 
+/* Templates menu (sidebar footer popup) */
+.tpl-wrap { position: relative; }
+.tpl-menu {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tpl-menu__opt {
+  text-align: left;
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  border-radius: 7px;
+  cursor: pointer;
+}
+.tpl-menu__opt:hover { background: var(--accent-soft); color: var(--accent); }
+
 .note-item__actions {
   position: absolute;
   top: 50%;
