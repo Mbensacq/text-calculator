@@ -546,6 +546,14 @@ body {
 .hl-unit { color: var(--ink-soft); }
 .hl-const { color: var(--heading); }
 .hl-keyword { color: var(--ink-soft); font-style: italic; }
+/* Light Markdown — never changes the character box (no font-size change), so
+   the highlight layer stays aligned with the textarea. */
+.md-strong { font-weight: 700; }
+.md-em { font-style: italic; }
+.md-mark { opacity: .35; }
+.md-bullet { color: var(--accent); font-weight: 700; }
+.md-check { color: var(--ink-soft); font-weight: 700; }
+.md-check.is-done { color: var(--accent); }
 
 /* Alt/Option held: numbers become draggable sliders (see editor.js). */
 .editor.scrub-ready .editor__input { cursor: ew-resize; }

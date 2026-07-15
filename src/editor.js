@@ -87,6 +87,29 @@
     if (last < text.length) div.appendChild(textNode(text.slice(last)));
   }
 
+  // Light Markdown emphasis, rendered *in place* (markers kept, only dimmed) so
+  // the highlight stays 1:1 with the textarea. Markers must hug their text
+  // (**bold**, *italic*) — a spaced "a * b" is multiplication, never emphasis.
+  const EMPH_RE = /\*\*(\S(?:[^*]*\S)?)\*\*|\*(\S(?:[^*\n]*\S)?)\*/g;
+  function appendInline(div, text, abs) {
+    EMPH_RE.lastIndex = 0;
+    let last = 0, m;
+    while ((m = EMPH_RE.exec(text))) {
+      if (m.index > last) appendNums(div, text.slice(last, m.index), abs + last);
+      const whole = m[0];
+      const strong = whole.slice(0, 2) === '**';
+      const mk = strong ? '**' : '*';
+      const inner = whole.slice(mk.length, whole.length - mk.length);
+      const wrap = span(strong ? 'md-strong' : 'md-em', '');
+      wrap.appendChild(span('md-mark', mk));
+      appendNums(wrap, inner, abs + m.index + mk.length);
+      wrap.appendChild(span('md-mark', mk));
+      div.appendChild(wrap);
+      last = m.index + whole.length;
+    }
+    if (last < text.length) appendNums(div, text.slice(last), abs + last);
+  }
+
   // Append text, wrapping bare numbers in <span class="hl-num"> tagged with
   // their absolute character offset in the document (so a drag can splice the
   // right slice of the textarea). A number glued to a letter — "m2", "taux2" —
@@ -112,23 +135,41 @@
     if (fm) {
       div.appendChild(textNode(fm[1]));
       div.appendChild(span('hl-var', fm[2]));
-      appendNums(div, fm[3] + fm[4], abs + fm[1].length + fm[2].length);
+      appendInline(div, fm[3] + fm[4], abs + fm[1].length + fm[2].length);
       return;
     }
     const m = code.match(ASSIGN_RE);
     if (m) {
       div.appendChild(textNode(m[1]));
       div.appendChild(span('hl-var', m[2]));
-      appendNums(div, m[3] + m[4], abs + m[1].length + m[2].length);
+      appendInline(div, m[3] + m[4], abs + m[1].length + m[2].length);
       return;
     }
-    appendNums(div, code, abs);
+    appendInline(div, code, abs);
   }
 
   function colourise(div, line, abs) {
     if (!line.trim()) { div.textContent = '​'; return; }
     if (HEADING_RE.test(line)) { div.appendChild(span('hl-heading', line)); return; }
     if (COMMENT_RE.test(line)) { div.appendChild(span('hl-comment', line)); return; }
+
+    // Checkbox item "[ ] …" / "[x] …" — style the box, colour the rest inline.
+    const cb = line.match(/^(\s*)(\[[ xX]\])([\s\S]*)$/);
+    if (cb) {
+      div.appendChild(textNode(cb[1]));
+      const done = /[xX]/.test(cb[2]);
+      div.appendChild(span('md-check' + (done ? ' is-done' : ''), cb[2]));
+      appendInline(div, cb[3], cb[1].length + cb[2].length);
+      return;
+    }
+    // Bullet list "- …" / "* …" (a space after the marker rules out -5 and 2*3).
+    const li = line.match(/^(\s*)([-*])(\s[\s\S]*)$/);
+    if (li) {
+      div.appendChild(textNode(li[1]));
+      div.appendChild(span('md-bullet', li[2]));
+      appendInline(div, li[3], li[1].length + li[2].length);
+      return;
+    }
 
     // Table row: draw the "|" separators discreetly, numbers stay scrubbable.
     if (line.indexOf('|') !== -1) {
