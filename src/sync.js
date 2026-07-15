@@ -40,6 +40,37 @@
     return s;
   }
 
+  /* ---- End-to-end encryption (optional) ----------------------------- *
+   * When a passphrase is set, note payloads are encrypted (AES-GCM) before
+   * leaving the device; the server only ever stores ciphertext. The key is
+   * derived (PBKDF2) from the passphrase and a salt fixed by the workspace, so
+   * every device with the same passphrase reaches the same key. The passphrase
+   * itself is never synced nor put in a share link.
+   * ------------------------------------------------------------------- */
+  function bufToB64(buf) {
+    const b = new Uint8Array(buf);
+    let s = '';
+    for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+    return btoa(s);
+  }
+  function b64ToBuf(b64) {
+    const s = atob(b64);
+    const a = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i);
+    return a;
+  }
+  function deriveKey(pass, ws) {
+    const enc = new TextEncoder();
+    return crypto.subtle.digest('SHA-256', enc.encode('tc-salt:' + ws)).then(function (saltBuf) {
+      const salt = new Uint8Array(saltBuf).slice(0, 16);
+      return crypto.subtle.importKey('raw', enc.encode(pass), 'PBKDF2', false, ['deriveKey']).then(function (base) {
+        return crypto.subtle.deriveKey(
+          { name: 'PBKDF2', salt: salt, iterations: 100000, hash: 'SHA-256' },
+          base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+      });
+    });
+  }
+
   // Base64url encode/decode of the config for a shareable link (#sync=...).
   function encodeShare(cfg) {
     try { return btoa(unescape(encodeURIComponent(JSON.stringify(cfg)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
@@ -60,6 +91,36 @@
 
     let cfg = null;
     let es = null;
+    let keyPromise = null;
+
+    // The derived crypto key (a promise), or null when no passphrase is set or
+    // WebCrypto is unavailable.
+    function getKey() {
+      if (!cfg || !cfg.secret || typeof crypto === 'undefined' || !crypto.subtle) return null;
+      if (!keyPromise) keyPromise = deriveKey(cfg.secret, cfg.ws);
+      return keyPromise;
+    }
+    function encryptNote(note) {
+      const kp = getKey();
+      if (!kp || note == null || note.deleted) return Promise.resolve(note);
+      const data = new TextEncoder().encode(JSON.stringify(note));
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      return kp.then(function (key) {
+        return crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, data).then(function (ct) {
+          return { updatedAt: note.updatedAt || Date.now(), enc: bufToB64(iv) + ':' + bufToB64(ct) };
+        });
+      }).catch(function () { return note; });
+    }
+    function decryptNote(env) {
+      const kp = getKey();
+      if (!kp) return Promise.resolve(null); // locked: ciphertext but no passphrase
+      const parts = String(env.enc).split(':');
+      if (parts.length !== 2) return Promise.resolve(null);
+      return kp.then(function (key) {
+        return crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64ToBuf(parts[0]) }, key, b64ToBuf(parts[1]))
+          .then(function (buf) { try { return JSON.parse(new TextDecoder().decode(buf)); } catch (e) { return null; } });
+      }).catch(function () { return null; });
+    }
 
     function trimSlash(u) { return u.replace(/\/+$/, ''); }
     function authQ() { return cfg.auth ? '?auth=' + encodeURIComponent(cfg.auth) : ''; }
@@ -83,8 +144,15 @@
       apply(m[1], data);
     }
     function apply(id, note) {
-      if (note == null || note.deleted) onRemoteDelete(id);
-      else onRemoteNote(id, note);
+      if (note == null || note.deleted) { onRemoteDelete(id); return; }
+      if (note.enc) {
+        decryptNote(note).then(function (dec) {
+          if (dec) { if (dec.updatedAt == null) dec.updatedAt = note.updatedAt; onRemoteNote(id, dec); }
+          else onStatus('locked');
+        });
+        return;
+      }
+      onRemoteNote(id, note);
     }
 
     function start() {
@@ -107,10 +175,11 @@
 
     function push(id, note) {
       if (!cfg) return;
-      const body = JSON.stringify(note);
-      try {
-        fetch(noteUrl(id), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: body }).catch(function () {});
-      } catch (e) { /* ignore */ }
+      encryptNote(note).then(function (payload) {
+        try {
+          fetch(noteUrl(id), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(function () {});
+        } catch (e) { /* ignore */ }
+      });
     }
     function removeNote(id, updatedAt) {
       if (!cfg) return;
@@ -120,6 +189,7 @@
     return {
       configure: function (config) {
         cfg = (config && config.url && config.ws) ? config : null;
+        keyPromise = null; // re-derive if the passphrase / workspace changed
         writeConfig(cfg);
         start();
         return cfg;

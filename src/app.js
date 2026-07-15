@@ -1232,6 +1232,7 @@
     const SYNC_LABELS = {
       on: 'connectée', connecting: 'connexion…',
       error: 'hors ligne (reconnexion…)', off: 'désactivée',
+      locked: '🔒 chiffrée — phrase secrète requise',
     };
     const syncPanel = document.getElementById('sync-panel');
     const syncScrim = document.getElementById('sync-scrim');
@@ -1252,7 +1253,10 @@
     function shareLink() {
       const cfg = sync.getConfig();
       if (!cfg) return '';
-      return location.origin + location.pathname + '#sync=' + TC.Sync.encodeShare(cfg);
+      // Never leak the encryption passphrase through the share link.
+      const shareCfg = { url: cfg.url, ws: cfg.ws };
+      if (cfg.auth) shareCfg.auth = cfg.auth;
+      return location.origin + location.pathname + '#sync=' + TC.Sync.encodeShare(shareCfg);
     }
     function updateShareLink() {
       if (syncShareEl) syncShareEl.textContent = shareLink();
@@ -1263,6 +1267,7 @@
         syncUrlEl.value = cfg.url || '';
         syncWsEl.value = cfg.ws || '';
         syncAuthEl.value = cfg.auth || '';
+        if (syncSecretEl) syncSecretEl.value = cfg.secret || '';
       }
       updateShareLink();
     }
@@ -1284,13 +1289,16 @@
     document.getElementById('sync-gen').addEventListener('click', function () {
       syncWsEl.value = TC.Sync.randomKey();
     });
+    const syncSecretEl = document.getElementById('sync-secret');
     document.getElementById('sync-enable').addEventListener('click', function () {
       const url = syncUrlEl.value.trim();
       const ws = syncWsEl.value.trim();
       const auth = syncAuthEl.value.trim();
+      const secret = syncSecretEl ? syncSecretEl.value : '';
       if (!url || !ws) { window.alert('Renseignez l’URL de la base et une clé d’espace de travail.'); return; }
       const cfg = { url: url, ws: ws };
       if (auth) cfg.auth = auth;
+      if (secret) cfg.secret = secret;
       sync.configure(cfg);
       pushAll();
       updateShareLink();

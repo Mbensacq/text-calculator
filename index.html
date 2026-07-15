@@ -462,6 +462,14 @@ D3: =somme(D1:D2)</pre>
             <input id="sync-auth" type="text" spellcheck="false" autocomplete="off"
                    placeholder="si votre serveur exige SYNC_TOKEN">
           </label>
+          <label class="sync-field">Phrase secrète de chiffrement (facultatif)
+            <input id="sync-secret" type="password" spellcheck="false" autocomplete="off"
+                   placeholder="chiffre vos notes de bout en bout">
+          </label>
+          <p class="sync-note">Avec une phrase secrète, vos notes sont chiffrées
+          sur l'appareil : le serveur ne voit que du texte chiffré. Saisissez la
+          <strong>même</strong> phrase sur chaque appareil ; elle n'est jamais
+          synchronisée ni incluse dans le lien de partage.</p>
           <div class="sync-actions">
             <button id="sync-enable" class="sync-btn-primary" type="button">Activer</button>
             <button id="sync-disable" class="foot-link" type="button">Désactiver</button>
