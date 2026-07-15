@@ -236,6 +236,23 @@ pour le SSE, Let's Encrypt, DNS), puis indiquez son URL dans l'app.
 *pierre tombale* pour se propager même aux appareils qui étaient hors ligne. La
 note en cours d'édition n'est jamais écrasée sous le curseur.
 
+**Conflits :** si une note a été modifiée à la fois localement et à distance,
+une barre propose de *garder la mienne*, *prendre l'autre* ou *garder les deux*
+plutôt que de trancher en silence.
+
+**Chiffrement de bout en bout (facultatif) :** en réglant une *phrase secrète*,
+chaque note est chiffrée sur l'appareil (AES-GCM, clé dérivée par PBKDF2) avant
+d'être poussée — le serveur ne voit que du texte chiffré. Saisissez la même
+phrase sur chaque appareil ; elle n'est ni synchronisée ni incluse dans le lien.
+
+**Partage en lecture seule :** « Partager la note » produit un lien dont le
+fragment contient la note ; ouvert ailleurs, il affiche une vue non modifiable,
+sans aucun serveur (fonctionne sur GitHub Pages).
+
+> **À venir côté serveur** : les *comptes/espaces* nommés et un *partage public
+> hébergé* (URL courte) nécessitent de déployer le serveur `server/` sur votre
+> hébergement (Infomaniak) ; le client et le protocole sont déjà prêts.
+
 **Sécurité :** la clé d'espace de travail joue le rôle de mot de passe (elle
 n'est pas devinable) — ne partagez le lien qu'avec les personnes autorisées.
 Avec Firebase, protégez la base par des *règles de sécurité* et/ou une
