@@ -57,23 +57,54 @@
 
   const INLINE_COMMENT_RE = /(^|\s)\/\//;
 
+  // Light classification of identifiers between numbers. Purely cosmetic and
+  // strictly character-preserving: a function call ("somme("), a conversion
+  // keyword ("en"/"sur"), a known unit ("km") or a constant ("pi") gets a class;
+  // everything else stays plain text. Never touches numbers, so the .hl-num
+  // spans that the scrub relies on are unaffected.
+  const IDENT_G = /[\p{L}_][\p{L}\p{N}_]*/gu;
+  const CONVERSION_WORDS = { en: 1, to: 1, vers: 1, sur: 1 };
+  const CONSTS = { pi: 1, tau: 1, phi: 1, 'π': 1, 'φ': 1 };
+  function classifyIdent(name, after) {
+    if (/^\s*\(/.test(after)) return 'hl-func';
+    const low = name.toLowerCase();
+    if (CONVERSION_WORDS[low]) return 'hl-keyword';
+    const U = (typeof TC !== 'undefined') ? TC.Units : null;
+    if (U && U.isKnownUnit && U.isKnownUnit(name)) return 'hl-unit';
+    if (CONSTS[low]) return 'hl-const';
+    return null;
+  }
+  function appendCode(div, text, absStart) {
+    IDENT_G.lastIndex = 0;
+    let last = 0, m;
+    while ((m = IDENT_G.exec(text))) {
+      if (m.index > last) div.appendChild(textNode(text.slice(last, m.index)));
+      const name = m[0];
+      const cls = classifyIdent(name, text.slice(m.index + name.length));
+      div.appendChild(cls ? span(cls, name) : textNode(name));
+      last = m.index + name.length;
+    }
+    if (last < text.length) div.appendChild(textNode(text.slice(last)));
+  }
+
   // Append text, wrapping bare numbers in <span class="hl-num"> tagged with
   // their absolute character offset in the document (so a drag can splice the
   // right slice of the textarea). A number glued to a letter — "m2", "taux2" —
-  // is part of an identifier/unit and is left alone.
+  // is part of an identifier/unit and is left alone. Non-number text is routed
+  // through appendCode for light identifier colouring.
   function appendNums(div, text, abs) {
     NUM_RE.lastIndex = 0;
     let last = 0;
     let m;
     while ((m = NUM_RE.exec(text))) {
       if (m.index > 0 && LETTER_RE.test(text[m.index - 1])) continue;
-      if (m.index > last) div.appendChild(textNode(text.slice(last, m.index)));
+      if (m.index > last) appendCode(div, text.slice(last, m.index), abs + last);
       const s = span('hl-num', m[0]);
       s.dataset.abs = abs + m.index;
       div.appendChild(s);
       last = m.index + m[0].length;
     }
-    if (last < text.length) div.appendChild(textNode(text.slice(last)));
+    if (last < text.length) appendCode(div, text.slice(last), abs + last);
   }
 
   function colouriseCode(div, code, abs) {

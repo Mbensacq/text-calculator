@@ -542,6 +542,10 @@ body {
 .hl-comment { color: var(--ink-soft); font-style: italic; }
 .hl-var { color: var(--accent); font-weight: 600; }
 .hl-pipe { color: var(--rule); }
+.hl-func { color: var(--accent); }
+.hl-unit { color: var(--ink-soft); }
+.hl-const { color: var(--heading); }
+.hl-keyword { color: var(--ink-soft); font-style: italic; }
 
 /* Alt/Option held: numbers become draggable sliders (see editor.js). */
 .editor.scrub-ready .editor__input { cursor: ew-resize; }
