@@ -111,13 +111,17 @@
 
   function hasTable(note) { return note.blocks.some((b) => b.type === 'grid'); }
 
-  function createStore(seedBody) {
+    // options: { key, seedNotes }. A separate key gives an isolated space (e.g.
+    // the demo sandbox); seedNotes pre-populates it the first time.
+  function createStore(seedBody, options) {
+    options = options || {};
+    const storeKey = options.key || KEY;
     let state = read();
     if (!state) state = migrateOrSeed(seedBody);
 
     function read() {
       try {
-        const raw = localStorage.getItem(KEY);
+        const raw = localStorage.getItem(storeKey);
         if (!raw) return null;
         const parsed = JSON.parse(raw);
         if (!parsed || !Array.isArray(parsed.notes) || !parsed.notes.length) return null;
@@ -129,6 +133,13 @@
     }
 
     function migrateOrSeed(body) {
+      if (options.seedNotes && options.seedNotes.length) {
+        const base = Date.now();
+        const notes = options.seedNotes.map(function (n, i) {
+          return normalise({ blocks: toBlocks(n), updatedAt: base + (options.seedNotes.length - i) });
+        });
+        return { notes: notes, activeId: notes[0].id };
+      }
       let initialBody = body || '';
       try {
         const legacy = localStorage.getItem(LEGACY_KEY);
@@ -139,7 +150,7 @@
     }
 
     function persist() {
-      try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* full/disabled */ }
+      try { localStorage.setItem(storeKey, JSON.stringify(state)); } catch (e) { /* full/disabled */ }
     }
 
     function sortNotes(a, b) {

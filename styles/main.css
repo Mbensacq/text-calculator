@@ -320,6 +320,38 @@ body {
   .note-item__title { font-size: 15px; }
 }
 
+/* ---- Demo banner --------------------------------------------------- */
+
+.demo-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: calc(7px + env(safe-area-inset-top, 0px)) 16px 7px;
+  background: var(--heading);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+.demo-banner__actions { display: flex; gap: 8px; flex: 0 0 auto; }
+.demo-banner__btn {
+  border: 1px solid rgba(255, 255, 255, .6);
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 12.5px;
+  padding: 4px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background .12s ease, color .12s ease;
+}
+.demo-banner__btn:hover { background: rgba(255, 255, 255, .18); }
+.demo-banner__btn--primary { background: #fff; color: var(--heading); border-color: #fff; }
+.demo-banner__btn--primary:hover { filter: brightness(.94); background: #fff; }
+/* When the banner shows, it already carries the safe-area inset. */
+.is-demo .topbar { padding-top: 12px; }
+
 /* ---- Top bar ------------------------------------------------------- */
 
 .topbar {

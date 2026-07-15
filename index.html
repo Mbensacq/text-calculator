@@ -17,7 +17,7 @@
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="styles/main.css?v=21">
+  <link rel="stylesheet" href="styles/main.css?v=22">
 </head>
 <body>
   <div class="app" id="app">
@@ -43,6 +43,13 @@
     <div class="scrim" id="scrim" aria-hidden="true"></div>
 
     <div class="workspace">
+      <div id="demo-banner" class="demo-banner" hidden>
+        <span class="demo-banner__txt">🧪 Mode démo — bac à sable, vos vraies notes sont intactes.</span>
+        <span class="demo-banner__actions">
+          <button id="demo-reset" type="button" class="demo-banner__btn">Réinitialiser</button>
+          <button id="demo-exit" type="button" class="demo-banner__btn demo-banner__btn--primary">Quitter</button>
+        </span>
+      </div>
       <header class="topbar">
         <div class="topbar__left">
           <button id="sidebar-toggle" class="icon-btn topbar__menu" type="button" aria-label="Afficher les notes">☰</button>
@@ -225,6 +232,12 @@ D3: =somme(D1:D2)</pre>
 # Un titre de section</pre>
           <p>Constantes : <code>pi</code>, <code>e</code>, <code>tau</code>, <code>phi</code>.</p>
         </section>
+        <section>
+          <h3>Mode démo</h3>
+          <p>Un bac à sable séparé, avec des notes d'exemple, pour tester sans
+          toucher à vos vraies notes (la synchronisation y est désactivée).</p>
+          <button id="demo-enter" type="button" class="foot-link">🧪 Ouvrir le mode démo</button>
+        </section>
       </div>
     </aside>
 
@@ -303,18 +316,18 @@ D3: =somme(D1:D2)</pre>
     </aside>
   </div>
 
-  <script src="src/units.js?v=21"></script>
-  <script src="src/tokenizer.js?v=21"></script>
-  <script src="src/parser.js?v=21"></script>
-  <script src="src/evaluator.js?v=21"></script>
-  <script src="src/formatter.js?v=21"></script>
-  <script src="src/engine.js?v=21"></script>
-  <script src="src/editor.js?v=21"></script>
-  <script src="src/storage.js?v=21"></script>
-  <script src="src/grid.js?v=21"></script>
-  <script src="src/grid-editor.js?v=21"></script>
-  <script src="src/note-editor.js?v=21"></script>
-  <script src="src/sync.js?v=21"></script>
-  <script src="src/app.js?v=21"></script>
+  <script src="src/units.js?v=22"></script>
+  <script src="src/tokenizer.js?v=22"></script>
+  <script src="src/parser.js?v=22"></script>
+  <script src="src/evaluator.js?v=22"></script>
+  <script src="src/formatter.js?v=22"></script>
+  <script src="src/engine.js?v=22"></script>
+  <script src="src/editor.js?v=22"></script>
+  <script src="src/storage.js?v=22"></script>
+  <script src="src/grid.js?v=22"></script>
+  <script src="src/grid-editor.js?v=22"></script>
+  <script src="src/note-editor.js?v=22"></script>
+  <script src="src/sync.js?v=22"></script>
+  <script src="src/app.js?v=22"></script>
 </body>
 </html>

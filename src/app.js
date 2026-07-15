@@ -136,6 +136,77 @@
     'objets_vendus = somme(B2:B5) =',
   ].join('\n');
 
+  // ---- Demo sandbox ------------------------------------------------------
+  // A separate, self-contained space (its own storage key, sync disabled) with
+  // ready-made notes that illustrate the features — so you can explore without
+  // touching your real notes. Entered with "?demo" in the URL.
+  const DEMO_KEY = 'text-calculator:demo';
+  function isDemo() {
+    try { return new URLSearchParams(location.search).has('demo'); } catch (e) { return false; }
+  }
+
+  const DEMO_WELCOME = [
+    '# 🧪 Mode démo',
+    '',
+    'Bac à sable : vos vraies notes ne sont pas touchées. Explorez, cassez,',
+    'testez — puis « Quitter » en haut pour revenir.',
+    '',
+    '## À essayer',
+    'Terminez une ligne par « = » pour voir le résultat.',
+    '(2 + 3) * 4 =',
+    '',
+    '// Glissez un nombre avec Alt (ordinateur) ou appui long (mobile) :',
+    'budget = 1500 €',
+    'depense = 430 €',
+    'reste = budget - depense =',
+    '',
+    '## Dates',
+    'aujourd\'hui + 15 jours =',
+    '25/12/2026 - aujourd\'hui =',
+    '',
+    'Ouvrez les autres notes de démo dans la liste ⟵',
+  ].join('\n');
+
+  function demoGrid() {
+    return {
+      rows: 5, cols: 4,
+      cells: {
+        '0,0': 'Produit', '0,1': 'Qté', '0,2': 'PU', '0,3': 'Total',
+        '1,0': 'sticker', '1,1': '12', '1,2': '3 €', '1,3': '=B2*C2',
+        '2,0': 'planche', '2,1': '3', '2,2': '8 €', '2,3': '=B3*C3',
+        '3,0': 'badge', '3,1': '7', '3,2': '2 €', '3,3': '=B4*C4',
+      },
+    };
+  }
+
+  const DEMO_MIXED_INTRO = [
+    '# Note mixte : texte + tableau',
+    '',
+    'On mélange du texte qui calcule et un vrai tableau dans une seule note.',
+    '',
+    'prix_sticker = 3 €',
+    'remise = 10%',
+    'prix_final = prix_sticker - remise =',
+  ].join('\n');
+
+  const DEMO_MIXED_OUTRO = [
+    '// Le tableau ci-dessus calcule la colonne Total (=B2*C2…).',
+    '// Et on réutilise les variables du bloc du haut, même APRÈS le tableau :',
+    'total_boutique = 12 * prix_final =',
+  ].join('\n');
+
+  const DEMO_NOTES = [
+    { blocks: [{ type: 'text', body: DEMO_WELCOME }] },
+    { blocks: [
+      { type: 'text', body: DEMO_MIXED_INTRO },
+      { type: 'grid', grid: demoGrid() },
+      { type: 'text', body: DEMO_MIXED_OUTRO },
+    ] },
+    { blocks: [{ type: 'text', body: EXAMPLE_NOTE }] },
+    { blocks: [{ type: 'text', body: SALES_NOTE }] },
+    { blocks: [{ type: 'text', body: CAISSE_NOTE }] },
+  ];
+
   function ready(fn) {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
     else fn();
@@ -150,7 +221,10 @@
   }
 
   ready(function () {
-    const store = TC.createStore(DEFAULT_NOTE);
+    const demo = isDemo();
+    const store = demo
+      ? TC.createStore(null, { key: DEMO_KEY, seedNotes: DEMO_NOTES })
+      : TC.createStore(DEFAULT_NOTE);
 
     const listEl = document.getElementById('note-list');
     const layoutEl = document.getElementById('app');
@@ -576,8 +650,9 @@
     });
 
     // Auto-connect: a shared link (#sync=…) takes priority, otherwise reuse the
-    // saved configuration.
-    (function initSync() {
+    // saved configuration. Never in demo mode — the sandbox stays offline so it
+    // can't push example notes into the real workspace.
+    function initSync() {
       const m = /[#&]sync=([^&]+)/.exec(location.hash || '');
       const fromLink = m ? TC.Sync.decodeShare(m[1]) : null;
       if (fromLink && fromLink.url && fromLink.ws) {
@@ -590,6 +665,36 @@
       } else {
         renderSyncStatus('off');
       }
+    }
+    if (demo) {
+      renderSyncStatus('off');
+      if (syncBtn) syncBtn.hidden = true;
+    } else {
+      initSync();
+    }
+
+    // Demo banner: make the sandbox obvious and easy to leave.
+    (function setupDemo() {
+      const enterBtn = document.getElementById('demo-enter');
+      if (enterBtn) {
+        if (demo) enterBtn.hidden = true;
+        else enterBtn.addEventListener('click', function () { location.href = location.pathname + '?demo'; });
+      }
+      const banner = document.getElementById('demo-banner');
+      if (!banner) return;
+      banner.hidden = !demo;
+      layoutEl.classList.toggle('is-demo', demo);
+      if (!demo) return;
+      const resetBtn = document.getElementById('demo-reset');
+      const exitBtn = document.getElementById('demo-exit');
+      if (resetBtn) resetBtn.addEventListener('click', function () {
+        if (!window.confirm('Réinitialiser les notes de démo ?')) return;
+        try { localStorage.removeItem(DEMO_KEY); } catch (e) { /* ignore */ }
+        location.reload();
+      });
+      if (exitBtn) exitBtn.addEventListener('click', function () {
+        location.href = location.pathname; // drop ?demo
+      });
     })();
 
     // Keyboard: Cmd/Ctrl+Enter creates a new note.
