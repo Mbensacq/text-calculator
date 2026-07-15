@@ -5,27 +5,27 @@
  * with ?v=N). Bump CACHE and the ?v= query together when assets change; the
  * old cache is then dropped on activate.
  */
-const CACHE = 'text-calculator-v24';
+const CACHE = 'text-calculator-v25';
 
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './styles/main.css?v=24',
-  './src/units.js?v=24',
-  './src/tokenizer.js?v=24',
-  './src/parser.js?v=24',
-  './src/evaluator.js?v=24',
-  './src/formatter.js?v=24',
-  './src/engine.js?v=24',
-  './src/editor.js?v=24',
-  './src/storage.js?v=24',
-  './src/grid.js?v=24',
-  './src/grid-editor.js?v=24',
-  './src/simplify.js?v=24',
-  './src/note-editor.js?v=24',
-  './src/sync.js?v=24',
-  './src/app.js?v=24',
+  './styles/main.css?v=25',
+  './src/units.js?v=25',
+  './src/tokenizer.js?v=25',
+  './src/parser.js?v=25',
+  './src/evaluator.js?v=25',
+  './src/formatter.js?v=25',
+  './src/engine.js?v=25',
+  './src/editor.js?v=25',
+  './src/storage.js?v=25',
+  './src/grid.js?v=25',
+  './src/grid-editor.js?v=25',
+  './src/simplify.js?v=25',
+  './src/note-editor.js?v=25',
+  './src/sync.js?v=25',
+  './src/app.js?v=25',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',

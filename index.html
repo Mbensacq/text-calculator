@@ -17,7 +17,7 @@
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="styles/main.css?v=24">
+  <link rel="stylesheet" href="styles/main.css?v=25">
 </head>
 <body>
   <div class="app" id="app">
@@ -222,6 +222,10 @@ B2 =                  une cellule</pre>
           aussi un bouton ▦ Tableau. Les variables d'un bloc restent utilisables
           dans les autres, même de part et d'autre d'un tableau (toute la note =
           une portée). Le « × » d'un bloc le supprime.</p>
+          <p><strong>Référencer un tableau depuis le texte :</strong> une cellule
+          du tableau s'appelle par sa case (A1, B2…) dans n'importe quel bloc
+          texte : <code>total = B1</code>, <code>somme(A1:A6)</code>. Ça se met à
+          jour quand le tableau change.</p>
         </section>
         <section>
           <h3>Grille cliquable (façon Excel)</h3>
@@ -328,19 +332,19 @@ D3: =somme(D1:D2)</pre>
     </aside>
   </div>
 
-  <script src="src/units.js?v=24"></script>
-  <script src="src/tokenizer.js?v=24"></script>
-  <script src="src/parser.js?v=24"></script>
-  <script src="src/evaluator.js?v=24"></script>
-  <script src="src/formatter.js?v=24"></script>
-  <script src="src/engine.js?v=24"></script>
-  <script src="src/editor.js?v=24"></script>
-  <script src="src/storage.js?v=24"></script>
-  <script src="src/grid.js?v=24"></script>
-  <script src="src/grid-editor.js?v=24"></script>
-  <script src="src/simplify.js?v=24"></script>
-  <script src="src/note-editor.js?v=24"></script>
-  <script src="src/sync.js?v=24"></script>
-  <script src="src/app.js?v=24"></script>
+  <script src="src/units.js?v=25"></script>
+  <script src="src/tokenizer.js?v=25"></script>
+  <script src="src/parser.js?v=25"></script>
+  <script src="src/evaluator.js?v=25"></script>
+  <script src="src/formatter.js?v=25"></script>
+  <script src="src/engine.js?v=25"></script>
+  <script src="src/editor.js?v=25"></script>
+  <script src="src/storage.js?v=25"></script>
+  <script src="src/grid.js?v=25"></script>
+  <script src="src/grid-editor.js?v=25"></script>
+  <script src="src/simplify.js?v=25"></script>
+  <script src="src/note-editor.js?v=25"></script>
+  <script src="src/sync.js?v=25"></script>
+  <script src="src/app.js?v=25"></script>
 </body>
 </html>

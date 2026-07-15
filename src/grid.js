@@ -196,9 +196,20 @@
   function deleteColumn(model, c) { return shiftedModel(model, 'col', c); }
   function deleteRow(model, r) { return shiftedModel(model, 'row', r); }
 
+  // Resolve a single cell / a range to its *value* (a Quantity / list), so other
+  // parts of a note (text blocks) can reference a table's cells in A1 notation.
+  function cellValue(model, name) {
+    try { return createContext(model).env.lookupCell(name); } catch (e) { return null; }
+  }
+  function rangeValue(model, from, to) {
+    try { return createContext(model).env.resolveRange(from, to); } catch (e) { return null; }
+  }
+
   return {
     computeGrid: computeGrid,
     evalExpr: evalExpr,
+    cellValue: cellValue,
+    rangeValue: rangeValue,
     deleteColumn: deleteColumn,
     deleteRow: deleteRow,
     colName: colName,

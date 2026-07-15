@@ -48,10 +48,29 @@
       return off;
     }
 
+    // Cell references (B1, ranges) in text resolve against the note's tables,
+    // so "total = B1" reads the grid's B1. With several tables, the first one
+    // that has the cell wins.
+    function noteCells() {
+      const models = [];
+      for (const c of ctx) if (c && c.type === 'grid') models.push(c.gridEditor.getModel());
+      if (!models.length) return null;
+      return {
+        lookupCell: function (name) {
+          for (const m of models) { const v = TC.Grid.cellValue(m, name); if (v != null) return v; }
+          return null;
+        },
+        resolveRange: function (from, to) {
+          for (const m of models) { const v = TC.Grid.rangeValue(m, from, to); if (v != null) return v; }
+          return null;
+        },
+      };
+    }
+
     // The result for one text block, sliced out of the whole-note evaluation
     // and re-indexed to that block's local lines.
     function evaluateBlock(i) {
-      const res = TC.evaluateDocument(combinedText());
+      const res = TC.evaluateDocument(combinedText(), { externalCells: noteCells() });
       const offset = textOffsetBefore(i);
       const n = ctx[i].editor.getValue().split('\n').length;
       const lines = [];
@@ -84,6 +103,7 @@
     function gridChanged(i, model) {
       blocks[i].grid = model;
       save();
+      refreshText(); // text blocks may reference this table's cells
     }
 
     /* ---- Structural operations -------------------------------------- */

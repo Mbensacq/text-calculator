@@ -153,7 +153,11 @@
     return rec;
   }
 
-  function evaluateDocument(text) {
+  function evaluateDocument(text, options) {
+    options = options || {};
+    // A resolver for A1 cell / range references that aren't satisfied by an
+    // inline pipe-table — used to reach the note's interactive table blocks.
+    const externalCells = options.externalCells || null;
     // A single reference instant for the whole document, so "aujourd'hui",
     // "demain" and friends all agree within one evaluation.
     const NOW = Date.now();
@@ -336,10 +340,14 @@
           return funcs[name] || null;
         },
         callFunction: callFunction,
-        lookupCell: function (name) { return bi >= 0 ? lookupCellIn(bi, name) : null; },
+        lookupCell: function (name) {
+          if (bi >= 0) { const v = lookupCellIn(bi, name); if (v != null) return v; }
+          return externalCells ? externalCells.lookupCell(name) : null;
+        },
         resolveRange: function (from, to) {
-          if (bi < 0) throw new CalcError('plage hors d’un tableau');
-          return resolveRangeIn(bi, from, to);
+          if (bi >= 0) { try { return resolveRangeIn(bi, from, to); } catch (e) { /* fall through */ } }
+          if (externalCells) { const r = externalCells.resolveRange(from, to); if (r != null) return r; }
+          throw new CalcError('plage hors d’un tableau');
         },
         now: NOW,
       };
