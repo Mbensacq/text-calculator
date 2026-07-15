@@ -485,6 +485,32 @@
       noteEditor.insertAtCaret(btn.dataset.insert, 1);
     });
 
+    // Command palette (Ctrl/Cmd+K) — every entry reuses a handler above.
+    const palette = TC.createCommandPalette ? TC.createCommandPalette({ getCommands: buildCommands }) : null;
+    function buildCommands() {
+      const cmds = [
+        { label: 'Nouvelle note', hint: 'Ctrl+Entrée', run: newNote },
+        { label: 'Nouveau tableau', run: newGridNote },
+        { label: 'Insérer un tableau ici', run: insertTable },
+        { label: 'Simplifier les calculs', run: function () { noteEditor.simplify(); } },
+        { label: 'Note d’exemple', run: loadExample },
+        { label: 'Note ventes (expo)', run: loadSales },
+        { label: 'Note caisse (expo)', run: loadCaisse },
+        { label: 'Aide-mémoire', run: function () { setHelp(true); } },
+        { label: 'Synchronisation…', run: function () { setSync(true); } },
+        { label: viewingTrash ? 'Revenir aux notes' : 'Corbeille', run: function () { viewingTrash = !viewingTrash; renderList(); } },
+      ];
+      store.list().slice(0, 12).forEach(function (it) {
+        cmds.push({ label: 'Aller à : ' + (it.title || 'Sans titre'), hint: 'note', run: function () { viewingTrash = false; selectNote(it.id); } });
+      });
+      return cmds;
+    }
+    if (palette) {
+      document.addEventListener('keydown', function (e) {
+        if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); palette.toggle(); }
+      });
+    }
+
     // Sidebar toggle (mobile)
     const toggle = document.getElementById('sidebar-toggle');
     function openSidebar() { layoutEl.classList.add('sidebar-open'); }
