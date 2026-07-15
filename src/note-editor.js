@@ -64,9 +64,13 @@
           for (const m of models) { const v = TC.Grid.rangeValue(m, from, to); if (v != null) return v; }
           return null;
         },
-        // Qualified "Nom!B1": resolve within the named table only.
+        // Qualified "Nom!B1" / "Nom!A1:A6": resolve within the named table only.
         lookupQCell: function (table, cell) {
           for (const m of models) if (m.name === table) return TC.Grid.cellValue(m, cell);
+          return null;
+        },
+        resolveQRange: function (table, from, to) {
+          for (const m of models) if (m.name === table) return TC.Grid.rangeValue(m, from, to);
           return null;
         },
       };

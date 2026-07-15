@@ -356,6 +356,9 @@
         lookupQCell: function (table, cell) {
           return externalCells && externalCells.lookupQCell ? externalCells.lookupQCell(table, cell) : null;
         },
+        resolveQRange: function (table, from, to) {
+          return externalCells && externalCells.resolveQRange ? externalCells.resolveQRange(table, from, to) : null;
+        },
         rate: function (from, to) {
           if (!rates) return null;
           const rf = rates[from], rt = rates[to];

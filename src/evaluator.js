@@ -580,6 +580,12 @@
         throw new CalcError('cellule « ' + ast.table + '!' + ast.cell + ' » introuvable');
       }
 
+      case 'qrange': {
+        const v = env && env.resolveQRange ? env.resolveQRange(ast.table, ast.from, ast.to) : null;
+        if (v != null) return v;
+        throw new CalcError('plage « ' + ast.table + '!' + ast.from + ':' + ast.to + ' » introuvable');
+      }
+
       case 'ratio': {
         // "part sur tout" → percentage (40 sur 250 = 16 %).
         return ratioPct(evaluate(ast.left, env), evaluate(ast.right, env));

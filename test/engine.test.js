@@ -346,7 +346,14 @@ function makeCells(tables) {
       for (const g of tables) { if (g.name === table) return Grid.cellValue(g, cell); }
       return null;
     },
-    resolveRange: function () { return null; },
+    resolveRange: function (from, to) {
+      for (const g of tables) { const v = Grid.rangeValue(g, from, to); if (v != null) return v; }
+      return null;
+    },
+    resolveQRange: function (table, from, to) {
+      for (const g of tables) { if (g.name === table) return Grid.rangeValue(g, from, to); }
+      return null;
+    },
   };
 }
 function runCells(text, tables) {
@@ -358,6 +365,11 @@ check('plain B1 falls back to first table when several', runCells('B1 =', [t1, t
 check('qualified T1!B1 targets its table', runCells('T1!B1 =', [t1, t2])[0], '20');
 check('qualified T2!B1 targets the other table', runCells('T2!B1 =', [t1, t2])[0], '200');
 check('qualified ref inside an expression', runCells('T2!B1 * 2 =', [t1, t2])[0], '400');
+// Qualified ranges: somme(T2!A1:A1) targets the named table.
+const rt1 = { rows: 4, cols: 1, cells: { '0,0': '10', '1,0': '20' }, name: 'T1' };
+const rt2 = { rows: 4, cols: 1, cells: { '0,0': '1', '1,0': '2', '2,0': '3' }, name: 'T2' };
+check('qualified range sums the named table', runCells('somme(T2!A1:A3) =', [rt1, rt2])[0], '6');
+check('qualified range on the other table', runCells('somme(T1!A1:A2) =', [rt1, rt2])[0], '30');
 check('unknown table name errors out',
   evaluateDocument('T3!B1 =', { externalCells: makeCells([t1, t2]) }).lines[0].error != null, true);
 check('lone bang is still factorial, not a qualified ref', run('5! =')[0], '120');

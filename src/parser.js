@@ -154,13 +154,19 @@
       let node = parsePower();
       for (;;) {
         if (at('colon')) {
-          // Cell range B1:B10 — both sides must be plain cell references.
+          // Cell range B1:B10, or qualified T2!B1:B10 when a table is named.
           next();
           const right = parsePower();
-          if (node.type !== 'ident' || right.type !== 'ident') {
+          if (right.type !== 'ident') {
             throw new ParseError('une plage attend deux références de cellule, ex. B1:B10');
           }
-          node = { type: 'range', from: node.name, to: right.name };
+          if (node.type === 'ident') {
+            node = { type: 'range', from: node.name, to: right.name };
+          } else if (node.type === 'qcell') {
+            node = { type: 'qrange', table: node.table, from: node.cell, to: right.name };
+          } else {
+            throw new ParseError('une plage attend deux références de cellule, ex. B1:B10 ou T2!B1:B10');
+          }
         }
         else if (at('percent')) { next(); node = { type: 'percent', operand: node }; }
         else if (at('bang')) { next(); node = { type: 'factorial', operand: node }; }
