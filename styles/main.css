@@ -167,6 +167,42 @@ body {
   padding: 0 1px;
 }
 
+/* Multiple selection */
+.sidebar__headbtns { display: inline-flex; gap: 4px; }
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--accent-soft);
+  border-bottom: 1px solid var(--rule);
+}
+.bulk-bar__count { font-size: 13px; font-weight: 700; color: var(--accent); }
+.bulk-bar__actions { display: inline-flex; gap: 4px; }
+.bulk-bar__btn {
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  border-radius: 7px;
+  width: 30px;
+  height: 28px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.bulk-bar__btn:hover { border-color: var(--accent); }
+.app.is-selecting .note-item { position: relative; padding-left: 36px; }
+.app.is-selecting .note-item::before {
+  content: '☐';
+  position: absolute;
+  left: 13px;
+  top: 11px;
+  color: var(--ink-soft);
+  font-size: 15px;
+}
+.app.is-selecting .note-item.is-selected::before { content: '☑'; color: var(--accent); }
+.app.is-selecting .note-item.is-selected { background: var(--accent-soft); }
+.app.is-selecting .note-item__actions { display: none; }
+
 .note-item__actions {
   position: absolute;
   top: 50%;

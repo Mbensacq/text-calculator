@@ -234,6 +234,8 @@
     let viewingTrash = false;
     let query = '';
     let queryTerms = [];
+    let selectMode = false;
+    const selectedIds = new Set();
 
     const noteView = document.getElementById('note-view');
     const sidebarTitle = document.querySelector('.sidebar__title');
@@ -456,7 +458,8 @@
         const li = document.createElement('li');
         li.className = 'note-item'
           + (!viewingTrash && n.id === activeId ? ' is-active' : '')
-          + (n.pinned ? ' is-pinned' : '');
+          + (n.pinned ? ' is-pinned' : '')
+          + (selectMode && selectedIds.has(n.id) ? ' is-selected' : '');
         li.dataset.id = n.id;
 
         const title = document.createElement('div');
@@ -503,6 +506,7 @@
         else if (action === 'purge') deleteForever(id);
         return;
       }
+      if (selectMode) { toggleSelected(id); return; }
       if (!viewingTrash) selectNote(id);
     });
 
@@ -521,17 +525,22 @@
     }
 
     // ---- Backup: export every note to a JSON file, import (merge) back -----
-    function exportNotes() {
-      const data = store.exportAll();
+    function downloadNotes(data, label) {
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'text-calculator-' + new Date().toISOString().slice(0, 10) + '.json';
+      a.download = 'text-calculator-' + label + '-' + new Date().toISOString().slice(0, 10) + '.json';
       document.body.appendChild(a);
       a.click();
       a.remove();
       setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+    }
+    function exportNotes() { downloadNotes(store.exportAll(), 'notes'); }
+    function exportSelection() {
+      const notes = Array.from(selectedIds).map(function (id) { return store.getNote(id); }).filter(Boolean);
+      if (!notes.length) return;
+      downloadNotes({ app: 'text-calculator', version: 1, exportedAt: Date.now(), notes: notes }, 'selection');
     }
     function importNotesFromFile(file) {
       const reader = new FileReader();
@@ -546,6 +555,53 @@
       };
       reader.readAsText(file);
     }
+    // ---- Multiple selection with grouped actions --------------------------
+    function setSelectMode(on) {
+      selectMode = on;
+      if (!on) selectedIds.clear();
+      layoutEl.classList.toggle('is-selecting', on);
+      updateBulkBar();
+      renderList();
+    }
+    function toggleSelected(id) {
+      if (selectedIds.has(id)) selectedIds.delete(id);
+      else selectedIds.add(id);
+      updateBulkBar();
+      const li = listEl.querySelector('.note-item[data-id="' + id + '"]');
+      if (li) li.classList.toggle('is-selected', selectedIds.has(id));
+    }
+    function updateBulkBar() {
+      const bar = document.getElementById('bulk-bar');
+      const count = document.getElementById('bulk-count');
+      if (!bar) return;
+      bar.hidden = !selectMode;
+      const n = selectedIds.size;
+      if (count) count.textContent = n + ' sélectionnée' + (n > 1 ? 's' : '');
+    }
+    function bulkPin() {
+      selectedIds.forEach(function (id) { store.setPinned(id, true); });
+      renderList();
+      pushAll();
+    }
+    function bulkTrash() {
+      const ids = Array.from(selectedIds);
+      ids.forEach(function (id) { store.setTrashed(id, true); });
+      setSelectMode(false);
+      loadActive();
+      renderList();
+      pushAll();
+    }
+    const selectToggle = document.getElementById('select-toggle');
+    if (selectToggle) selectToggle.addEventListener('click', function () { setSelectMode(!selectMode); });
+    const bulkPinBtn = document.getElementById('bulk-pin');
+    const bulkTrashBtn = document.getElementById('bulk-trash');
+    const bulkExportBtn = document.getElementById('bulk-export');
+    const bulkCancelBtn = document.getElementById('bulk-cancel');
+    if (bulkPinBtn) bulkPinBtn.addEventListener('click', bulkPin);
+    if (bulkTrashBtn) bulkTrashBtn.addEventListener('click', bulkTrash);
+    if (bulkExportBtn) bulkExportBtn.addEventListener('click', exportSelection);
+    if (bulkCancelBtn) bulkCancelBtn.addEventListener('click', function () { setSelectMode(false); });
+
     const exportBtn = document.getElementById('export-notes');
     const importBtn = document.getElementById('import-notes');
     const importFile = document.getElementById('import-file');

@@ -24,11 +24,23 @@
     <aside class="sidebar">
       <div class="sidebar__head">
         <span class="sidebar__title">Notes</span>
-        <button id="new-note" class="icon-btn" type="button" title="Nouvelle note (Ctrl/Cmd+Entrée)" aria-label="Nouvelle note">＋</button>
+        <span class="sidebar__headbtns">
+          <button id="select-toggle" class="icon-btn" type="button" title="Sélection multiple" aria-label="Sélection multiple">☑</button>
+          <button id="new-note" class="icon-btn" type="button" title="Nouvelle note (Ctrl/Cmd+Entrée)" aria-label="Nouvelle note">＋</button>
+        </span>
       </div>
       <div class="sidebar__search">
         <input id="note-search" type="search" class="search-input" placeholder="Rechercher…"
                spellcheck="false" autocomplete="off" aria-label="Rechercher dans les notes">
+      </div>
+      <div id="bulk-bar" class="bulk-bar" hidden>
+        <span id="bulk-count" class="bulk-bar__count">0 sélectionnée</span>
+        <span class="bulk-bar__actions">
+          <button id="bulk-pin" class="bulk-bar__btn" type="button" title="Épingler la sélection">📌</button>
+          <button id="bulk-trash" class="bulk-bar__btn" type="button" title="Mettre à la corbeille">🗑</button>
+          <button id="bulk-export" class="bulk-bar__btn" type="button" title="Exporter la sélection">⬇</button>
+          <button id="bulk-cancel" class="bulk-bar__btn" type="button" title="Annuler la sélection">✕</button>
+        </span>
       </div>
       <ul id="note-list" class="note-list"></ul>
       <div class="sidebar__foot">

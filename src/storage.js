@@ -283,6 +283,14 @@
       return n.pinned;
     }
 
+    function setPinned(id, val) {
+      const n = find(id);
+      if (!n) return;
+      n.pinned = !!val;
+      n.updatedAt = Date.now();
+      persist();
+    }
+
     function setTrashed(id, val) {
       const n = find(id);
       if (!n) return;
@@ -318,6 +326,7 @@
       list: list,
       trashList: trashList,
       togglePin: togglePin,
+      setPinned: setPinned,
       setTrashed: setTrashed,
       active: active,
       setActive: setActive,
