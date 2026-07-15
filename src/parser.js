@@ -3,7 +3,9 @@
  * expression AST.
  *
  * Grammar (lowest to highest precedence):
- *   expr        := convert
+ *   expr        := comparison
+ *   comparison  := ratio ( ('<' | '>' | …) ratio )*
+ *   ratio       := convert ( 'sur' convert )*
  *   convert     := additive ( ('en' | 'to') additive )?
  *   additive    := multiplicative ( ('+' | '-') multiplicative )*
  *   multiplicative := unary ( ('*' | '/') unary | IMPLICIT unary )*
@@ -39,6 +41,10 @@
   }
   ParseError.prototype = Object.create(Error.prototype);
 
+  // Words that act as infix operators. They must NOT be swallowed as factors by
+  // implicit multiplication ("40 sur 250" is a ratio, not "40 × sur × 250").
+  const INFIX_WORDS = { sur: true };
+
   function parse(tokens) {
     let pos = 0;
 
@@ -52,19 +58,31 @@
 
     // Does the current token start a new factor (for implicit multiplication)?
     function startsFactor() {
-      const t = peek().type;
-      return t === 'number' || t === 'ident' || t === 'lparen';
+      const t = peek();
+      if (t.type === 'ident' && INFIX_WORDS[t.value]) return false; // "sur" is an operator
+      return t.type === 'number' || t.type === 'ident' || t.type === 'lparen';
     }
 
     function parseExpr() { return parseComparison(); }
 
     // Comparisons are the loosest operators: "a + b > c" reads as "(a+b) > c".
     function parseComparison() {
-      let left = parseConvert();
+      let left = parseRatio();
       while (at('cmp')) {
         const op = next().value;
-        const right = parseConvert();
+        const right = parseRatio();
         left = { type: 'compare', op: op, left: left, right: right };
+      }
+      return left;
+    }
+
+    // "part sur tout" → the part as a percentage of the whole (40 sur 250 = 16 %).
+    function parseRatio() {
+      let left = parseConvert();
+      while (at('ident') && peek().value === 'sur') {
+        next();
+        const right = parseConvert();
+        left = { type: 'ratio', left: left, right: right };
       }
       return left;
     }

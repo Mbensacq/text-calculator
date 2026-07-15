@@ -129,6 +129,50 @@
     return Units.div(acc, Units.scalar(args.length));
   }
 
+  function stddevOf(args) { return Units.pow(varianceOf(args), Units.scalar(0.5)); }
+
+  // Relational percentages, rendered with the "%" display unit (base 0.16 → "16 %").
+  function ratioPct(a, b) {
+    if (Units.isList(a) || Units.isList(b) || Units.isDate(a) || Units.isDate(b)) {
+      throw new CalcError('un pourcentage attend deux nombres');
+    }
+    if (!Units.sameDim(a.dim, b.dim)) throw new CalcError('un pourcentage attend deux grandeurs de même unité');
+    if (b.base === 0) throw new CalcError('division par zéro');
+    return Units.quantity(a.base / b.base, {}, { '%': 1 });
+  }
+  function evolPct(a, b) {
+    if (Units.isList(a) || Units.isList(b) || Units.isDate(a) || Units.isDate(b)) {
+      throw new CalcError('une évolution attend deux nombres');
+    }
+    if (!Units.sameDim(a.dim, b.dim)) throw new CalcError('une évolution attend deux grandeurs de même unité');
+    if (a.base === 0) throw new CalcError('division par zéro (valeur de départ nulle)');
+    return Units.quantity((b.base - a.base) / a.base, {}, { '%': 1 });
+  }
+
+  // percentile(data…, rang) — linear interpolation, spreadsheet-style. Args are
+  // already flattened, so the trailing value is the rank and the rest the data.
+  function percentileFlat(args) {
+    if (args.length < 2) throw new CalcError('percentile attend des données puis un rang, ex. percentile(B1:B10, 90)');
+    const p = needDimensionless(args[args.length - 1], 'percentile');
+    if (p < 0 || p > 100) throw new CalcError('le rang d’un percentile va de 0 à 100');
+    const data = args.slice(0, -1);
+    reduceSame(data, 'percentile', (a) => a); // same-dimension check
+    const s = data.slice().sort((a, b) => a.base - b.base);
+    const rank = (p / 100) * (s.length - 1);
+    const lo = Math.floor(rank), hi = Math.ceil(rank);
+    if (lo === hi) return s[lo];
+    return Units.add(s[lo], Units.mul(Units.sub(s[hi], s[lo]), Units.scalar(rank - lo)));
+  }
+  // somme_cumulee(data…) → the list of running totals.
+  function cumulFlat(args) {
+    if (!args.length) throw new CalcError('somme cumulée sans données');
+    reduceSame(args, 'somme cumulée', (a) => a);
+    const out = [];
+    let acc = null;
+    for (const x of args) { acc = acc === null ? x : Units.add(acc, x); out.push(acc); }
+    return Units.list(out);
+  }
+
   function need2(args, name) {
     if (args.length !== 2) throw new CalcError(name + ' attend 2 arguments');
   }
@@ -149,8 +193,21 @@
     mediane: (args) => medianOf(args),
     médiane: (args) => medianOf(args),
     variance: (args) => varianceOf(args),
-    stddev: (args) => Units.pow(varianceOf(args), Units.scalar(0.5)),
-    ecarttype: (args) => Units.pow(varianceOf(args), Units.scalar(0.5)),
+    stddev: (args) => stddevOf(args),
+    ecarttype: (args) => stddevOf(args),
+    ecart_type: (args) => stddevOf(args),
+    'écart_type': (args) => stddevOf(args),
+    percentile: (args) => percentileFlat(args),
+    centile: (args) => percentileFlat(args),
+    somme_cumulee: (args) => cumulFlat(args),
+    'somme_cumulée': (args) => cumulFlat(args),
+    cumul: (args) => cumulFlat(args),
+    // Relational percentages (each returns a value shown as "N %").
+    sur: (args) => { need2(args, 'sur'); return ratioPct(args[0], args[1]); },
+    pourcentage: (args) => { need2(args, 'pourcentage'); return ratioPct(args[0], args[1]); },
+    evolution: (args) => { need2(args, 'evolution'); return evolPct(args[0], args[1]); },
+    'évolution': (args) => { need2(args, 'évolution'); return evolPct(args[0], args[1]); },
+    variation: (args) => { need2(args, 'variation'); return evolPct(args[0], args[1]); },
     count: (args) => Units.scalar(args.length),
     hypot: (args) => Units.pow(addAll(args.map((a) => Units.pow(a, Units.scalar(2))), 'hypot'), Units.scalar(0.5)),
     pow: (args) => { need2(args, 'pow'); return Units.pow(args[0], args[1]); },
@@ -397,6 +454,11 @@
         const v = env && env.lookupQCell ? env.lookupQCell(ast.table, ast.cell) : null;
         if (v != null) return v;
         throw new CalcError('cellule « ' + ast.table + '!' + ast.cell + ' » introuvable');
+      }
+
+      case 'ratio': {
+        // "part sur tout" → percentage (40 sur 250 = 16 %).
+        return ratioPct(evaluate(ast.left, env), evaluate(ast.right, env));
       }
 
       case 'unary': {

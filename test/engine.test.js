@@ -254,6 +254,25 @@ expr('monnaie(50 €, 42.50 €)', '7.5 €');
 check('caisse daily total', run('v = 8 €, 23 €, 10 €, 6 €\nsomme(v) =')[1], '47 €');
 check('caisse count', run('v = 8 €, 23 €, 10 €, 6 €\ncount(v) =')[1], '4');
 
+/* ---- relational percentages (displayed with the "%" unit) --------- */
+expr('40 sur 250', '16 %');
+expr('30 € sur 250 €', '12 %');
+expr('sur(1, 8)', '12.5 %');
+expr('pourcentage(1, 4)', '25 %');
+expr('evolution(80, 95)', '18.75 %');
+expr('variation(100, 90)', '-10 %');
+// "sur" must not break implicit multiplication or factorial elsewhere.
+expr('10 km / 2 h', '5 km/h');
+expr('5!', '120');
+check('sur needs same dimension', /unité/.test(run('10 € sur 2 kg =')[0]), true);
+
+/* ---- statistics: percentile, cumulative sum, std deviation -------- */
+expr('percentile(1, 2, 3, 4, 5, 6, 7, 8, 9, 50)', '5');
+expr('percentile(2, 4, 6, 8, 10, 90)', '9.2');
+expr('somme_cumulee(1, 2, 3, 4)', '1, 3, 6, 10');
+expr('cumul(10 €, 20 €, 5 €)', '10 €, 30 €, 35 €');
+expr('ecart_type(2, 4, 4, 4, 5, 5, 7, 9)', '2');
+
 /* ---- interactive grid: delete column/row & aggregates ------------- */
 const Grid = require('../src/grid.js');
 const gm = {

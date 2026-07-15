@@ -147,6 +147,11 @@
   def(['Mio', 'MiB'], 1024 ** 2, { data: 1 });
   def(['Gio', 'GiB'], 1024 ** 3, { data: 1 });
 
+  // Percentage as a dimensionless display unit: a value with unit { '%': 1 }
+  // renders as "16 %" (base 0.16 ÷ 0.01). Built by relational-percent helpers;
+  // never produced by the tokenizer's bare "%" (that stays a postfix operator).
+  def(['%'], 0.01, {});
+
   // Money — each currency is its own base dimension so they never mix silently.
   def(['€', 'EUR', 'euro', 'euros'], 1, { EUR: 1 });
   def(['$', 'USD', 'dollar', 'dollars'], 1, { USD: 1 });
