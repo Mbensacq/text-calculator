@@ -1,10 +1,14 @@
 /*
  * storage.js — a tiny note collection backed by localStorage.
  *
- * A note is just { id, body, updatedAt }. Its title is derived from the first
- * non-empty line (Apple-Notes style), so there is no separate title field to
- * keep in sync. The store persists on every change and migrates the old
- * single-note key from earlier versions.
+ * A note is a *stack of blocks*:
+ *   { id, blocks: [ {type:'text', body} | {type:'grid', grid} ], updatedAt,
+ *     pinned?, trashed? }
+ *
+ * A note's title is derived from its first meaningful block (Apple-Notes
+ * style), so there is no separate title field. The store persists on every
+ * change, migrates the old single-note key, and upgrades legacy notes (which
+ * had a `type` + `body`/`grid`) to the block model on read.
  */
 (function (root, factory) {
   const mod = factory();
@@ -28,12 +32,11 @@
       const t = line.replace(/^\s*(#+|\/\/)\s*/, '').trim();
       if (t) return t;
     }
-    return 'Note sans titre';
+    return '';
   }
 
   function deriveSnippet(body) {
     const lines = (body || '').split('\n').map((l) => l.trim()).filter(Boolean);
-    // Skip the line already used as the title.
     return lines.length > 1 ? lines[1].replace(/^\s*(#+|\/\/)\s*/, '') : '';
   }
 
@@ -49,9 +52,64 @@
     return 'Tableau';
   }
 
-  function emptyGrid() {
-    return { rows: 6, cols: 4, cells: {} };
+  function emptyGrid() { return { rows: 6, cols: 4, cells: {} }; }
+  function textBlock(body) { return { type: 'text', body: body || '' }; }
+  function gridBlock(grid) { return { type: 'grid', grid: grid || emptyGrid() }; }
+
+  // Normalise any note-ish object into a blocks array (upgrades legacy notes
+  // and remote payloads that predate the block model).
+  function toBlocks(src) {
+    if (src && Array.isArray(src.blocks) && src.blocks.length) {
+      return src.blocks.map(function (b) {
+        return b && b.type === 'grid' ? gridBlock(b.grid) : textBlock(b.body);
+      });
+    }
+    if (src && src.type === 'grid') return [gridBlock(src.grid)];
+    return [textBlock(src ? src.body : '')];
   }
+
+  function normalise(note) {
+    return {
+      id: note.id || uid(),
+      blocks: toBlocks(note),
+      updatedAt: note.updatedAt || Date.now(),
+      pinned: !!note.pinned,
+      trashed: !!note.trashed,
+    };
+  }
+
+  function firstText(note) {
+    for (const b of note.blocks) if (b.type === 'text') return b.body || '';
+    return '';
+  }
+
+  function noteTitle(note) {
+    for (const b of note.blocks) {
+      if (b.type === 'grid') return gridTitle(b.grid);
+      const t = deriveTitle(b.body);
+      if (t) return t;
+    }
+    return 'Note sans titre';
+  }
+
+  function noteSnippet(note) {
+    const tables = note.blocks.filter((b) => b.type === 'grid').length;
+    const snip = deriveSnippet(firstText(note));
+    if (snip) return snip + (tables ? ' · ' + tables + ' tableau' + (tables > 1 ? 'x' : '') : '');
+    if (tables) return tables + ' tableau' + (tables > 1 ? 'x' : '');
+    return '';
+  }
+
+  function noteSearch(note) {
+    const parts = [];
+    for (const b of note.blocks) {
+      if (b.type === 'text') parts.push(b.body || '');
+      else parts.push(gridTitle(b.grid), Object.values((b.grid && b.grid.cells) || {}).join(' '));
+    }
+    return parts.join(' ').toLowerCase();
+  }
+
+  function hasTable(note) { return note.blocks.some((b) => b.type === 'grid'); }
 
   function createStore(seedBody) {
     let state = read();
@@ -63,6 +121,7 @@
         if (!raw) return null;
         const parsed = JSON.parse(raw);
         if (!parsed || !Array.isArray(parsed.notes) || !parsed.notes.length) return null;
+        parsed.notes = parsed.notes.map(normalise); // upgrade legacy shapes
         return parsed;
       } catch (e) {
         return null;
@@ -75,7 +134,7 @@
         const legacy = localStorage.getItem(LEGACY_KEY);
         if (legacy != null && legacy.trim()) initialBody = legacy;
       } catch (e) { /* ignore */ }
-      const note = { id: uid(), body: initialBody, updatedAt: Date.now() };
+      const note = normalise({ id: uid(), blocks: [textBlock(initialBody)] });
       return { notes: [note], activeId: note.id };
     }
 
@@ -83,7 +142,6 @@
       try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* full/disabled */ }
     }
 
-    // Pinned notes float to the top; within a group, most-recent first.
     function sortNotes(a, b) {
       const pa = a.pinned ? 1 : 0;
       const pb = b.pinned ? 1 : 0;
@@ -92,39 +150,27 @@
     }
 
     function toItem(n) {
-      const title = n.type === 'grid' ? gridTitle(n.grid) : deriveTitle(n.body);
-      const snippet = n.type === 'grid' ? 'Tableau' : deriveSnippet(n.body);
-      const bodyText = n.type === 'grid' ? '' : (n.body || '');
       return {
         id: n.id,
-        type: n.type || 'text',
-        title: title,
-        snippet: snippet,
+        title: noteTitle(n),
+        snippet: noteSnippet(n),
         updatedAt: n.updatedAt,
         pinned: !!n.pinned,
+        hasTable: hasTable(n),
         active: n.id === state.activeId,
-        search: (title + ' ' + snippet + ' ' + bodyText).toLowerCase(),
+        search: noteSearch(n),
       };
     }
 
     function visibleNotes() { return state.notes.filter((n) => !n.trashed); }
-
-    function list() {
-      return visibleNotes().slice().sort(sortNotes).map(toItem);
-    }
-
-    // Notes currently in the trash (most-recent first).
+    function list() { return visibleNotes().slice().sort(sortNotes).map(toItem); }
     function trashList() {
       return state.notes.filter((n) => n.trashed)
         .slice().sort((a, b) => b.updatedAt - a.updatedAt).map(toItem);
     }
 
-    function find(id) {
-      return state.notes.filter((n) => n.id === id)[0] || null;
-    }
+    function find(id) { return state.notes.filter((n) => n.id === id)[0] || null; }
 
-    // The active note, unless it has been trashed — then fall back to the most
-    // relevant visible note (creating an empty one only if the trash is all).
     function active() {
       const a = find(state.activeId);
       if (a && !a.trashed) return a;
@@ -138,7 +184,7 @@
     }
 
     function create() {
-      const note = { id: uid(), body: '', updatedAt: Date.now() };
+      const note = normalise({ id: uid(), blocks: [textBlock('')] });
       state.notes.push(note);
       state.activeId = note.id;
       persist();
@@ -146,25 +192,18 @@
     }
 
     function createGrid() {
-      const note = { id: uid(), type: 'grid', grid: emptyGrid(), updatedAt: Date.now() };
+      const note = normalise({ id: uid(), blocks: [gridBlock(emptyGrid())] });
       state.notes.push(note);
       state.activeId = note.id;
       persist();
       return note;
     }
 
-    function updateBody(id, body) {
+    // Replace a note's blocks wholesale (the note editor owns the block array).
+    function updateBlocks(id, blocks) {
       const note = find(id);
       if (!note) return;
-      note.body = body;
-      note.updatedAt = Date.now();
-      persist();
-    }
-
-    function updateGrid(id, grid) {
-      const note = find(id);
-      if (!note) return;
-      note.grid = grid;
+      note.blocks = toBlocks({ blocks: blocks });
       note.updatedAt = Date.now();
       persist();
     }
@@ -172,47 +211,35 @@
     function getNote(id) {
       const n = find(id);
       if (!n) return null;
-      const out = { id: n.id, type: n.type || 'text', updatedAt: n.updatedAt || 0 };
-      if (out.type === 'grid') out.grid = n.grid || { rows: 6, cols: 4, cells: {} };
-      else out.body = n.body || '';
-      // Only carry the flags when set, to keep the synced payload lean. Absent
-      // means false, so older payloads stay compatible.
+      const out = { id: n.id, updatedAt: n.updatedAt || 0, blocks: toBlocks(n) };
       if (n.pinned) out.pinned = true;
       if (n.trashed) out.trashed = true;
       return out;
     }
 
-    function allNotes() {
-      return state.notes.map((n) => getNote(n.id));
-    }
+    function allNotes() { return state.notes.map((n) => getNote(n.id)); }
 
-    // Merge a note coming from another device. Last-write-wins by updatedAt.
-    // Returns 'added' | 'updated' | 'ignored'. Never changes the active note.
+    // Merge a note from another device. Last-write-wins by updatedAt. Accepts
+    // both the block shape and the legacy {type, body/grid} shape.
     function applyRemote(id, remote) {
       const ts = remote.updatedAt || 0;
       const existing = find(id);
       if (existing) {
         if (ts <= (existing.updatedAt || 0)) return 'ignored';
-        existing.type = remote.type || 'text';
-        if (existing.type === 'grid') { existing.grid = remote.grid || { rows: 6, cols: 4, cells: {} }; delete existing.body; }
-        else { existing.body = remote.body || ''; delete existing.grid; }
+        existing.blocks = toBlocks(remote);
         existing.pinned = !!remote.pinned;
         existing.trashed = !!remote.trashed;
         existing.updatedAt = ts;
         persist();
         return 'updated';
       }
-      const note = { id: id, type: remote.type || 'text', updatedAt: ts };
-      if (note.type === 'grid') note.grid = remote.grid || { rows: 6, cols: 4, cells: {} };
-      else note.body = remote.body || '';
-      if (remote.pinned) note.pinned = true;
-      if (remote.trashed) note.trashed = true;
+      const note = normalise({ id: id, blocks: toBlocks(remote), updatedAt: ts,
+        pinned: remote.pinned, trashed: remote.trashed });
       state.notes.push(note);
       persist();
       return 'added';
     }
 
-    // Pin / unpin. Bumps updatedAt so the change also propagates over sync.
     function togglePin(id) {
       const n = find(id);
       if (!n) return false;
@@ -222,8 +249,6 @@
       return n.pinned;
     }
 
-    // Soft delete: move to (or out of) the trash. Recoverable, and it syncs.
-    // Trashing the active note hands the focus to the next visible note.
     function setTrashed(id, val) {
       const n = find(id);
       if (!n) return;
@@ -233,7 +258,7 @@
         const next = visibleNotes().slice().sort(sortNotes)[0];
         if (next) state.activeId = next.id;
         else {
-          const fresh = { id: uid(), body: '', updatedAt: Date.now() };
+          const fresh = normalise({ id: uid(), blocks: [textBlock('')] });
           state.notes.push(fresh);
           state.activeId = fresh.id;
         }
@@ -241,17 +266,15 @@
       persist();
     }
 
-    // Permanent delete (from the trash). The caller is expected to also send a
-    // sync tombstone so the deletion reaches other devices.
     function remove(id) {
       state.notes = state.notes.filter((n) => n.id !== id);
       if (!visibleNotes().length) {
-        const fresh = { id: uid(), body: '', updatedAt: Date.now() };
+        const fresh = normalise({ id: uid(), blocks: [textBlock('')] });
         state.notes.push(fresh);
         state.activeId = fresh.id;
       } else {
         const cur = find(state.activeId);
-        if (!cur || cur.trashed) state.activeId = list()[0].id; // most relevant visible
+        if (!cur || cur.trashed) state.activeId = list()[0].id;
       }
       persist();
       return active();
@@ -266,8 +289,7 @@
       setActive: setActive,
       create: create,
       createGrid: createGrid,
-      updateBody: updateBody,
-      updateGrid: updateGrid,
+      updateBlocks: updateBlocks,
       remove: remove,
       getNote: getNote,
       allNotes: allNotes,
@@ -275,5 +297,12 @@
     };
   }
 
-  return { createStore: createStore, deriveTitle: deriveTitle, deriveSnippet: deriveSnippet };
+  return {
+    createStore: createStore,
+    deriveTitle: deriveTitle,
+    deriveSnippet: deriveSnippet,
+    emptyGrid: emptyGrid,
+    textBlock: textBlock,
+    gridBlock: gridBlock,
+  };
 });

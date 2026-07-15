@@ -138,10 +138,18 @@
     const highlight = opts.highlight; // colour + measuring layer
     const onChange = opts.onChange || function () {};
     const staticNames = opts.completions || []; // [{ name, kind }]
+    // Injected evaluator (default: evaluate this textarea alone). A block in a
+    // multi-block note passes one that evaluates the whole note's shared scope
+    // and returns just this block's lines.
+    const evaluate = opts.evaluate || function (t) { return TC.evaluateDocument(t); };
+    const blockMode = !!opts.block;
+
+    const editorBox = highlight.parentNode;
+    if (blockMode) editorBox.classList.add('is-block');
 
     const results = document.createElement('div');
     results.className = 'editor__results-layer';
-    highlight.parentNode.appendChild(results);
+    editorBox.appendChild(results);
 
     const pool = {}; // line index -> { el, text }
 
@@ -279,13 +287,15 @@
       }
       if (isFunc) { const p = input.selectionStart - 1; input.setSelectionRange(p, p); }
       closeAc();
-      recompute();
+      recompute(true);
     }
 
     function copyMetrics() {
       const cs = getComputedStyle(input);
       for (const prop of COPIED_STYLES) highlight.style[prop] = cs[prop];
-      highlight.style.width = input.clientWidth + 'px';
+      // In block mode the highlight is in normal flow and defines the block's
+      // height, so let it size to the container rather than pinning a width.
+      highlight.style.width = blockMode ? 'auto' : input.clientWidth + 'px';
     }
 
     function syncScroll() {
@@ -294,10 +304,10 @@
       results.style.transform = y;
     }
 
-    function recompute() {
+    function recompute(fireChange) {
       const text = input.value;
       const lines = text.split('\n');
-      const result = TC.evaluateDocument(text);
+      const result = evaluate(text);
 
       if (result.names) {
         docNames = (result.names.vars || []).map(function (n) { return { name: n, kind: 'var' }; })
@@ -394,13 +404,13 @@
       }
 
       syncScroll();
-      onChange(text, result);
+      if (fireChange !== false) onChange(text, result);
     }
 
-    input.addEventListener('input', recompute);
+    input.addEventListener('input', function () { recompute(true); });
     input.addEventListener('input', refreshAc);
     input.addEventListener('scroll', function () { syncScroll(); closeAc(); });
-    window.addEventListener('resize', function () { copyMetrics(); recompute(); closeAc(); });
+    window.addEventListener('resize', function () { copyMetrics(); recompute(false); closeAc(); });
 
     // Autocomplete keyboard: navigation and acceptance take over only while the
     // menu is open, so ordinary typing (and Ctrl/Cmd+Enter) is untouched.
@@ -429,7 +439,6 @@
      *   • touch   — long-press a number, then drag (so a plain swipe still
      *     scrolls the note and a tap still places the caret).
      * ------------------------------------------------------------------ */
-    const editorBox = highlight.parentNode;
     const LONG_PRESS_MS = 400;
     const MOVE_CANCEL = 10;
     let scrub = null;
@@ -469,7 +478,7 @@
       scrub.len = str.length;
       const caret = scrub.abs + str.length;
       try { input.setSelectionRange(caret, caret); } catch (err) { /* ignore */ }
-      recompute();
+      recompute(true);
     }
 
     function cancelArm() { if (touchArm) { clearTimeout(touchArm.timer); touchArm = null; } }
@@ -528,9 +537,12 @@
     // Underline numbers and switch the cursor while Alt is held, to hint that
     // they can be dragged (desktop).
     function altHint(on) { editorBox.classList.toggle('scrub-ready', on); }
-    document.addEventListener('keydown', function (e) { if (e.key === 'Alt') altHint(true); });
-    document.addEventListener('keyup', function (e) { if (e.key === 'Alt') altHint(false); });
-    window.addEventListener('blur', function () { altHint(false); });
+    function onAltDown(e) { if (e.key === 'Alt') altHint(true); }
+    function onAltUp(e) { if (e.key === 'Alt') altHint(false); }
+    function onWinBlur() { altHint(false); }
+    document.addEventListener('keydown', onAltDown);
+    document.addEventListener('keyup', onAltUp);
+    window.addEventListener('blur', onWinBlur);
 
     copyMetrics();
 
@@ -544,7 +556,7 @@
         closeAc();
         input.value = v == null ? '' : v;
         input.scrollTop = 0;
-        recompute();
+        recompute(false);
       },
       // Insert text at the caret (used by the function palette). The caret is
       // left `caretOffsetFromEnd` characters before the end of the inserted
@@ -565,7 +577,15 @@
           const pos = input.selectionStart - caretOffsetFromEnd;
           input.setSelectionRange(pos, pos);
         }
-        recompute();
+        recompute(true);
+      },
+      // Detach body-level nodes/listeners when a block is removed.
+      destroy: function () {
+        try { acEl.remove(); } catch (e) { /* ignore */ }
+        try { mirror.remove(); } catch (e) { /* ignore */ }
+        document.removeEventListener('keydown', onAltDown);
+        document.removeEventListener('keyup', onAltUp);
+        window.removeEventListener('blur', onWinBlur);
       },
     };
   }

@@ -160,8 +160,7 @@
     let viewingTrash = false;
     let query = '';
 
-    const textView = document.getElementById('text-view');
-    const gridView = document.getElementById('grid-view');
+    const noteView = document.getElementById('note-view');
     const sidebarTitle = document.querySelector('.sidebar__title');
     const searchInput = document.getElementById('note-search');
     const trashToggle = document.getElementById('trash-toggle');
@@ -191,57 +190,32 @@
       return out;
     }
 
-    const editor = TC.createEditor({
-      input: document.getElementById('input'),
-      highlight: document.getElementById('highlight'),
+    // The whole note is a stack of blocks (text-that-calculates + tables). The
+    // note editor owns the block array and saves it back through onChange.
+    const noteEditor = TC.createNoteEditor({
+      container: noteView,
       completions: builtinCompletions(),
-      onChange: function (text) {
-        store.updateBody(activeId, text);
+      onChange: function (blocks) {
+        store.updateBlocks(activeId, blocks);
         schedulePush(activeId);
         bumpList();
       },
     });
-
-    const gridEditor = TC.createGridEditor({
-      container: document.getElementById('grid'),
-      onChange: function (model) {
-        store.updateGrid(activeId, model);
-        schedulePush(activeId);
-        bumpList();
-      },
-      // Clicking the top-left corner deletes the whole table (its note). It goes
-      // to the trash, so it stays recoverable — but confirm, since it clears the
-      // entire grid in one click.
-      onDeleteTable: function () {
-        const note = store.list().filter(function (n) { return n.id === activeId; })[0];
-        const label = note ? note.title : 'ce tableau';
-        if (!window.confirm('Supprimer « ' + label + ' » ? (récupérable dans la corbeille)')) return;
-        trashNote(activeId);
-      },
-    });
-
-    let isGrid = false;
 
     function loadActive() {
       const note = store.active();
       activeId = note.id;
-      isGrid = note.type === 'grid';
-      textView.hidden = isGrid;
-      gridView.hidden = !isGrid;
-      if (isGrid) gridEditor.setModel(note.grid);
-      else editor.setValue(note.body);
+      noteEditor.setNote(note);
       renderList();
     }
 
-    function focusActive() { if (isGrid) gridEditor.focus(); else editor.focus(); }
+    function focusActive() { noteEditor.focus(); }
 
     // A short slide-in when the visible note changes (user-initiated switches).
     function animateSwitch() {
-      const el = isGrid ? gridView : textView;
-      if (!el) return;
-      el.classList.remove('note-anim');
-      void el.offsetWidth; // force reflow so the animation restarts
-      el.classList.add('note-anim');
+      noteView.classList.remove('note-anim');
+      void noteView.offsetWidth; // force reflow so the animation restarts
+      noteView.classList.add('note-anim');
     }
 
     function selectNote(id) {
@@ -259,28 +233,36 @@
       animateSwitch();
       pushNow(note.id);
       closeSidebar();
-      editor.focus();
+      focusActive();
     }
 
-    function newGrid() {
+    // Start a fresh note that opens on a table.
+    function newGridNote() {
       viewingTrash = false;
       const note = store.createGrid();
       loadActive();
       animateSwitch();
       pushNow(note.id);
       closeSidebar();
-      gridEditor.focus();
+      focusActive();
+    }
+
+    // Insert a table into the note being edited (the primary way to add one).
+    function insertTable() {
+      viewingTrash = false;
+      noteEditor.insertTable();
+      closeSidebar();
     }
 
     function loadNote(body) {
       viewingTrash = false;
       const note = store.create();
-      store.updateBody(note.id, body);
+      store.updateBlocks(note.id, [{ type: 'text', body: body }]);
       loadActive();
       animateSwitch();
       pushNow(note.id);
       closeSidebar();
-      editor.focus();
+      focusActive();
     }
     function loadExample() { loadNote(EXAMPLE_NOTE); }
     function loadSales() { loadNote(SALES_NOTE); }
@@ -415,8 +397,8 @@
     }
 
     document.getElementById('new-note').addEventListener('click', newNote);
-    document.getElementById('new-grid').addEventListener('click', newGrid);
-    document.getElementById('tb-grid').addEventListener('click', newGrid);
+    document.getElementById('new-grid').addEventListener('click', newGridNote);
+    document.getElementById('tb-grid').addEventListener('click', insertTable);
     document.getElementById('load-example').addEventListener('click', loadExample);
     document.getElementById('load-sales').addEventListener('click', loadSales);
     document.getElementById('load-caisse').addEventListener('click', loadCaisse);
@@ -425,7 +407,7 @@
     document.getElementById('fnbar').addEventListener('click', function (e) {
       const btn = e.target.closest('.fn');
       if (!btn) return;
-      editor.insertAtCaret(btn.dataset.insert, 1);
+      noteEditor.insertAtCaret(btn.dataset.insert, 1);
     });
 
     // Sidebar toggle (mobile)
@@ -442,7 +424,7 @@
     // Mobile bottom action bar (thumb zone).
     document.getElementById('mb-notes').addEventListener('click', function () { layoutEl.classList.toggle('sidebar-open'); });
     document.getElementById('mb-note').addEventListener('click', newNote);
-    document.getElementById('mb-grid').addEventListener('click', newGrid);
+    document.getElementById('mb-grid').addEventListener('click', insertTable);
     document.getElementById('mb-help').addEventListener('click', function () { setHelp(true); });
 
     // Help panel
@@ -495,7 +477,7 @@
 
     function isEditingActive() {
       const ae = document.activeElement;
-      return !!ae && (textView.contains(ae) || gridView.contains(ae));
+      return !!ae && noteView.contains(ae);
     }
 
     function onRemoteNote(id, remote) {

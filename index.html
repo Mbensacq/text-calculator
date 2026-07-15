@@ -17,7 +17,7 @@
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="styles/main.css?v=20">
+  <link rel="stylesheet" href="styles/main.css?v=21">
 </head>
 <body>
   <div class="app" id="app">
@@ -57,10 +57,9 @@
         </div>
       </header>
 
-      <div id="text-view">
       <div class="fnbar" id="fnbar" role="toolbar" aria-label="Barre d'outils">
         <div class="fnbar__group fnbar__group--lead">
-          <button type="button" id="tb-grid" class="tb-btn tb-btn--primary" title="Nouveau tableau (grille cliquable)">
+          <button type="button" id="tb-grid" class="tb-btn tb-btn--primary" title="Insérer un tableau (grille cliquable)">
             <span class="tb-btn__ico" aria-hidden="true">▦</span>
             <span class="tb-btn__txt">Tableau</span>
           </button>
@@ -80,19 +79,7 @@
         </div>
       </div>
 
-      <main class="sheet">
-        <div class="editor">
-          <textarea id="input" class="editor__input" spellcheck="false" autocomplete="off"
-                    autocapitalize="off" autocorrect="off"
-                    placeholder="Écrivez vos notes… par ex.  distance = 10 km"></textarea>
-          <div id="highlight" class="editor__highlight" aria-hidden="true"></div>
-        </div>
-      </main>
-      </div><!-- /text-view -->
-
-      <div id="grid-view" hidden>
-        <div id="grid" class="gridwrap"></div>
-      </div>
+      <div id="note-view" class="note-view"></div>
     </div>
 
     <nav class="mobilebar" aria-label="Actions rapides">
@@ -208,11 +195,20 @@ somme(D2:D3) =        total de la colonne D
 B2 =                  une cellule</pre>
         </section>
         <section>
+          <h3>Tableaux dans les notes</h3>
+          <p>Une note est une <strong>pile de blocs</strong> : du texte qui
+          calcule et des <strong>tableaux</strong>, mélangés. Insérez un tableau
+          où vous voulez avec le bouton <strong>▦ Tableau</strong> (barre
+          d'outils) ou le <strong>＋ Tableau</strong> entre deux blocs. Les
+          variables d'un bloc restent utilisables dans les autres, même de part
+          et d'autre d'un tableau (toute la note = une portée). Le « × » d'un
+          bloc le supprime.</p>
+        </section>
+        <section>
           <h3>Grille cliquable (façon Excel)</h3>
-          <p>Créez un <strong>Tableau</strong> avec le bouton à gauche de la
-          barre d'outils. Cliquez une cellule pour la saisir ; une cellule
-          commençant par <code>=</code> affiche son <em>résultat</em>. Entrée
-          descend, Tab va à droite, les « + » agrandissent la grille.</p>
+          <p>Cliquez une cellule pour la saisir ; une cellule commençant par
+          <code>=</code> affiche son <em>résultat</em>. Entrée descend, Tab va à
+          droite, les « + » agrandissent la grille.</p>
           <p><strong>En-têtes cliquables :</strong> cliquez une lettre de
           colonne (ou un numéro de ligne) pour la <em>sélectionner</em> — la
           somme, la moyenne et le nombre de valeurs s'affichent en bas, et le
@@ -307,17 +303,18 @@ D3: =somme(D1:D2)</pre>
     </aside>
   </div>
 
-  <script src="src/units.js?v=20"></script>
-  <script src="src/tokenizer.js?v=20"></script>
-  <script src="src/parser.js?v=20"></script>
-  <script src="src/evaluator.js?v=20"></script>
-  <script src="src/formatter.js?v=20"></script>
-  <script src="src/engine.js?v=20"></script>
-  <script src="src/editor.js?v=20"></script>
-  <script src="src/storage.js?v=20"></script>
-  <script src="src/grid.js?v=20"></script>
-  <script src="src/grid-editor.js?v=20"></script>
-  <script src="src/sync.js?v=20"></script>
-  <script src="src/app.js?v=20"></script>
+  <script src="src/units.js?v=21"></script>
+  <script src="src/tokenizer.js?v=21"></script>
+  <script src="src/parser.js?v=21"></script>
+  <script src="src/evaluator.js?v=21"></script>
+  <script src="src/formatter.js?v=21"></script>
+  <script src="src/engine.js?v=21"></script>
+  <script src="src/editor.js?v=21"></script>
+  <script src="src/storage.js?v=21"></script>
+  <script src="src/grid.js?v=21"></script>
+  <script src="src/grid-editor.js?v=21"></script>
+  <script src="src/note-editor.js?v=21"></script>
+  <script src="src/sync.js?v=21"></script>
+  <script src="src/app.js?v=21"></script>
 </body>
 </html>

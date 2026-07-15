@@ -280,10 +280,8 @@ body {
 
   .topbar__menu { display: inline-flex; align-items: center; justify-content: center; }
 
-  /* Roomier writing surface + space for the bottom bar. (Higher-specificity
-     selectors so these win over the base rules that appear later in the file.) */
-  .workspace .sheet { padding: 16px 12px calc(66px + env(safe-area-inset-bottom, 0px)); }
-  .workspace #grid-view { padding: 14px 14px calc(66px + env(safe-area-inset-bottom, 0px)); }
+  /* Roomier writing surface + space for the bottom bar. */
+  .note-view { padding: 14px 10px calc(74px + env(safe-area-inset-bottom, 0px)); }
 
   .mobilebar {
     display: flex;
@@ -573,6 +571,103 @@ body {
   font-weight: 500;
   font-size: 13.5px;
 }
+
+/* ---- Note blocks (a note = a stack of text + table blocks) ---------- */
+
+.note-view {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 22px 24px 48px;
+}
+
+.note-block,
+.block-insert { width: 100%; max-width: 760px; }
+
+.note-block { position: relative; }
+
+/* Text block: a paper card whose height follows its content (block mode). */
+.editor.is-block {
+  max-width: none;
+  border-radius: 12px;
+  overflow: visible;      /* let result chips show past the edge */
+}
+.editor.is-block .editor__highlight {
+  position: relative;     /* in normal flow → defines the block's height */
+  inset: auto;
+  width: auto;
+  min-height: 1.7em;
+}
+.editor.is-block .editor__input {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  overflow: hidden;       /* the block grows; no inner scrollbar */
+  scrollbar-gutter: auto;
+}
+.editor.is-block .editor__input,
+.editor.is-block .editor__highlight { padding: 14px 16px; }
+
+/* Table block: the clickable grid inside its own card. */
+.note-block--grid .gridwrap {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 12px;
+  overflow-x: auto;
+}
+
+/* Per-block tools (delete), revealed on hover/focus. */
+.note-block__tools {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  z-index: 4;
+  opacity: 0;
+  transition: opacity .12s ease;
+}
+.note-block:hover .note-block__tools,
+.note-block:focus-within .note-block__tools { opacity: 1; }
+.note-block__del {
+  width: 24px;
+  height: 24px;
+  line-height: 1;
+  font-size: 16px;
+  color: var(--ink-soft);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background .12s ease, color .12s ease, border-color .12s ease;
+}
+.note-block__del:hover { background: var(--error); color: #fff; border-color: var(--error); }
+
+/* Slim "insert a table here" divider between blocks. */
+.block-insert {
+  display: flex;
+  justify-content: center;
+  padding: 5px 0;
+  opacity: .4;
+  transition: opacity .14s ease;
+}
+.block-insert:hover, .block-insert:focus-within { opacity: 1; }
+@media (hover: hover) { .block-insert { opacity: 0; } .note-view:hover .block-insert { opacity: .5; } }
+.block-insert__btn {
+  border: 1px dashed var(--rule);
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  padding: 3px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .12s ease, color .12s ease, border-color .12s ease;
+}
+.block-insert__btn:hover { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
 
 /* ---- Help panel --------------------------------------------------- */
 

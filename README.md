@@ -49,9 +49,14 @@ temps = 2 h
 - **Tableaux façon tableur** : écrivez un tableau avec des `|`, adressez les
   cellules en `A1` (colonnes A, B, C… et lignes 1, 2, 3…), mettez des formules
   dans les cellules (`=B2*C2`) et totalisez des plages : `somme(B2:B10) =`.
-- **Grille cliquable** (type de note « Tableau ») : une vraie grille où une
-  cellule `=B1*C1` affiche son **résultat** (la formule n'apparaît qu'à
-  l'édition), avec des poignées « + » pour ajouter lignes et colonnes.
+- **Notes par blocs** : une note est une pile de blocs — du **texte qui
+  calcule** et des **tableaux** interactifs, mélangés dans la même note. On
+  insère un tableau où l'on veut (bouton ▦ ou « ＋ Tableau » entre deux blocs),
+  et les variables restent partagées d'un bloc à l'autre, même de part et
+  d'autre d'un tableau (toute la note = une seule portée de calcul).
+- **Grille cliquable** : une vraie grille où une cellule `=B1*C1` affiche son
+  **résultat** (la formule n'apparaît qu'à l'édition), avec des poignées « + »
+  pour ajouter lignes et colonnes.
   **En-têtes cliquables** : sélectionnez une colonne (ou une ligne) pour voir sa
   somme / moyenne / nombre de valeurs et insérer `=somme(…)` en un clic ;
   le « × » de l'en-tête supprime la colonne/ligne (les formules sont réajustées).
@@ -229,7 +234,8 @@ src/
   editor.js        surface d'écriture, surbrillance, résultats en marge
   storage.js       collection de notes (localStorage) + fusion multi-appareils
   grid.js          calcul d'une grille de cellules (façon tableur)
-  grid-editor.js   grille cliquable (note « Tableau »)
+  grid-editor.js   grille cliquable (bloc « Tableau »)
+  note-editor.js   note = pile de blocs (texte + tableaux), portée partagée
   sync.js          synchronisation temps réel (REST + SSE, Firebase ou serveur)
   app.js           câblage de l'interface
 server/            serveur de synchronisation self-hosted (sans dépendance)
