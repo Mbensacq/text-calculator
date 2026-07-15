@@ -182,8 +182,14 @@ un téléphone :
 - **Firefox (Android)** : menu ⋮ → *Installer* / *Ajouter à l'écran d'accueil*.
 - **Safari (iOS)** : bouton Partager → *Sur l'écran d'accueil*.
 
-L'application s'ouvre alors en plein écran, comme une appli native, et
-fonctionne sans connexion (un *service worker* met en cache la coquille).
+Sur les navigateurs compatibles, un bouton **« ⬇ Installer l'application »**
+apparaît directement dans le panneau. L'application s'ouvre alors en plein
+écran, comme une appli native, et fonctionne sans connexion (un *service
+worker* met en cache la coquille).
+
+Sur écran tactile, un **clavier de calcul** (parenthèses, opérateurs, %, €,
+√, Σ) s'affiche au-dessus du clavier système pendant la saisie, et un
+**glissement vers la gauche** sur une note l'envoie à la corbeille.
 
 ## Synchronisation multi-appareils (optionnelle)
 
