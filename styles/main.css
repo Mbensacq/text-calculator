@@ -1082,6 +1082,34 @@ body {
   transition: background .12s ease, border-color .12s ease, color .12s ease;
 }
 .grid-status__btn:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+/* Mini-chart drawn from a column/row selection. */
+.grid-chart {
+  margin-top: 10px;
+  padding: 12px 14px 8px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  overflow-x: auto;
+}
+.grid-chart__bar { display: flex; gap: 6px; margin-bottom: 8px; }
+.grid-chart__type {
+  font: inherit; font-size: 12px;
+  padding: 3px 10px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.grid-chart__type.is-on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.grid-chart__svg { display: block; max-width: 100%; }
+.grid-chart__axis { stroke: var(--rule); stroke-width: 1; }
+.grid-chart__rect { fill: var(--accent); }
+.grid-chart__line { fill: none; stroke: var(--accent); stroke-width: 2; }
+.grid-chart__dot { fill: var(--accent); }
+.grid-chart__val { fill: var(--ink-soft); font-size: 10px; font-variant-numeric: tabular-nums; }
+.grid-chart__cat { fill: var(--ink-soft); font-size: 10px; }
 .grid-status__btn--danger:hover { background: var(--error); border-color: var(--error); color: #fff; }
 
 .grid__cell { padding: 0; }

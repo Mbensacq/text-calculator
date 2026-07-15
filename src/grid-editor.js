@@ -35,6 +35,9 @@
     let focusedKey = null;
     let selection = null;  // { axis: 'col'|'row', index }
     let statusEl = null;
+    let chartEl = null;
+    let chartOpen = false;
+    let chartType = 'bar';
     let saveTimer = null;
 
     const key = (r, c) => r + ',' + c;
@@ -207,7 +210,12 @@
     function renderStatus() {
       if (!statusEl) return;
       statusEl.textContent = '';
-      if (!selection) { statusEl.hidden = true; return; }
+      if (!selection) {
+        statusEl.hidden = true;
+        chartOpen = false;
+        if (chartEl) { chartEl.hidden = true; chartEl.textContent = ''; }
+        return;
+      }
       statusEl.hidden = false;
 
       const label = document.createElement('span');
@@ -253,12 +261,119 @@
         }
       }
 
+      if (hasNums) {
+        statusEl.appendChild(actionBtn(chartOpen ? '📊 Masquer' : '📊 Graphique',
+          'Afficher un graphique des valeurs sélectionnées',
+          function () { chartOpen = !chartOpen; updateChart(); }));
+      }
+
       const del = document.createElement('button');
       del.type = 'button';
       del.className = 'grid-status__btn grid-status__btn--danger';
       del.textContent = selection.axis === 'col' ? 'Supprimer la colonne' : 'Supprimer la ligne';
       del.addEventListener('click', function () { deleteAxis(selection.axis, selection.index); });
       statusEl.appendChild(del);
+
+      updateChart();
+    }
+
+    /* ---- Mini-charts (SVG, no dependency) --------------------------- */
+
+    function numericFromDisplay(s) {
+      const t = String(s == null ? '' : s).replace(/[\s  ]/g, '');
+      const m = /^-?\d+(?:\.\d+)?/.exec(t);
+      return m ? parseFloat(m[0]) : null;
+    }
+    function labelForRow(r, c) {
+      if (c !== 0) { const d = computed[key(r, 0)]; if (d && d.display) return d.display; }
+      return String(r + 1);
+    }
+    function selectionPairs() {
+      const pairs = [];
+      if (!selection) return pairs;
+      if (selection.axis === 'col') {
+        const c = selection.index;
+        for (let r = 0; r < model.rows; r++) {
+          const v = numericFromDisplay(computed[key(r, c)] && computed[key(r, c)].display);
+          if (v != null) pairs.push({ label: labelForRow(r, c), value: v });
+        }
+      } else {
+        const r = selection.index;
+        for (let c = 0; c < model.cols; c++) {
+          const v = numericFromDisplay(computed[key(r, c)] && computed[key(r, c)].display);
+          if (v != null) pairs.push({ label: colName(c), value: v });
+        }
+      }
+      return pairs;
+    }
+    function updateChart() {
+      if (!chartEl) return;
+      chartEl.textContent = '';
+      const pairs = selection && chartOpen ? selectionPairs() : [];
+      if (pairs.length < 1) { chartEl.hidden = true; return; }
+      chartEl.hidden = false;
+      const toolbar = document.createElement('div');
+      toolbar.className = 'grid-chart__bar';
+      [['bar', 'Barres'], ['line', 'Courbe']].forEach(function (t) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'grid-chart__type' + (chartType === t[0] ? ' is-on' : '');
+        b.textContent = t[1];
+        b.addEventListener('click', function () { chartType = t[0]; updateChart(); });
+        toolbar.appendChild(b);
+      });
+      chartEl.appendChild(toolbar);
+      chartEl.appendChild(renderChartSVG(pairs, chartType));
+    }
+    function fmtNum(v) {
+      return (TC.Formatter && TC.Formatter.formatNumber) ? TC.Formatter.formatNumber(v) : String(Math.round(v * 100) / 100);
+    }
+    function svgEl(name, attrs) {
+      const e = document.createElementNS('http://www.w3.org/2000/svg', name);
+      for (const k in attrs) e.setAttribute(k, attrs[k]);
+      return e;
+    }
+    function renderChartSVG(pairs, type) {
+      const n = pairs.length;
+      const barW = 40, gap = 16, padL = 10, padR = 10, padT = 16, padB = 26;
+      const W = padL + padR + n * barW + (n - 1) * gap;
+      const H = 172;
+      const vals = pairs.map((p) => p.value);
+      const hi = Math.max.apply(null, vals.concat([0]));
+      const lo = Math.min.apply(null, vals.concat([0]));
+      const span = (hi - lo) || 1;
+      const plotH = H - padT - padB;
+      const yOf = (v) => padT + (hi - v) / span * plotH;
+      const y0 = yOf(0);
+      const cx = (i) => padL + i * (barW + gap) + barW / 2;
+      const svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, class: 'grid-chart__svg', width: Math.min(W, 560), height: H });
+      svg.appendChild(svgEl('line', { x1: 0, x2: W, y1: y0, y2: y0, class: 'grid-chart__axis' }));
+
+      function labels(x, p, y) {
+        const val = svgEl('text', { x: x, y: p.value >= 0 ? y - 5 : y + 12, 'text-anchor': 'middle', class: 'grid-chart__val' });
+        val.textContent = fmtNum(p.value);
+        svg.appendChild(val);
+        const lab = svgEl('text', { x: x, y: padT + plotH + 16, 'text-anchor': 'middle', class: 'grid-chart__cat' });
+        const s = String(p.label);
+        lab.textContent = s.length > 8 ? s.slice(0, 7) + '…' : s;
+        svg.appendChild(lab);
+      }
+      if (type === 'line') {
+        let d = '';
+        pairs.forEach((p, i) => { d += (i ? 'L' : 'M') + cx(i) + ' ' + yOf(p.value) + ' '; });
+        svg.appendChild(svgEl('path', { d: d, class: 'grid-chart__line' }));
+        pairs.forEach((p, i) => {
+          svg.appendChild(svgEl('circle', { cx: cx(i), cy: yOf(p.value), r: 3.2, class: 'grid-chart__dot' }));
+          labels(cx(i), p, yOf(p.value));
+        });
+      } else {
+        pairs.forEach((p, i) => {
+          const y = yOf(p.value);
+          svg.appendChild(svgEl('rect', { x: padL + i * (barW + gap), y: Math.min(y, y0), width: barW, height: Math.max(1, Math.abs(y - y0)), rx: 3, class: 'grid-chart__rect' }));
+          labels(cx(i), p, y);
+        });
+      }
+      return svg;
     }
 
     function actionBtn(label, title, onClick) {
@@ -464,6 +579,11 @@
       statusEl.className = 'grid-status';
       statusEl.hidden = true;
       container.appendChild(statusEl);
+
+      chartEl = document.createElement('div');
+      chartEl.className = 'grid-chart';
+      chartEl.hidden = true;
+      container.appendChild(chartEl);
 
       recompute();
       applySelection();
