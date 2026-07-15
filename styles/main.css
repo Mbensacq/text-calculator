@@ -662,11 +662,31 @@ body {
   top: 5px;
   right: 5px;
   z-index: 4;
+  display: flex;
+  gap: 4px;
   opacity: 0;
   transition: opacity .12s ease;
 }
 .note-block:hover .note-block__tools,
 .note-block:focus-within .note-block__tools { opacity: 1; }
+.note-block__grip {
+  width: 24px;
+  height: 24px;
+  line-height: 1;
+  font-size: 15px;
+  color: var(--ink-soft);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 7px;
+  cursor: grab;
+  transition: background .12s ease, color .12s ease, border-color .12s ease;
+}
+.note-block__grip:hover { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.note-block__grip:active { cursor: grabbing; }
+/* Drop indicators while a block is being dragged. */
+.note-view.is-dragging .note-block { transition: none; }
+.note-block.drop-before { box-shadow: 0 -3px 0 -1px var(--accent); }
+.note-block.drop-after { box-shadow: 0 3px 0 -1px var(--accent); }
 .note-block__del {
   width: 24px;
   height: 24px;

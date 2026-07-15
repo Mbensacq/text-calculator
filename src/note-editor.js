@@ -30,6 +30,7 @@
     let ctx = [];            // parallel to blocks: { type, el, editor?|gridEditor? }
     let activeCtx = null;    // index of the last-focused block
     let activeTextEditor = null;
+    let dragFrom = -1;       // block index being dragged (-1 = none)
 
     /* ---- Shared-scope evaluation ------------------------------------ */
 
@@ -222,6 +223,53 @@
       render();
     }
 
+    // Reorder blocks by drag-and-drop. Cross-block references use the whole-note
+    // scope, so reordering is semantically safe: save + render is enough. The
+    // note-view scroll position is restored so the page doesn't jump.
+    function moveBlock(from, to) {
+      if (from < 0 || from >= blocks.length) return;
+      const moved = blocks.splice(from, 1)[0];
+      let dest = from < to ? to - 1 : to;
+      dest = Math.max(0, Math.min(dest, blocks.length));
+      if (dest === from) { blocks.splice(from, 0, moved); return; }
+      blocks.splice(dest, 0, moved);
+      activeCtx = null;
+      const scrollTop = container.scrollTop;
+      save();
+      render();
+      container.scrollTop = scrollTop;
+    }
+
+    function clearDropMarks() {
+      const marked = container.querySelectorAll('.drop-before, .drop-after');
+      Array.prototype.forEach.call(marked, function (el) { el.classList.remove('drop-before', 'drop-after'); });
+    }
+    // Wire a block wrapper as a drop target during a drag.
+    function wireDropTarget(wrap, i) {
+      wrap.addEventListener('dragover', function (e) {
+        if (dragFrom < 0) return;
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+        const rect = wrap.getBoundingClientRect();
+        const before = (e.clientY - rect.top) < rect.height / 2;
+        clearDropMarks();
+        wrap.classList.add(before ? 'drop-before' : 'drop-after');
+      });
+      wrap.addEventListener('dragleave', function () { wrap.classList.remove('drop-before', 'drop-after'); });
+      wrap.addEventListener('drop', function (e) {
+        if (dragFrom < 0) return;
+        e.preventDefault();
+        const rect = wrap.getBoundingClientRect();
+        const before = (e.clientY - rect.top) < rect.height / 2;
+        const target = before ? i : i + 1;
+        const from = dragFrom;
+        dragFrom = -1;
+        container.classList.remove('is-dragging');
+        clearDropMarks();
+        moveBlock(from, target);
+      });
+    }
+
     /* ---- Rendering -------------------------------------------------- */
 
     function destroyCtx() {
@@ -284,6 +332,27 @@
     function blockTools(i) {
       const tools = document.createElement('div');
       tools.className = 'note-block__tools';
+      const grip = document.createElement('button');
+      grip.type = 'button';
+      grip.className = 'note-block__grip';
+      grip.title = 'Déplacer ce bloc (glisser-déposer)';
+      grip.setAttribute('aria-label', 'Déplacer ce bloc');
+      grip.textContent = '⠿';
+      grip.draggable = true;
+      grip.addEventListener('dragstart', function (e) {
+        dragFrom = i;
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = 'move';
+          try { e.dataTransfer.setData('text/plain', String(i)); } catch (x) { /* IE guard */ }
+        }
+        container.classList.add('is-dragging');
+      });
+      grip.addEventListener('dragend', function () {
+        dragFrom = -1;
+        container.classList.remove('is-dragging');
+        clearDropMarks();
+      });
+      tools.appendChild(grip);
       const del = document.createElement('button');
       del.type = 'button';
       del.className = 'note-block__del';
@@ -360,6 +429,7 @@
         if (block.type === 'grid') wrap = makeGridBlock(block, i);
         else if (block.type === 'image') wrap = makeImageBlock(block, i);
         else wrap = makeTextBlock(block, i);
+        wireDropTarget(wrap, i);
         container.appendChild(wrap);
         container.appendChild(insertRow(i + 1));
       });
