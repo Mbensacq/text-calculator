@@ -474,6 +474,7 @@ body {
 }
 .keypad__key:active { background: var(--accent-soft); color: var(--accent); }
 .app.keypad-open .mobilebar { display: none; }
+.note-item.swipe-armed { background: rgba(200, 60, 60, .16); }
 
 /* ---- Sidebar responsive behaviour --------------------------------- */
 

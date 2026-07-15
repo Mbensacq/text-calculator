@@ -776,6 +776,37 @@
       if (!viewingTrash) selectNote(id);
     });
 
+    // Swipe a note-item left to send it to the trash (recoverable). Distinct
+    // from a vertical scroll; disabled in selection / trash view.
+    let itemSwipe = null;
+    listEl.addEventListener('touchstart', function (e) {
+      const item = e.target.closest('.note-item');
+      if (!item || selectMode || viewingTrash) { itemSwipe = null; return; }
+      const t = e.touches[0];
+      itemSwipe = { item: item, id: item.dataset.id, x: t.clientX, y: t.clientY, dx: 0 };
+    }, { passive: true });
+    listEl.addEventListener('touchmove', function (e) {
+      if (!itemSwipe) return;
+      const t = e.touches[0];
+      const dx = t.clientX - itemSwipe.x;
+      const dy = t.clientY - itemSwipe.y;
+      if (Math.abs(dx) > Math.abs(dy) && dx < 0) {
+        itemSwipe.dx = dx;
+        itemSwipe.item.style.transition = 'none';
+        itemSwipe.item.style.transform = 'translateX(' + Math.max(dx, -120) + 'px)';
+        itemSwipe.item.classList.toggle('swipe-armed', dx < -90);
+      }
+    }, { passive: true });
+    listEl.addEventListener('touchend', function () {
+      if (!itemSwipe) return;
+      const it = itemSwipe;
+      itemSwipe = null;
+      it.item.style.transition = '';
+      it.item.style.transform = '';
+      it.item.classList.remove('swipe-armed');
+      if (it.dx < -90) trashNote(it.id);
+    }, { passive: true });
+
     if (searchInput) {
       searchInput.addEventListener('input', function () {
         query = searchInput.value.trim().toLowerCase();
