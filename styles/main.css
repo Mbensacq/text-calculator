@@ -431,6 +431,7 @@ body {
   transition: background .12s ease, color .12s ease;
 }
 .foot-link:hover { background: var(--accent-soft); color: var(--accent); }
+.foot-link--accent { color: var(--accent); font-weight: 600; }
 
 .scrim { display: none; }
 

@@ -473,6 +473,28 @@
       focusActive();
     }
 
+    // ---- Install as an app (Add to Home Screen) ---------------------------
+    let deferredInstall = null;
+    const installBtn = document.getElementById('install-app');
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      deferredInstall = e;
+      if (installBtn) installBtn.hidden = false;
+    });
+    function promptInstall() {
+      if (!deferredInstall) return;
+      deferredInstall.prompt();
+      deferredInstall.userChoice.then(function () {
+        deferredInstall = null;
+        if (installBtn) installBtn.hidden = true;
+      });
+    }
+    if (installBtn) installBtn.addEventListener('click', promptInstall);
+    window.addEventListener('appinstalled', function () {
+      deferredInstall = null;
+      if (installBtn) installBtn.hidden = true;
+    });
+
     // ---- Custom insertion keypad (touch devices) --------------------------
     const keypad = document.getElementById('keypad');
     const coarsePointer = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
@@ -912,6 +934,7 @@
       (TC.TEMPLATES || []).forEach(function (t) {
         cmds.push({ label: 'Modèle : ' + t.label, hint: 'nouvelle note', run: function () { newFromTemplate(t); } });
       });
+      if (deferredInstall) cmds.push({ label: 'Installer l’application', hint: 'PWA', run: promptInstall });
       store.list().slice(0, 12).forEach(function (it) {
         cmds.push({ label: 'Aller à : ' + (it.title || 'Sans titre'), hint: 'note', run: function () { viewingTrash = false; selectNote(it.id); } });
       });
