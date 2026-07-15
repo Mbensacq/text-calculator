@@ -107,6 +107,62 @@
         if (e.key === 'Enter') { e.preventDefault(); focusCell(r + 1, c); }
         else if (e.key === 'Tab') { e.preventDefault(); focusCell(r, c + (e.shiftKey ? -1 : 1)); }
       });
+      input.addEventListener('paste', function (e) {
+        const cd = e.clipboardData || window.clipboardData;
+        const text = cd ? cd.getData('text') : '';
+        // Multi-cell paste (Excel/CSV) only when it spans rows or columns.
+        if (text.indexOf('\t') < 0 && text.indexOf('\n') < 0) return; // single cell → default
+        e.preventDefault();
+        pasteGrid(r, c, text);
+      });
+    }
+
+    // Spread pasted spreadsheet/CSV text across cells from (r0, c0), growing the
+    // grid as needed.
+    function pasteGrid(r0, c0, text) {
+      const data = Grid.parseDelimited(text);
+      data.forEach(function (rowArr, dr) {
+        rowArr.forEach(function (val, dc) {
+          const rr = r0 + dr, cc = c0 + dc;
+          if (rr + 1 > model.rows) model.rows = rr + 1;
+          if (cc + 1 > model.cols) model.cols = cc + 1;
+          if (val === '') delete model.cells[key(rr, cc)];
+          else model.cells[key(rr, cc)] = val;
+        });
+      });
+      scheduleSave();
+      build();
+      focusCell(r0, c0);
+    }
+
+    // Copy the column's first non-empty cell down to the last data row,
+    // incrementing row references when it is a formula.
+    function fillDown(col) {
+      let src = -1;
+      for (let r = 0; r < model.rows; r++) if (raw(r, col).trim() !== '') { src = r; break; }
+      if (src < 0) return;
+      const srcVal = raw(src, col);
+      let last = src;
+      for (let r = 0; r < model.rows; r++) for (let c = 0; c < model.cols; c++) if (raw(r, c).trim() !== '' && r > last) last = r;
+      for (let r = src + 1; r <= last; r++) model.cells[key(r, col)] = Grid.fillFormula(srcVal, r - src);
+      selection = null;
+      scheduleSave();
+      build();
+    }
+
+    function sortColumn(col, dir) {
+      model = Grid.sortByColumn(model, col, dir);
+      selection = null;
+      scheduleSave();
+      build();
+    }
+
+    function firstDataIsFormula(col) {
+      for (let r = 0; r < model.rows; r++) {
+        const v = raw(r, col).trim();
+        if (v !== '') return v.charAt(0) === '=';
+      }
+      return false;
     }
 
     /* ---- Selection & aggregates ------------------------------------- */
@@ -186,12 +242,32 @@
         statusEl.appendChild(none);
       }
 
+      // Column-only tools: sort the rows and fill a formula down.
+      if (selection.axis === 'col') {
+        const col = selection.index;
+        statusEl.appendChild(actionBtn('Trier ↑', 'Trier les lignes par cette colonne (croissant)', function () { sortColumn(col, 'asc'); }));
+        statusEl.appendChild(actionBtn('Trier ↓', 'Trier les lignes par cette colonne (décroissant)', function () { sortColumn(col, 'desc'); }));
+        if (firstDataIsFormula(col)) {
+          statusEl.appendChild(actionBtn('Recopier ↓', 'Recopier la formule vers le bas (références de ligne ajustées)', function () { fillDown(col); }));
+        }
+      }
+
       const del = document.createElement('button');
       del.type = 'button';
       del.className = 'grid-status__btn grid-status__btn--danger';
       del.textContent = selection.axis === 'col' ? 'Supprimer la colonne' : 'Supprimer la ligne';
       del.addEventListener('click', function () { deleteAxis(selection.axis, selection.index); });
       statusEl.appendChild(del);
+    }
+
+    function actionBtn(label, title, onClick) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'grid-status__btn';
+      b.textContent = label;
+      b.title = title;
+      b.addEventListener('click', onClick);
+      return b;
     }
 
     function stat(label, value) {

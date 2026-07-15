@@ -196,6 +196,93 @@
   function deleteColumn(model, c) { return shiftedModel(model, 'col', c); }
   function deleteRow(model, r) { return shiftedModel(model, 'row', r); }
 
+  // Parse pasted spreadsheet / CSV text into a 2-D array of trimmed strings.
+  // Delimiter is tab if present (Excel), else ";", else ",". Quoted fields with
+  // embedded delimiters, quotes ("") or newlines are supported.
+  function parseDelimited(text) {
+    text = String(text).replace(/\r\n?/g, '\n').replace(/\n+$/, '');
+    const delim = text.indexOf('\t') >= 0 ? '\t' : (text.indexOf(';') >= 0 ? ';' : ',');
+    const rows = [];
+    let row = [], field = '', inQ = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (inQ) {
+        if (ch === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else inQ = false; }
+        else field += ch;
+      } else if (ch === '"') inQ = true;
+      else if (ch === delim) { row.push(field); field = ''; }
+      else if (ch === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else field += ch;
+    }
+    row.push(field); rows.push(row);
+    return rows.map((r) => r.map((c) => c.trim()));
+  }
+
+  // Shift the row numbers of every A1 reference in a formula (used by fill-down
+  // and by row-preserving sorts). Only the row part moves; columns are kept.
+  function fillFormula(src, delta) {
+    if (typeof src !== 'string' || src.charAt(0) !== '=' || delta === 0) return src;
+    return src.replace(/([A-Za-z]{1,2})(\d{1,3})/g, function (whole, letters, digits) {
+      const row = parseInt(digits, 10) + delta;
+      return row >= 1 ? letters + row : whole;
+    });
+  }
+
+  // Reorder rows by the value in one column. A non-numeric first row is treated
+  // as a header and kept on top. Formula cells that move have their row
+  // references shifted so same-row computations stay correct.
+  function sortByColumn(model, col, dir) {
+    const ctx = createContext(model);
+    function keyAt(r) {
+      const rawv = ctx.rawAt(r, col).trim();
+      if (rawv === '') return { n: null, s: '' };
+      // Formula: sort by its computed magnitude.
+      if (rawv.charAt(0) === '=') {
+        try {
+          const v = ctx.resolve(r, col);
+          if (v && !v.list && !v.date && typeof v.base === 'number') return { n: v.base, s: Fmt.formatValue(v) };
+        } catch (e) { /* error cell → treated as text */ }
+        return { n: null, s: rawv };
+      }
+      // Plain value: numeric only when it starts with a number ("30", "30 €",
+      // "1 000,5"). A text header ("age") stays non-numeric so it isn't sorted.
+      const m = /^-?\d[\d\s]*(?:[.,]\d+)?/.exec(rawv);
+      if (m) {
+        const num = parseFloat(m[0].replace(/\s/g, '').replace(',', '.'));
+        if (!isNaN(num)) return { n: num, s: rawv };
+      }
+      return { n: null, s: rawv };
+    }
+    let start = 0;
+    const k0 = keyAt(0);
+    if (k0.n === null && k0.s !== '') start = 1; // keep a text header row in place
+    const order = [];
+    for (let r = start; r < model.rows; r++) order.push(r);
+    const sign = dir === 'desc' ? -1 : 1;
+    order.sort(function (a, b) {
+      const ka = keyAt(a), kb = keyAt(b);
+      if (ka.n !== null && kb.n !== null) return sign * (ka.n - kb.n);
+      if (ka.n !== null) return -1;
+      if (kb.n !== null) return 1;
+      return sign * ka.s.localeCompare(kb.s);
+    });
+    const cells = {};
+    for (let c = 0; c < model.cols; c++) {
+      for (let r = 0; r < start; r++) { const v = model.cells[r + ',' + c]; if (v != null) cells[r + ',' + c] = v; }
+    }
+    order.forEach(function (srcRow, i) {
+      const destRow = start + i;
+      for (let c = 0; c < model.cols; c++) {
+        const v = model.cells[srcRow + ',' + c];
+        if (v != null) cells[destRow + ',' + c] = fillFormula(v, destRow - srcRow);
+      }
+    });
+    const out = { rows: model.rows, cols: model.cols, cells: cells };
+    if (model.name != null) out.name = model.name;
+    if (model.formats) out.formats = model.formats;
+    return out;
+  }
+
   // Resolve a single cell / a range to its *value* (a Quantity / list), so other
   // parts of a note (text blocks) can reference a table's cells in A1 notation.
   function cellValue(model, name) {
@@ -212,6 +299,9 @@
     rangeValue: rangeValue,
     deleteColumn: deleteColumn,
     deleteRow: deleteRow,
+    parseDelimited: parseDelimited,
+    fillFormula: fillFormula,
+    sortByColumn: sortByColumn,
     colName: colName,
     parseCoord: parseCoord,
     colToIndex: colToIndex,

@@ -333,6 +333,22 @@ const delRow0 = Grid.deleteRow(gm, 0);
 check('delete row shrinks height', delRow0.rows, 3);
 check('delete row rewrites refs upward', delRow0.cells['0,2'], '=A1*B1');
 
+/* ---- grid: paste (CSV/TSV), fill-down, sort ----------------------- */
+check('parse TSV', JSON.stringify(Grid.parseDelimited('a\tb\n1\t2')), JSON.stringify([['a', 'b'], ['1', '2']]));
+check('parse CSV with quoted comma', JSON.stringify(Grid.parseDelimited('"a,b",c\n1,2')), JSON.stringify([['a,b', 'c'], ['1', '2']]));
+check('parse semicolon CSV', JSON.stringify(Grid.parseDelimited('x;y\n3;4')), JSON.stringify([['x', 'y'], ['3', '4']]));
+check('fill-down shifts formula rows', Grid.fillFormula('=A2*B2', 3), '=A5*B5');
+check('fill-down leaves literals', Grid.fillFormula('42', 3), '42');
+const sm = { rows: 4, cols: 2, cells: { '0,0': 'nom', '0,1': 'age', '1,0': 'Zoe', '1,1': '30', '2,0': 'Al', '2,1': '25', '3,0': 'Bo', '3,1': '40' } };
+const sAsc = Grid.sortByColumn(sm, 1, 'asc');
+check('sort keeps the text header on top', sAsc.cells['0,1'], 'age');
+check('sort ascending by column', [sAsc.cells['1,1'], sAsc.cells['2,1'], sAsc.cells['3,1']].join(','), '25,30,40');
+check('sort moves whole rows', [sAsc.cells['1,0'], sAsc.cells['2,0'], sAsc.cells['3,0']].join(','), 'Al,Zoe,Bo');
+const fm = { rows: 3, cols: 2, cells: { '0,0': '5 €', '0,1': '=A1*2', '1,0': '20 €', '1,1': '=A2*2', '2,0': '1 €', '2,1': '=A3*2' } };
+const fAsc = Grid.sortByColumn(fm, 0, 'asc');
+check('sort by money column is numeric', [fAsc.cells['0,0'], fAsc.cells['1,0'], fAsc.cells['2,0']].join(','), '1 €,5 €,20 €');
+check('sort shifts formula row refs', [fAsc.cells['0,1'], fAsc.cells['1,1'], fAsc.cells['2,1']].join(','), '=A1*2,=A2*2,=A3*2');
+
 /* ---- cross-block cell refs: plain (single table) & qualified ------ */
 const t1 = { rows: 6, cols: 2, cells: { '0,0': '10', '0,1': '=A1*2' }, name: 'T1' };
 const t2 = { rows: 6, cols: 2, cells: { '0,0': '100', '0,1': '=A1*2' }, name: 'T2' };
