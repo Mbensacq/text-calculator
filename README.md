@@ -276,11 +276,17 @@ les *service workers* ne fonctionnant pas en `file://`) :
 python3 -m http.server 8000   # puis http://localhost:8000
 ```
 
-Pour lancer les tests du moteur de calcul :
+Pour lancer les tests :
 
 ```sh
-npm test
+npm test              # suite du moteur de calcul (zéro dépendance)
+npm run check-versions # aligne les « ?v=N » et le cache du service worker
+npm run browser-test  # tests end-to-end en navigateur (Chromium requis)
 ```
+
+L'**intégration continue** (`.github/workflows/ci.yml`) rejoue, à chaque push
+et pull request, la vérification de syntaxe de chaque module, la suite du
+moteur et le contrôle d'alignement des versions.
 
 ## Structure
 
