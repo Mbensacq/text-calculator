@@ -18,6 +18,15 @@
 
   const NARROW = ' '; // narrow no-break space, used for thousands grouping
 
+  // Display options, adjustable from the settings panel. They only affect how
+  // numbers are *shown*; the tokenizer still accepts both "." and "," on input.
+  const opts = { decimalSep: '.', maxDecimals: 6 };
+  function setOptions(o) {
+    if (!o) return;
+    if (o.decimalSep === '.' || o.decimalSep === ',') opts.decimalSep = o.decimalSep;
+    if (typeof o.maxDecimals === 'number' && o.maxDecimals >= 0 && o.maxDecimals <= 10) opts.maxDecimals = o.maxDecimals | 0;
+  }
+
   // Symbol used to display each SI base dimension when no explicit unit remains.
   const DIM_SYMBOL = {
     length: 'm',
@@ -78,7 +87,7 @@
     return (neg ? '-' : '') + out;
   }
 
-  function formatNumber(x) {
+  function formatNumberRaw(x) {
     if (Number.isNaN(x)) return 'indéfini';
     if (!isFinite(x)) return x > 0 ? '∞' : '-∞';
     if (x === 0) return '0';
@@ -88,17 +97,22 @@
       return x.toExponential(4).replace(/\.?0+e/, 'e');
     }
 
-    // Strip floating-point noise, then present with up to 6 decimals.
+    // Strip floating-point noise, then present with up to `maxDecimals` decimals.
     const rounded = parseFloat(x.toPrecision(12));
     let s;
     if (Number.isInteger(rounded)) {
       s = rounded.toString();
     } else {
-      s = rounded.toFixed(6).replace(/0+$/, '').replace(/\.$/, '');
+      s = rounded.toFixed(opts.maxDecimals).replace(/0+$/, '').replace(/\.$/, '');
     }
     const dot = s.indexOf('.');
     if (dot === -1) return groupThousands(s);
     return groupThousands(s.slice(0, dot)) + '.' + s.slice(dot + 1);
+  }
+  // Apply the chosen decimal separator on the way out (input still accepts both).
+  function formatNumber(x) {
+    const s = formatNumberRaw(x);
+    return opts.decimalSep === ',' ? s.replace('.', ',') : s;
   }
 
   function formatQuantity(q) {
@@ -149,5 +163,5 @@
     return formatQuantity(v);
   }
 
-  return { formatQuantity, formatValue, formatNumber, formatUnitMap, labelDimensionCount };
+  return { formatQuantity, formatValue, formatNumber, formatUnitMap, labelDimensionCount, setOptions };
 });

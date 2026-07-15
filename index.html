@@ -81,6 +81,7 @@
         <div class="topbar__right">
           <p class="topbar__hint">Terminez une ligne par « = » pour afficher le résultat.</p>
           <button id="sync-btn" class="icon-btn" type="button" title="Synchronisation" aria-label="Synchronisation">⇅</button>
+          <button id="settings-btn" class="icon-btn" type="button" title="Réglages" aria-label="Réglages">⚙</button>
           <button id="help-btn" class="icon-btn" type="button" title="Aide-mémoire" aria-label="Aide">?</button>
         </div>
       </header>
@@ -144,6 +145,78 @@
       <button type="button" class="keypad__key" data-fn="sqrt()">√</button>
       <button type="button" class="keypad__key" data-fn="somme()">Σ</button>
     </div>
+
+    <div id="settings-scrim" class="help-scrim" hidden></div>
+    <aside id="settings-panel" class="help" hidden aria-label="Réglages">
+      <div class="help__head">
+        <h2>Réglages</h2>
+        <button id="settings-close" class="icon-btn" type="button" aria-label="Fermer">✕</button>
+      </div>
+      <div class="help__body">
+        <section>
+          <h3>Apparence</h3>
+          <label class="set-row">Thème
+            <select id="set-theme">
+              <option value="auto">Automatique (système)</option>
+              <option value="light">Clair</option>
+              <option value="dark">Sombre</option>
+            </select>
+          </label>
+          <label class="set-row">Couleur d'accent
+            <select id="set-accent">
+              <option value="teal">Turquoise</option>
+              <option value="blue">Bleu</option>
+              <option value="violet">Violet</option>
+              <option value="rose">Rose</option>
+              <option value="orange">Orange</option>
+            </select>
+          </label>
+          <label class="set-row">Police
+            <select id="set-font">
+              <option value="sans">Standard</option>
+              <option value="mono">Monospace</option>
+            </select>
+          </label>
+        </section>
+        <section>
+          <h3>Résultats</h3>
+          <label class="set-row">Affichage
+            <select id="set-results">
+              <option value="right">À droite (normal)</option>
+              <option value="dim">Discrets</option>
+              <option value="hidden">Masqués</option>
+            </select>
+          </label>
+        </section>
+        <section>
+          <h3>Format des nombres</h3>
+          <label class="set-row">Séparateur décimal
+            <select id="set-decsep">
+              <option value=".">Point (12.5)</option>
+              <option value=",">Virgule (12,5)</option>
+            </select>
+          </label>
+          <label class="set-row">Décimales (max)
+            <select id="set-decimals">
+              <option value="0">0</option>
+              <option value="2">2</option>
+              <option value="4">4</option>
+              <option value="6">6</option>
+              <option value="8">8</option>
+            </select>
+          </label>
+        </section>
+        <section>
+          <h3>Taux de change</h3>
+          <p>Valeur d'une unité de chaque devise, exprimée en euros
+          (<code>1 € = 1</code>). Permet <code>100 $ en €</code>.</p>
+          <div id="rates-rows" class="rates-rows"></div>
+        </section>
+        <section>
+          <button id="settings-reset" class="foot-link" type="button">Réinitialiser les réglages</button>
+        </section>
+      </div>
+    </aside>
 
     <div id="help-scrim" class="help-scrim" hidden></div>
     <aside id="help-panel" class="help" hidden aria-label="Aide-mémoire">
@@ -444,6 +517,7 @@ D3: =somme(D1:D2)</pre>
   <script src="src/command-palette.js?v=32"></script>
   <script src="src/undo.js?v=32"></script>
   <script src="src/history.js?v=32"></script>
+  <script src="src/settings.js?v=32"></script>
   <script src="src/templates.js?v=32"></script>
   <script src="src/note-editor.js?v=32"></script>
   <script src="src/sync.js?v=32"></script>

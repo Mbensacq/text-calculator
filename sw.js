@@ -26,6 +26,7 @@ const ASSETS = [
   './src/command-palette.js?v=32',
   './src/undo.js?v=32',
   './src/history.js?v=32',
+  './src/settings.js?v=32',
   './src/templates.js?v=32',
   './src/note-editor.js?v=32',
   './src/sync.js?v=32',

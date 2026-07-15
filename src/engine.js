@@ -24,6 +24,7 @@
   root.TC = root.TC || {};
   root.TC.Engine = mod;
   root.TC.evaluateDocument = mod.evaluateDocument;
+  root.TC.setRates = mod.setRates;
   if (typeof module !== 'undefined' && module.exports) module.exports = mod;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (Tok, Par, Ev, Units, Fmt) {
   'use strict';
@@ -34,6 +35,11 @@
   const CalcError = Units.CalcError;
 
   const COMMENT_RE = /^\s*(#|\/\/)/;
+
+  // Exchange rates set once from the user's settings, used when a call to
+  // evaluateDocument doesn't pass its own options.rates.
+  let defaultRates = null;
+  function setRates(r) { defaultRates = r && typeof r === 'object' ? r : null; }
 
   /* ---- Spreadsheet cells (A1 notation over pipe-delimited tables) ---- */
 
@@ -161,7 +167,7 @@
     // Exchange rates as "value of one unit of each currency in a common
     // reference" (e.g. { EUR: 1, USD: 0.92 } → 1 USD = 0.92 €). rate(from,to)
     // then divides the two. Populated from the user's settings; empty by default.
-    const rates = options.rates || null;
+    const rates = options.rates || defaultRates;
     // A single reference instant for the whole document, so "aujourd'hui",
     // "demain" and friends all agree within one evaluation.
     const NOW = Date.now();
@@ -439,5 +445,5 @@
     return { lines: records, names: { vars: Object.keys(defs), funcs: Object.keys(funcs) } };
   }
 
-  return { evaluateDocument, splitAssignment, splitResultRequest, classify };
+  return { evaluateDocument, splitAssignment, splitResultRequest, classify, setRates };
 });

@@ -33,8 +33,9 @@
   --shadow: 0 1px 2px rgba(40, 35, 25, .04), 0 8px 30px rgba(40, 35, 25, .06);
 }
 
+/* Dark palette, shared by auto (system) and the explicit "dark" theme. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
     --bg: #17161a;
     --paper: #201f24;
     --ink: #e9e7e2;
@@ -54,6 +55,38 @@
     --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 34px rgba(0, 0, 0, .4);
   }
 }
+:root[data-theme="dark"] {
+  --bg: #17161a;
+  --paper: #201f24;
+  --ink: #e9e7e2;
+  --ink-soft: #9b978e;
+  --rule: #2f2d34;
+  --accent: #4fd1c5;
+  --accent-soft: #4fd1c51f;
+  --error: #f0895a;
+  --topbar-bg: #201f24cc;
+  --sidebar-bg: #191820;
+  --active-bg: #2b2933;
+  --heading: #e0a458;
+  --result: #f19bd6;
+  --result-bg: rgba(241, 155, 214, .14);
+  --error-bg: rgba(240, 137, 90, .16);
+  --select: rgba(79, 209, 197, .22);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 34px rgba(0, 0, 0, .4);
+}
+
+/* Accent colour presets (override the computed/result accent). */
+:root[data-accent="blue"]   { --accent: #2563eb; --accent-soft: #2563eb1a; --select: rgba(37, 99, 235, .18); }
+:root[data-accent="violet"] { --accent: #7c3aed; --accent-soft: #7c3aed1a; --select: rgba(124, 58, 237, .18); }
+:root[data-accent="rose"]   { --accent: #db2777; --accent-soft: #db27771a; --select: rgba(219, 39, 119, .18); }
+:root[data-accent="orange"] { --accent: #ea580c; --accent-soft: #ea580c1a; --select: rgba(234, 88, 12, .18); }
+
+/* Monospace option — applies to the whole app. */
+:root[data-font="mono"] { --font-sans: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+
+/* Result display modes. */
+:root[data-results="hidden"] .calc-result { display: none; }
+:root[data-results="dim"] .calc-result { opacity: .5; }
 
 * { box-sizing: border-box; }
 
@@ -358,6 +391,39 @@ body {
 }
 .hist__restore:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 .hist__empty { padding: 16px 12px; color: var(--ink-soft); font-style: italic; font-size: 13px; }
+
+/* Settings panel rows */
+.set-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0;
+  font-size: 14px;
+  color: var(--ink);
+}
+.set-row select {
+  font: inherit;
+  font-size: 13px;
+  padding: 5px 8px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+.rates-rows { display: flex; flex-direction: column; gap: 6px; }
+.rates-row { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink); }
+.rates-input {
+  width: 90px;
+  font: inherit;
+  font-size: 13px;
+  padding: 5px 8px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+}
 
 .note-item__actions {
   position: absolute;

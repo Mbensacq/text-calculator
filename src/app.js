@@ -225,6 +225,10 @@
     const store = demo
       ? TC.createStore(null, { key: DEMO_KEY, seedNotes: DEMO_NOTES })
       : TC.createStore(DEFAULT_NOTE);
+    const settings = TC.createSettings
+      ? TC.createSettings({ key: demo ? 'tc-settings:demo' : 'tc-settings' })
+      : null;
+    if (settings) applySettings(false); // theme / number format / rates before first render
 
     const listEl = document.getElementById('note-list');
     const layoutEl = document.getElementById('app');
@@ -1005,6 +1009,7 @@
         { label: 'Note caisse (expo)', run: loadCaisse },
         { label: 'Aide-mémoire', run: function () { setHelp(true); } },
         { label: 'Synchronisation…', run: function () { setSync(true); } },
+        { label: 'Réglages (thème, format, taux)…', run: function () { setSettings(true); } },
         { label: 'Historique de la note (versions)', run: openHistory },
         { label: 'Copier la note (Markdown)', run: copyNote },
         { label: 'Exporter la note en Markdown', run: exportMarkdown },
@@ -1078,6 +1083,94 @@
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && !helpPanel.hidden) setHelp(false);
     });
+
+    // ---- Settings (theme, fonts, number format, exchange rates) -----------
+    const RATE_ROWS = [['USD', '$'], ['GBP', '£'], ['CHF', 'CHF'], ['JPY', '¥']];
+    function applySettings(rerender) {
+      if (!settings) return;
+      const s = settings.get();
+      const rootEl = document.documentElement;
+      if (s.theme === 'auto') rootEl.removeAttribute('data-theme'); else rootEl.setAttribute('data-theme', s.theme);
+      rootEl.setAttribute('data-accent', s.accent);
+      rootEl.setAttribute('data-font', s.font);
+      rootEl.setAttribute('data-results', s.results);
+      if (TC.Formatter && TC.Formatter.setOptions) TC.Formatter.setOptions({ decimalSep: s.decimalSep, maxDecimals: s.maxDecimals });
+      if (TC.setRates) TC.setRates(Object.assign({ EUR: 1 }, s.rates || {}));
+      if (rerender) loadActive();
+    }
+    const settingsPanel = document.getElementById('settings-panel');
+    const settingsScrim = document.getElementById('settings-scrim');
+    function setSettings(open) {
+      if (!settingsPanel) return;
+      settingsPanel.hidden = !open;
+      settingsScrim.hidden = !open;
+      if (open) syncSettingsUI();
+    }
+    function bindSetting(id, prop) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('change', function () {
+        const v = prop === 'maxDecimals' ? parseInt(el.value, 10) : el.value;
+        settings.set({ [prop]: v });
+        applySettings(true);
+      });
+    }
+    function renderRates(rates) {
+      const box = document.getElementById('rates-rows');
+      if (!box) return;
+      box.textContent = '';
+      RATE_ROWS.forEach(function (pair) {
+        const row = document.createElement('label');
+        row.className = 'rates-row';
+        row.appendChild(document.createTextNode('1 ' + pair[1] + ' = '));
+        const inp = document.createElement('input');
+        inp.type = 'number';
+        inp.step = '0.0001';
+        inp.min = '0';
+        inp.className = 'rates-input';
+        inp.placeholder = '—';
+        inp.value = rates && rates[pair[0]] != null ? rates[pair[0]] : '';
+        inp.addEventListener('change', function () {
+          const cur = settings.get().rates || {};
+          const r = Object.assign({}, cur);
+          const val = parseFloat(String(inp.value).replace(',', '.'));
+          if (isFinite(val) && val > 0) r[pair[0]] = val; else delete r[pair[0]];
+          settings.set({ rates: r });
+          applySettings(true);
+        });
+        row.appendChild(inp);
+        row.appendChild(document.createTextNode(' €'));
+        box.appendChild(row);
+      });
+    }
+    function syncSettingsUI() {
+      if (!settings) return;
+      const s = settings.get();
+      const setVal = function (id, v) { const el = document.getElementById(id); if (el) el.value = v; };
+      setVal('set-theme', s.theme);
+      setVal('set-accent', s.accent);
+      setVal('set-font', s.font);
+      setVal('set-results', s.results);
+      setVal('set-decsep', s.decimalSep);
+      setVal('set-decimals', String(s.maxDecimals));
+      renderRates(s.rates);
+    }
+    if (settings) {
+      bindSetting('set-theme', 'theme');
+      bindSetting('set-accent', 'accent');
+      bindSetting('set-font', 'font');
+      bindSetting('set-results', 'results');
+      bindSetting('set-decsep', 'decimalSep');
+      bindSetting('set-decimals', 'maxDecimals');
+      const settingsBtn = document.getElementById('settings-btn');
+      const settingsClose = document.getElementById('settings-close');
+      const settingsResetBtn = document.getElementById('settings-reset');
+      if (settingsBtn) settingsBtn.addEventListener('click', function () { setSettings(true); });
+      if (settingsClose) settingsClose.addEventListener('click', function () { setSettings(false); });
+      if (settingsScrim) settingsScrim.addEventListener('click', function () { setSettings(false); });
+      if (settingsResetBtn) settingsResetBtn.addEventListener('click', function () { settings.reset(); syncSettingsUI(); applySettings(true); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && settingsPanel && !settingsPanel.hidden) setSettings(false); });
+    }
 
     // ---- Synchronisation (optionnelle, multi-appareils) -------------------
     // Local-first : sans configuration, l'app reste purement locale. Une fois
