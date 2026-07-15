@@ -86,6 +86,10 @@ temps = 2 h
   **Markdown** (résultats inclus, tableaux convertis), **CSV** des tableaux,
   **copie** de la note ; **import** d'un JSON de sauvegarde ou de tout fichier
   texte (une note façon Soulver/Numi se recalcule aussitôt).
+- **Personnalisation** (⚙) : **thème** clair / sombre / automatique, couleur
+  d'**accent**, **police** (standard ou mono), affichage des **résultats**
+  (à droite / discrets / masqués), **format des nombres** (séparateur décimal,
+  décimales), et **taux de change** manuels par devise.
 - **Grille cliquable** : une vraie grille où une cellule `=B1*C1` affiche son
   **résultat** (la formule n'apparaît qu'à l'édition), avec des poignées « + »
   pour ajouter lignes et colonnes.
