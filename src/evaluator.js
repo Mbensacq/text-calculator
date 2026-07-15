@@ -173,6 +173,53 @@
     return Units.list(out);
   }
 
+  // A duration argument accepted as a plain number of years or as a time
+  // quantity ("20" or "20 ans"), so financial helpers read naturally.
+  function asYears(q, name) {
+    if (Units.isDimensionless(q.dim)) return q.base;
+    if (Units.sameDim(q.dim, { time: 1 })) return q.base / 31557600;
+    throw new CalcError(name + ' : durée en années attendue');
+  }
+  // A rate given as a fraction (0.2) or a percentage literal (20%). Both reduce
+  // to a dimensionless base, so "3%" → 0.03.
+  function rateOf(args, i, name, dflt) {
+    return args.length > i ? needDimensionless(args[i], name) : dflt;
+  }
+
+  // VAT / price helpers (French accounting). Keep the money unit of the amount.
+  function financeTTC(args) {
+    if (!args.length || args.length > 2) throw new CalcError('ttc attend un montant HT (et un taux)');
+    return Units.mul(args[0], Units.scalar(1 + rateOf(args, 1, 'ttc', 0.2)));
+  }
+  function financeHT(args) {
+    if (!args.length || args.length > 2) throw new CalcError('ht attend un montant TTC (et un taux)');
+    return Units.div(args[0], Units.scalar(1 + rateOf(args, 1, 'ht', 0.2)));
+  }
+  function financeTVA(args) {
+    if (!args.length || args.length > 2) throw new CalcError('tva attend un montant HT (et un taux)');
+    return Units.mul(args[0], Units.scalar(rateOf(args, 1, 'tva', 0.2)));
+  }
+  // Fixed-rate loan monthly payment: capital · r / (1 − (1+r)^−n).
+  function mensualiteOf(args) {
+    if (args.length !== 3) throw new CalcError('mensualite attend capital, taux annuel, années');
+    const r = needDimensionless(args[1], 'mensualite') / 12;
+    const n = asYears(args[2], 'mensualite') * 12;
+    if (n <= 0) throw new CalcError('mensualite : durée invalide');
+    const factor = r === 0 ? 1 / n : r / (1 - Math.pow(1 + r, -n));
+    return Units.mul(args[0], Units.scalar(factor));
+  }
+  // Compound growth: final value = capital · (1 + taux)^années.
+  function interetCompose(args) {
+    if (args.length !== 3) throw new CalcError('interet_compose attend capital, taux annuel, années');
+    const taux = needDimensionless(args[1], 'interet_compose');
+    const annees = asYears(args[2], 'interet_compose');
+    return Units.mul(args[0], Units.scalar(Math.pow(1 + taux, annees)));
+  }
+  function remiseOf(args) {
+    if (args.length !== 2) throw new CalcError('remise attend un prix et un taux');
+    return Units.mul(args[0], Units.scalar(1 - needDimensionless(args[1], 'remise')));
+  }
+
   function need2(args, name) {
     if (args.length !== 2) throw new CalcError(name + ' attend 2 arguments');
   }
@@ -208,6 +255,17 @@
     evolution: (args) => { need2(args, 'evolution'); return evolPct(args[0], args[1]); },
     'évolution': (args) => { need2(args, 'évolution'); return evolPct(args[0], args[1]); },
     variation: (args) => { need2(args, 'variation'); return evolPct(args[0], args[1]); },
+    // Finance: VAT, discount, loan payment, compound growth.
+    ttc: (args) => financeTTC(args),
+    ht: (args) => financeHT(args),
+    tva: (args) => financeTVA(args),
+    remise: (args) => remiseOf(args),
+    rabais: (args) => remiseOf(args),
+    mensualite: (args) => mensualiteOf(args),
+    'mensualité': (args) => mensualiteOf(args),
+    interet_compose: (args) => interetCompose(args),
+    interets_composes: (args) => interetCompose(args),
+    'intérêt_composé': (args) => interetCompose(args),
     count: (args) => Units.scalar(args.length),
     hypot: (args) => Units.pow(addAll(args.map((a) => Units.pow(a, Units.scalar(2))), 'hypot'), Units.scalar(0.5)),
     pow: (args) => { need2(args, 'pow'); return Units.pow(args[0], args[1]); },

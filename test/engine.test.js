@@ -273,6 +273,17 @@ expr('somme_cumulee(1, 2, 3, 4)', '1, 3, 6, 10');
 expr('cumul(10 €, 20 €, 5 €)', '10 €, 30 €, 35 €');
 expr('ecart_type(2, 4, 4, 4, 5, 5, 7, 9)', '2');
 
+/* ---- finance: VAT, discount, loan payment, compound growth -------- */
+expr('ttc(100 €)', '120 €');
+expr('ttc(100 €, 5.5%)', '105.5 €');
+expr('ht(120 €)', '100 €');
+expr('tva(100 €)', '20 €');
+expr('remise(80 €, 25%)', '60 €');
+expr('mensualite(1200 €, 0%, 1)', '100 €');
+expr('interet_compose(1000 €, 5%, 10)', '1 628.894627 €');
+check('loan payment ~1109 €', /^1 109/.test(run('mensualite(200000 €, 3%, 20) =')[0]), true);
+check('years may carry a time unit', run('mensualite(200000 €, 3%, 20 ans) =')[0], run('mensualite(200000 €, 3%, 20) =')[0]);
+
 /* ---- interactive grid: delete column/row & aggregates ------------- */
 const Grid = require('../src/grid.js');
 const gm = {
