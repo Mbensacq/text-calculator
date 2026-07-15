@@ -898,6 +898,88 @@
       };
       reader.readAsText(file);
     }
+    // ---- Share a note as a read-only link (client-only; the note travels in
+    // the URL fragment, which is never sent to any server) -------------------
+    function shareViewLink() {
+      const item = activeItem();
+      return location.origin + location.pathname + '#view=' +
+        TC.Sync.encodeShare({ t: (item && item.title) || 'Note', md: noteEditor.toMarkdown() });
+    }
+    function shareNote() {
+      const link = shareViewLink();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).then(function () { toast('Lien de lecture copié'); }, function () { window.prompt('Lien de la note :', link); });
+      } else {
+        window.prompt('Lien de la note :', link);
+      }
+    }
+    function escHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    function inlineMd(s) {
+      return escHtml(s)
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>');
+    }
+    function tableHtml(rows) {
+      const cells = rows.map(function (r) { return r.replace(/^\|/, '').replace(/\|$/, '').split('|').map(function (c) { return c.trim(); }); });
+      let html = '<table>';
+      cells.forEach(function (row, ri) {
+        if (row.every(function (c) { return /^:?-+:?$/.test(c); })) return; // separator
+        const tag = ri === 0 ? 'th' : 'td';
+        html += '<tr>' + row.map(function (c) { return '<' + tag + '>' + inlineMd(c) + '</' + tag + '>'; }).join('') + '</tr>';
+      });
+      return html + '</table>';
+    }
+    function mdToHtml(md) {
+      const lines = String(md).split('\n');
+      const out = [];
+      let i = 0;
+      while (i < lines.length) {
+        const ln = lines[i];
+        if (/^#{1,3}\s/.test(ln)) { const lvl = ln.match(/^#+/)[0].length; out.push('<h' + lvl + '>' + inlineMd(ln.replace(/^#+\s/, '')) + '</h' + lvl + '>'); i++; continue; }
+        if (/^\|.*\|\s*$/.test(ln)) { const rows = []; while (i < lines.length && /^\|.*\|\s*$/.test(lines[i])) { rows.push(lines[i]); i++; } out.push(tableHtml(rows)); continue; }
+        if (/^[-*]\s/.test(ln)) { const items = []; while (i < lines.length && /^[-*]\s/.test(lines[i])) { items.push('<li>' + inlineMd(lines[i].replace(/^[-*]\s/, '')) + '</li>'); i++; } out.push('<ul>' + items.join('') + '</ul>'); continue; }
+        if (ln.trim() === '') { i++; continue; }
+        out.push('<p>' + inlineMd(ln) + '</p>'); i++;
+      }
+      return out.join('\n');
+    }
+    function showSharedView(payload) {
+      const overlay = document.createElement('div');
+      overlay.className = 'shared';
+      const box = document.createElement('div');
+      box.className = 'shared__box';
+      const head = document.createElement('div');
+      head.className = 'shared__head';
+      head.appendChild(document.createTextNode(payload.t || 'Note partagée'));
+      const close = document.createElement('button');
+      close.className = 'shared__close';
+      close.type = 'button';
+      close.textContent = '✕';
+      close.addEventListener('click', function () { overlay.remove(); });
+      head.appendChild(close);
+      const body = document.createElement('div');
+      body.className = 'shared__body md-view';
+      body.innerHTML = mdToHtml(payload.md || '');
+      const foot = document.createElement('div');
+      foot.className = 'shared__foot';
+      foot.textContent = 'Vue en lecture seule — cette note n’est pas modifiable ici.';
+      box.appendChild(head);
+      box.appendChild(body);
+      box.appendChild(foot);
+      overlay.appendChild(box);
+      document.body.appendChild(overlay);
+    }
+    (function checkSharedView() {
+      const m = /[#&]view=([^&]+)/.exec(location.hash || '');
+      if (!m) return;
+      const payload = TC.Sync && TC.Sync.decodeShare ? TC.Sync.decodeShare(m[1]) : null;
+      if (payload && payload.md != null) {
+        showSharedView(payload);
+        try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* ignore */ }
+      }
+    })();
+
     function exportCSV() {
       const csv = noteEditor.toCSV();
       if (!csv) { toast('Aucun tableau à exporter dans cette note'); return; }
@@ -1012,6 +1094,7 @@
         { label: 'Réglages (thème, format, taux)…', run: function () { setSettings(true); } },
         { label: 'Historique de la note (versions)', run: openHistory },
         { label: 'Copier la note (Markdown)', run: copyNote },
+        { label: 'Partager la note (lien lecture seule)', run: shareNote },
         { label: 'Exporter la note en Markdown', run: exportMarkdown },
         { label: 'Exporter les tableaux en CSV', run: exportCSV },
         { label: 'Imprimer / exporter en PDF', hint: 'impression', run: function () { window.print(); } },

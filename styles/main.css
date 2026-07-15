@@ -425,6 +425,45 @@ body {
   color: var(--ink);
 }
 
+/* Read-only shared-note view (#view=…) */
+.shared {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 6vh 16px;
+  background: rgba(0, 0, 0, .45);
+  overflow-y: auto;
+}
+.shared__box {
+  width: min(720px, 96vw);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .35);
+  overflow: hidden;
+}
+.shared__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--rule);
+  font-weight: 700;
+  font-size: 16px;
+}
+.shared__close { border: 0; background: transparent; font-size: 17px; cursor: pointer; color: var(--ink-soft); }
+.shared__body { padding: 18px 22px; overflow-x: auto; }
+.shared__foot { padding: 10px 18px 16px; color: var(--ink-soft); font-size: 12.5px; font-style: italic; }
+.md-view h1, .md-view h2, .md-view h3 { color: var(--heading); margin: .6em 0 .3em; }
+.md-view p { margin: .35em 0; }
+.md-view code { background: var(--accent-soft); border-radius: 4px; padding: 0 3px; }
+.md-view table { border-collapse: collapse; margin: .5em 0; }
+.md-view th, .md-view td { border: 1px solid var(--rule); padding: 4px 10px; text-align: left; }
+.md-view th { background: var(--sidebar-bg); }
+
 .note-item__actions {
   position: absolute;
   top: 50%;
