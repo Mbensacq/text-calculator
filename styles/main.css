@@ -444,6 +444,36 @@ body {
 /* Bottom action bar — mobile only (thumb zone). Hidden on desktop. */
 .mobilebar { display: none; }
 
+/* Custom insertion keypad above the on-screen keyboard (touch devices). */
+.keypad {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 45;
+  display: flex;
+  gap: 5px;
+  padding: 7px 8px calc(7px + env(safe-area-inset-bottom));
+  background: var(--sidebar-bg);
+  border-top: 1px solid var(--rule);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.keypad__key {
+  flex: 0 0 auto;
+  min-width: 42px;
+  height: 40px;
+  font: inherit;
+  font-size: 17px;
+  border: 1px solid var(--rule);
+  border-radius: 9px;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+.keypad__key:active { background: var(--accent-soft); color: var(--accent); }
+.app.keypad-open .mobilebar { display: none; }
+
 /* ---- Sidebar responsive behaviour --------------------------------- */
 
 .topbar__menu { display: none; }

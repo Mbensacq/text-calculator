@@ -473,6 +473,33 @@
       focusActive();
     }
 
+    // ---- Custom insertion keypad (touch devices) --------------------------
+    const keypad = document.getElementById('keypad');
+    const coarsePointer = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+    function showKeypad(on) {
+      if (!keypad) return;
+      keypad.hidden = !on;
+      layoutEl.classList.toggle('keypad-open', on);
+    }
+    if (keypad && coarsePointer) {
+      noteView.addEventListener('focusin', function (e) {
+        if (e.target && e.target.tagName === 'TEXTAREA') showKeypad(true);
+      });
+      noteView.addEventListener('focusout', function () {
+        setTimeout(function () { if (!noteView.contains(document.activeElement)) showKeypad(false); }, 60);
+      });
+      // Keep the textarea focused when a key is pressed.
+      keypad.addEventListener('mousedown', function (e) { e.preventDefault(); });
+      keypad.addEventListener('touchstart', function (e) { e.preventDefault(); }, { passive: false });
+      keypad.addEventListener('click', function (e) {
+        const k = e.target.closest('.keypad__key');
+        if (!k) return;
+        if (k.dataset.fn) noteEditor.insertAtCaret(k.dataset.fn, 1);
+        else if (k.dataset.ins != null) noteEditor.insertAtCaret(k.dataset.ins, 0);
+        if (navigator.vibrate) { try { navigator.vibrate(8); } catch (x) { /* ignore */ } }
+      });
+    }
+
     // ---- Swipe between notes (mobile) -------------------------------------
     // A quick horizontal flick over the note moves to the previous / next note
     // in the current (filtered) list. Starting on a table is ignored so the
