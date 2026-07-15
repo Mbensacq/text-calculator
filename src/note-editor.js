@@ -102,9 +102,69 @@
       if (ctx[pos] && ctx[pos].gridEditor) ctx[pos].gridEditor.focus();
     }
 
+    function insertTextAt(pos) {
+      pos = Math.max(0, Math.min(pos, blocks.length));
+      blocks.splice(pos, 0, { type: 'text', body: '' });
+      save();
+      render();
+      if (ctx[pos] && ctx[pos].editor) ctx[pos].editor.focus();
+    }
+
+    function insertImageAt(pos, src) {
+      pos = Math.max(0, Math.min(pos, blocks.length));
+      blocks.splice(pos, 0, { type: 'image', src: src, caption: '' });
+      ensureTrailingText();
+      save();
+      render();
+    }
+
     // Insert a table just after the active block (used by the toolbar button).
     function insertTable() {
       insertTableAt(activeCtx == null ? blocks.length : activeCtx + 1);
+    }
+
+    // Read an image file, downscale it (so it fits comfortably in localStorage
+    // and syncs reasonably), then insert it as a block.
+    function pickImage(pos) {
+      const inp = document.createElement('input');
+      inp.type = 'file';
+      inp.accept = 'image/*';
+      inp.addEventListener('change', function () {
+        const file = inp.files && inp.files[0];
+        if (!file) return;
+        downscale(file, function (dataURL) {
+          if (!dataURL) return;
+          if (dataURL.length > 2600000) {
+            window.alert('Image trop lourde même après réduction — essayez une image plus petite.');
+            return;
+          }
+          insertImageAt(pos, dataURL);
+        });
+      });
+      inp.click();
+    }
+
+    function downscale(file, cb) {
+      const reader = new FileReader();
+      reader.onload = function () {
+        const img = new Image();
+        img.onload = function () {
+          const MAX = 1400;
+          const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+          const w = Math.max(1, Math.round(img.width * scale));
+          const h = Math.max(1, Math.round(img.height * scale));
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            cb(canvas.toDataURL('image/jpeg', 0.85));
+          } catch (e) { cb(reader.result); }
+        };
+        img.onerror = function () { cb(null); };
+        img.src = reader.result;
+      };
+      reader.onerror = function () { cb(null); };
+      reader.readAsDataURL(file);
     }
 
     function deleteBlock(i) {
@@ -128,11 +188,50 @@
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'block-insert__btn';
-      btn.title = 'Insérer un tableau ici';
-      btn.appendChild(document.createTextNode('＋ Tableau'));
-      btn.addEventListener('click', function () { insertTableAt(pos); });
+      btn.title = 'Insérer un bloc ici';
+      btn.textContent = '＋';
+      const menu = document.createElement('div');
+      menu.className = 'block-insert__menu';
+      menu.hidden = true;
+      [['📝 Texte', function () { insertTextAt(pos); }],
+        ['▦ Tableau', function () { insertTableAt(pos); }],
+        ['🖼 Image', function () { pickImage(pos); }]].forEach(function (opt) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'block-insert__opt';
+        b.textContent = opt[0];
+        b.addEventListener('click', function () { menu.hidden = true; opt[1](); });
+        menu.appendChild(b);
+      });
+      btn.addEventListener('click', function () { menu.hidden = !menu.hidden; });
+      // Close the menu when focus/click leaves the row.
+      row.addEventListener('focusout', function () { setTimeout(function () { if (!row.contains(document.activeElement)) menu.hidden = true; }, 0); });
       row.appendChild(btn);
+      row.appendChild(menu);
       return row;
+    }
+
+    function makeImageBlock(block, i) {
+      const wrap = document.createElement('div');
+      wrap.className = 'note-block note-block--image';
+      wrap.appendChild(blockTools(i));
+      const fig = document.createElement('figure');
+      fig.className = 'img-block';
+      const img = document.createElement('img');
+      img.src = block.src || '';
+      img.alt = block.caption || '';
+      img.loading = 'lazy';
+      fig.appendChild(img);
+      const cap = document.createElement('input');
+      cap.className = 'img-block__cap';
+      cap.type = 'text';
+      cap.placeholder = 'Légende (facultatif)';
+      cap.value = block.caption || '';
+      cap.addEventListener('input', function () { blocks[i].caption = cap.value; img.alt = cap.value; save(); });
+      fig.appendChild(cap);
+      wrap.appendChild(fig);
+      ctx[i] = { type: 'image', el: wrap };
+      return wrap;
     }
 
     function blockTools(i) {
@@ -210,7 +309,10 @@
       container.textContent = '';
       ctx = new Array(blocks.length);
       blocks.forEach(function (block, i) {
-        const wrap = block.type === 'grid' ? makeGridBlock(block, i) : makeTextBlock(block, i);
+        let wrap;
+        if (block.type === 'grid') wrap = makeGridBlock(block, i);
+        else if (block.type === 'image') wrap = makeImageBlock(block, i);
+        else wrap = makeTextBlock(block, i);
         container.appendChild(wrap);
         container.appendChild(insertRow(i + 1));
       });
@@ -223,7 +325,9 @@
 
     function getBlocks() {
       return blocks.map(function (b) {
-        return b.type === 'grid' ? { type: 'grid', grid: b.grid } : { type: 'text', body: b.body };
+        if (b.type === 'grid') return { type: 'grid', grid: b.grid };
+        if (b.type === 'image') return { type: 'image', src: b.src, caption: b.caption };
+        return { type: 'text', body: b.body };
       });
     }
 
@@ -231,9 +335,9 @@
       setNote: function (note) {
         const src = (note && note.blocks) || [];
         blocks = src.map(function (b) {
-          return b.type === 'grid'
-            ? { type: 'grid', grid: b.grid ? JSON.parse(JSON.stringify(b.grid)) : newGridModel() }
-            : { type: 'text', body: b.body || '' };
+          if (b.type === 'grid') return { type: 'grid', grid: b.grid ? JSON.parse(JSON.stringify(b.grid)) : newGridModel() };
+          if (b.type === 'image') return { type: 'image', src: b.src || '', caption: b.caption || '' };
+          return { type: 'text', body: b.body || '' };
         });
         if (!blocks.length) blocks = [{ type: 'text', body: '' }];
         activeCtx = null;

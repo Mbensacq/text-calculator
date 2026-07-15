@@ -49,11 +49,12 @@ temps = 2 h
 - **Tableaux façon tableur** : écrivez un tableau avec des `|`, adressez les
   cellules en `A1` (colonnes A, B, C… et lignes 1, 2, 3…), mettez des formules
   dans les cellules (`=B2*C2`) et totalisez des plages : `somme(B2:B10) =`.
-- **Notes par blocs** : une note est une pile de blocs — du **texte qui
-  calcule** et des **tableaux** interactifs, mélangés dans la même note. On
-  insère un tableau où l'on veut (bouton ▦ ou « ＋ Tableau » entre deux blocs),
-  et les variables restent partagées d'un bloc à l'autre, même de part et
-  d'autre d'un tableau (toute la note = une seule portée de calcul).
+- **Notes par blocs (façon Notion)** : une note est une pile de blocs — du
+  **texte qui calcule**, des **tableaux** interactifs et des **images** —
+  mélangés dans la même note. Le **＋** entre deux blocs insère Texte / Tableau /
+  Image ; les variables restent partagées d'un bloc à l'autre, même de part et
+  d'autre d'un tableau (toute la note = une seule portée de calcul). Les images
+  sont réduites automatiquement avant stockage.
 - **Grille cliquable** : une vraie grille où une cellule `=B1*C1` affiche son
   **résultat** (la formule n'apparaît qu'à l'édition), avec des poignées « + »
   pour ajouter lignes et colonnes.

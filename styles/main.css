@@ -701,6 +701,64 @@ body {
 }
 .block-insert__btn:hover { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
 
+/* The little "add block" menu. */
+.block-insert { position: relative; flex-direction: column; align-items: center; }
+.block-insert__menu {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 4px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  z-index: 6;
+}
+.block-insert__opt {
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background .12s ease, color .12s ease;
+}
+.block-insert__opt:hover { background: var(--accent-soft); color: var(--accent); }
+
+/* Image block. */
+.note-block--image { display: flex; }
+.img-block {
+  margin: 0;
+  width: 100%;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 10px;
+  overflow: hidden;
+}
+.img-block img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 0 auto;
+}
+.img-block__cap {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 13px;
+  text-align: center;
+  outline: none;
+}
+
 /* ---- Help panel --------------------------------------------------- */
 
 .help-scrim {

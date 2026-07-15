@@ -58,10 +58,14 @@
 
   // Normalise any note-ish object into a blocks array (upgrades legacy notes
   // and remote payloads that predate the block model).
+  function imageBlock(src, caption) { return { type: 'image', src: src || '', caption: caption || '' }; }
+
   function toBlocks(src) {
     if (src && Array.isArray(src.blocks) && src.blocks.length) {
       return src.blocks.map(function (b) {
-        return b && b.type === 'grid' ? gridBlock(b.grid) : textBlock(b.body);
+        if (b && b.type === 'grid') return gridBlock(b.grid);
+        if (b && b.type === 'image') return imageBlock(b.src, b.caption);
+        return textBlock(b ? b.body : '');
       });
     }
     if (src && src.type === 'grid') return [gridBlock(src.grid)];
@@ -104,7 +108,8 @@
     const parts = [];
     for (const b of note.blocks) {
       if (b.type === 'text') parts.push(b.body || '');
-      else parts.push(gridTitle(b.grid), Object.values((b.grid && b.grid.cells) || {}).join(' '));
+      else if (b.type === 'grid') parts.push(gridTitle(b.grid), Object.values((b.grid && b.grid.cells) || {}).join(' '));
+      else if (b.type === 'image') parts.push(b.caption || '');
     }
     return parts.join(' ').toLowerCase();
   }
