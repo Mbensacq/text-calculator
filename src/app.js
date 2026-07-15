@@ -473,6 +473,41 @@
       focusActive();
     }
 
+    // ---- Swipe between notes (mobile) -------------------------------------
+    // A quick horizontal flick over the note moves to the previous / next note
+    // in the current (filtered) list. Starting on a table is ignored so the
+    // grid can scroll horizontally, and the flick must be fast + mostly
+    // horizontal so it never fights text selection, scrolling or number-scrub.
+    function visibleOrder() {
+      return store.list().filter(matchesQuery).filter(matchesFilters).map(function (x) { return x.id; });
+    }
+    function navRelative(dir) {
+      if (viewingTrash) return;
+      const order = visibleOrder();
+      const i = order.indexOf(activeId);
+      if (i < 0) return;
+      const j = i + dir;
+      if (j < 0 || j >= order.length) return;
+      selectNote(order[j]);
+    }
+    let swipe = null;
+    noteView.addEventListener('touchstart', function (e) {
+      if (e.touches.length !== 1 || (e.target.closest && e.target.closest('.note-block--grid'))) { swipe = null; return; }
+      const t = e.touches[0];
+      swipe = { x: t.clientX, y: t.clientY, time: Date.now() };
+    }, { passive: true });
+    noteView.addEventListener('touchend', function (e) {
+      if (!swipe) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - swipe.x;
+      const dy = t.clientY - swipe.y;
+      const dt = Date.now() - swipe.time;
+      swipe = null;
+      if (dt < 400 && Math.abs(dx) > 80 && Math.abs(dx) > Math.abs(dy) * 2) {
+        navRelative(dx < 0 ? 1 : -1); // flick left → next note
+      }
+    }, { passive: true });
+
     function newNote() {
       viewingTrash = false;
       const note = store.create();
