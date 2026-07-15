@@ -54,7 +54,10 @@ temps = 2 h
   mélangés dans la même note. Le **＋** entre deux blocs insère Texte / Tableau /
   Image ; les variables restent partagées d'un bloc à l'autre, même de part et
   d'autre d'un tableau (toute la note = une seule portée de calcul). Les images
-  sont réduites automatiquement avant stockage.
+  sont réduites automatiquement avant stockage. Un bloc texte peut référencer
+  une cellule d'un tableau par sa case : `total = B1`, `somme(A1:A6)`. Quand la
+  note contient plusieurs tableaux, chacun porte un nom (T1, T2…, éditable) et
+  l'on lève l'ambiguïté avec `T2!B1` ; avec un seul tableau, `B1` suffit.
 - **Grille cliquable** : une vraie grille où une cellule `=B1*C1` affiche son
   **résultat** (la formule n'apparaît qu'à l'édition), avec des poignées « + »
   pour ajouter lignes et colonnes.

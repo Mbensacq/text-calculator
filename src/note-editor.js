@@ -64,7 +64,29 @@
           for (const m of models) { const v = TC.Grid.rangeValue(m, from, to); if (v != null) return v; }
           return null;
         },
+        // Qualified "Nom!B1": resolve within the named table only.
+        lookupQCell: function (table, cell) {
+          for (const m of models) if (m.name === table) return TC.Grid.cellValue(m, cell);
+          return null;
+        },
       };
+    }
+
+    // Give every table a short, stable name (T1, T2…) so cells can be qualified
+    // when the note has more than one. Existing names are kept.
+    function assignTableNames() {
+      const used = {};
+      blocks.forEach(function (b) { if (b.type === 'grid' && b.grid && b.grid.name) used[b.grid.name] = 1; });
+      let counter = 1;
+      blocks.forEach(function (b) {
+        if (b.type !== 'grid') return;
+        if (!b.grid) b.grid = newGridModel();
+        if (!b.grid.name) {
+          while (used['T' + counter]) counter++;
+          b.grid.name = 'T' + counter;
+          used[b.grid.name] = 1;
+        }
+      });
     }
 
     // The result for one text block, sliced out of the whole-note evaluation
@@ -116,6 +138,7 @@
     function insertTableAt(pos) {
       pos = Math.max(0, Math.min(pos, blocks.length));
       blocks.splice(pos, 0, { type: 'grid', grid: newGridModel() });
+      assignTableNames();
       ensureTrailingText();
       save();
       render();
@@ -360,6 +383,7 @@
           return { type: 'text', body: b.body || '' };
         });
         if (!blocks.length) blocks = [{ type: 'text', body: '' }];
+        assignTableNames();
         activeCtx = null;
         activeTextEditor = null;
         render();

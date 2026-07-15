@@ -349,6 +349,9 @@
           if (externalCells) { const r = externalCells.resolveRange(from, to); if (r != null) return r; }
           throw new CalcError('plage hors d’un tableau');
         },
+        lookupQCell: function (table, cell) {
+          return externalCells && externalCells.lookupQCell ? externalCells.lookupQCell(table, cell) : null;
+        },
         now: NOW,
       };
     }

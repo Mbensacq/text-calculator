@@ -393,6 +393,12 @@
         return env.resolveRange(ast.from, ast.to);
       }
 
+      case 'qcell': {
+        const v = env && env.lookupQCell ? env.lookupQCell(ast.table, ast.cell) : null;
+        if (v != null) return v;
+        throw new CalcError('cellule « ' + ast.table + '!' + ast.cell + ' » introuvable');
+      }
+
       case 'unary': {
         const v = evaluate(ast.operand, env);
         return isList(v) ? Units.list(v.items.map(Units.neg)) : Units.neg(v);

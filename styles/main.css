@@ -953,6 +953,22 @@ body {
   padding: 20px;
 }
 
+.grid-head { margin-bottom: 6px; }
+.grid-name {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 2px 4px;
+  border-radius: 6px;
+  outline: none;
+  max-width: 220px;
+}
+.grid-name:hover { background: var(--accent-soft); }
+.grid-name:focus { background: var(--accent-soft); }
+
 .grid {
   border-collapse: separate;
   border-spacing: 0;

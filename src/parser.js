@@ -179,6 +179,7 @@
       const t = peek();
       if (t.type === 'number') { next(); return { type: 'num', value: t.value }; }
       if (t.type === 'date') { next(); return { type: 'date', t: t.value }; }
+      if (t.type === 'qcell') { next(); return { type: 'qcell', table: t.value.table, cell: t.value.cell }; }
 
       if (t.type === 'ident') {
         next();

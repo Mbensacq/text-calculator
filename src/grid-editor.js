@@ -343,6 +343,19 @@
       addRowTr.appendChild(fill);
       table.appendChild(addRowTr);
 
+      const gridHead = document.createElement('div');
+      gridHead.className = 'grid-head';
+      const nameInput = document.createElement('input');
+      nameInput.className = 'grid-name';
+      nameInput.type = 'text';
+      nameInput.spellcheck = false;
+      nameInput.placeholder = 'Nom du tableau';
+      nameInput.value = model.name || '';
+      nameInput.title = 'Nom du tableau — pour référencer une cellule : Nom!B1';
+      nameInput.addEventListener('input', function () { model.name = nameInput.value; scheduleSave(); });
+      gridHead.appendChild(nameInput);
+      container.appendChild(gridHead);
+
       container.appendChild(table);
 
       statusEl = document.createElement('div');
@@ -357,8 +370,8 @@
     return {
       setModel: function (m) {
         model = m && m.cells
-          ? { rows: m.rows || 6, cols: m.cols || 4, cells: Object.assign({}, m.cells) }
-          : { rows: 6, cols: 4, cells: {} };
+          ? { rows: m.rows || 6, cols: m.cols || 4, cells: Object.assign({}, m.cells), name: m.name || '' }
+          : { rows: 6, cols: 4, cells: {}, name: '' };
         selection = null;
         build();
       },

@@ -147,6 +147,12 @@
         const start = i;
         let name = '';
         while (i < n && IDENT_PART.test(input[i])) { name += input[i]; i++; }
+        // Qualified cell reference "Nom!B1" (a table name, "!", a cell). The
+        // lookahead keeps a lone "!" as factorial.
+        if (input[i] === '!') {
+          const qm = /^[A-Za-z]+\d+/.exec(input.slice(i + 1, i + 12));
+          if (qm) { i += 1 + qm[0].length; push('qcell', { table: name, cell: qm[0] }, start); continue; }
+        }
         if (CONVERSION_KEYWORDS[name.toLowerCase()]) push('keyword', name.toLowerCase(), start);
         else push('ident', name, start);
         continue;

@@ -17,7 +17,7 @@
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="styles/main.css?v=25">
+  <link rel="stylesheet" href="styles/main.css?v=26">
 </head>
 <body>
   <div class="app" id="app">
@@ -226,6 +226,10 @@ B2 =                  une cellule</pre>
           du tableau s'appelle par sa case (A1, B2…) dans n'importe quel bloc
           texte : <code>total = B1</code>, <code>somme(A1:A6)</code>. Ça se met à
           jour quand le tableau change.</p>
+          <p><strong>Plusieurs tableaux ?</strong> Chaque tableau a un nom (T1, T2…,
+          modifiable en haut à gauche du tableau). Pour lever l'ambiguïté, préfixez
+          la case du nom du tableau : <code>T2!B1</code>. Avec un seul tableau,
+          <code>B1</code> suffit.</p>
         </section>
         <section>
           <h3>Grille cliquable (façon Excel)</h3>
@@ -332,19 +336,19 @@ D3: =somme(D1:D2)</pre>
     </aside>
   </div>
 
-  <script src="src/units.js?v=25"></script>
-  <script src="src/tokenizer.js?v=25"></script>
-  <script src="src/parser.js?v=25"></script>
-  <script src="src/evaluator.js?v=25"></script>
-  <script src="src/formatter.js?v=25"></script>
-  <script src="src/engine.js?v=25"></script>
-  <script src="src/editor.js?v=25"></script>
-  <script src="src/storage.js?v=25"></script>
-  <script src="src/grid.js?v=25"></script>
-  <script src="src/grid-editor.js?v=25"></script>
-  <script src="src/simplify.js?v=25"></script>
-  <script src="src/note-editor.js?v=25"></script>
-  <script src="src/sync.js?v=25"></script>
-  <script src="src/app.js?v=25"></script>
+  <script src="src/units.js?v=26"></script>
+  <script src="src/tokenizer.js?v=26"></script>
+  <script src="src/parser.js?v=26"></script>
+  <script src="src/evaluator.js?v=26"></script>
+  <script src="src/formatter.js?v=26"></script>
+  <script src="src/engine.js?v=26"></script>
+  <script src="src/editor.js?v=26"></script>
+  <script src="src/storage.js?v=26"></script>
+  <script src="src/grid.js?v=26"></script>
+  <script src="src/grid-editor.js?v=26"></script>
+  <script src="src/simplify.js?v=26"></script>
+  <script src="src/note-editor.js?v=26"></script>
+  <script src="src/sync.js?v=26"></script>
+  <script src="src/app.js?v=26"></script>
 </body>
 </html>

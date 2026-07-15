@@ -276,6 +276,35 @@ const delRow0 = Grid.deleteRow(gm, 0);
 check('delete row shrinks height', delRow0.rows, 3);
 check('delete row rewrites refs upward', delRow0.cells['0,2'], '=A1*B1');
 
+/* ---- cross-block cell refs: plain (single table) & qualified ------ */
+const t1 = { rows: 6, cols: 2, cells: { '0,0': '10', '0,1': '=A1*2' }, name: 'T1' };
+const t2 = { rows: 6, cols: 2, cells: { '0,0': '100', '0,1': '=A1*2' }, name: 'T2' };
+function makeCells(tables) {
+  return {
+    lookupCell: function (name) {
+      for (const g of tables) { const v = Grid.cellValue(g, name); if (v != null) return v; }
+      return null;
+    },
+    lookupQCell: function (table, cell) {
+      for (const g of tables) { if (g.name === table) return Grid.cellValue(g, cell); }
+      return null;
+    },
+    resolveRange: function () { return null; },
+  };
+}
+function runCells(text, tables) {
+  return evaluateDocument(text, { externalCells: makeCells(tables) }).lines
+    .filter((l) => l.resultRequested).map((l) => norm(l.display));
+}
+check('plain B1 resolves against the single table', runCells('B1 =', [t1])[0], '20');
+check('plain B1 falls back to first table when several', runCells('B1 =', [t1, t2])[0], '20');
+check('qualified T1!B1 targets its table', runCells('T1!B1 =', [t1, t2])[0], '20');
+check('qualified T2!B1 targets the other table', runCells('T2!B1 =', [t1, t2])[0], '200');
+check('qualified ref inside an expression', runCells('T2!B1 * 2 =', [t1, t2])[0], '400');
+check('unknown table name errors out',
+  evaluateDocument('T3!B1 =', { externalCells: makeCells([t1, t2]) }).lines[0].error != null, true);
+check('lone bang is still factorial, not a qualified ref', run('5! =')[0], '120');
+
 /* ---- simplify (constant folding, result-preserving) --------------- */
 const { simplifyDocument } = require('../src/simplify.js');
 function simp(text) {
