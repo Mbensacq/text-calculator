@@ -59,6 +59,9 @@ temps = 2 h
 - **Tableaux façon tableur** : écrivez un tableau avec des `|`, adressez les
   cellules en `A1` (colonnes A, B, C… et lignes 1, 2, 3…), mettez des formules
   dans les cellules (`=B2*C2`) et totalisez des plages : `somme(B2:B10) =`.
+  La grille cliquable ajoute le **collage CSV/Excel**, le **tri par colonne**,
+  la **recopie de formule**, les **formats de colonne** (entier, %, €…), les
+  **en-têtes gelés** et des **mini-graphiques** (barres / courbe).
 - **Notes par blocs (façon Notion)** : une note est une pile de blocs — du
   **texte qui calcule**, des **tableaux** interactifs et des **images** —
   mélangés dans la même note. Le **＋** entre deux blocs insère Texte / Tableau /
