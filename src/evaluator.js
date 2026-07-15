@@ -311,6 +311,22 @@
   // Relative-day keywords. Resolved against the document's reference "now".
   const DATE_WORDS = { aujourdhui: 0, today: 0, demain: 1, tomorrow: 1, hier: -1, yesterday: -1 };
 
+  // Weekday names resolve to the *next* occurrence (bare "vendredi" = the coming
+  // Friday). JS getUTCDay: 0 = Sunday … 6 = Saturday.
+  const WEEKDAYS = { lundi: 1, mardi: 2, mercredi: 3, jeudi: 4, vendredi: 5, samedi: 6, dimanche: 0 };
+
+  function todayMidnight(env) {
+    const d = new Date((env && env.now) || Date.now());
+    return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+  function nextWeekday(name, env) {
+    const base = todayMidnight(env);
+    const todayDow = new Date(base).getUTCDay();
+    let delta = (WEEKDAYS[name] - todayDow + 7) % 7;
+    if (delta === 0) delta = 7; // strictly after today
+    return Units.makeDate(base + delta * 86400000, false);
+  }
+
   function isTimeQuantity(q) {
     return !isDate(q) && !isList(q) && Units.sameDim(q.dim, TIME_DIM);
   }
@@ -338,6 +354,35 @@
     année: (v) => { if (v.length !== 1) throw new CalcError('année attend une date'); return Units.scalar(needDate(v[0], 'année').getUTCFullYear()); },
     mois: (v) => { if (v.length !== 1) throw new CalcError('mois attend une date'); return Units.scalar(needDate(v[0], 'mois').getUTCMonth() + 1); },
     jour: (v) => { if (v.length !== 1) throw new CalcError('jour attend une date'); return Units.scalar(needDate(v[0], 'jour').getUTCDate()); },
+    // 1 = lundi … 7 = dimanche.
+    jour_semaine: (v) => {
+      if (v.length !== 1) throw new CalcError('jour_semaine attend une date');
+      const dow = needDate(v[0], 'jour_semaine').getUTCDay();
+      return Units.scalar(dow === 0 ? 7 : dow);
+    },
+    // Business days (Mon–Fri) in the half-open span between two dates.
+    jours_ouvres: (v) => {
+      if (v.length !== 2) throw new CalcError('jours_ouvres attend deux dates');
+      const a = needDate(v[0], 'jours_ouvres').getTime();
+      const b = needDate(v[1], 'jours_ouvres').getTime();
+      const lo = Math.min(a, b), hi = Math.max(a, b);
+      let count = 0;
+      for (let t = lo; t < hi; t += 86400000) {
+        const dow = new Date(t).getUTCDay();
+        if (dow !== 0 && dow !== 6) count++;
+      }
+      return Units.scalar(count);
+    },
+    // Full years between a birth date and a reference date (default: today).
+    age: (v, env) => {
+      if (!v.length || v.length > 2) throw new CalcError('age attend une date de naissance (et une référence)');
+      const birth = needDate(v[0], 'age');
+      const ref = v.length === 2 ? needDate(v[1], 'age') : new Date(todayMidnight(env));
+      let years = ref.getUTCFullYear() - birth.getUTCFullYear();
+      const m = ref.getUTCMonth() - birth.getUTCMonth();
+      if (m < 0 || (m === 0 && ref.getUTCDate() < birth.getUTCDate())) years--;
+      return Units.scalar(years);
+    },
   };
 
   // Date-aware binary operation (date ± duration, date − date).
@@ -493,9 +538,10 @@
         // 1) a variable defined anywhere in the document
         const v = env && env.lookupVar ? env.lookupVar(name) : null;
         if (v) return v;
-        // 1b) a relative-day keyword (aujourd'hui / demain / hier)
+        // 1b) a relative-day keyword (aujourd'hui / demain / hier / weekday)
         const low = name.toLowerCase();
         if (Object.prototype.hasOwnProperty.call(DATE_WORDS, low)) return dateFromWord(low, env);
+        if (Object.prototype.hasOwnProperty.call(WEEKDAYS, low)) return nextWeekday(low, env);
         // 2) a mathematical constant
         if (CONSTANTS[name]) return CONSTANTS[name]();
         // 3) a spreadsheet cell (B2) when a table is present
@@ -639,7 +685,7 @@
         if (env && env.lookupFunc && env.lookupFunc(name)) {
           return env.callFunction(name, values);
         }
-        if (DATE_CALLS[name]) return DATE_CALLS[name](values);
+        if (DATE_CALLS[name]) return DATE_CALLS[name](values, env);
         if (FUNCTIONS[name]) {
           if (values.length !== 1) throw new CalcError(name + ' attend 1 argument');
           const v = values[0];

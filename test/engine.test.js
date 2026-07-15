@@ -273,6 +273,17 @@ expr('somme_cumulee(1, 2, 3, 4)', '1, 3, 6, 10');
 expr('cumul(10 €, 20 €, 5 €)', '10 €, 30 €, 35 €');
 expr('ecart_type(2, 4, 4, 4, 5, 5, 7, 9)', '2');
 
+/* ---- advanced dates: weekdays, business days, age ----------------- */
+expr('jour_semaine(01/01/2026)', '4');            // Thursday
+expr('jour_semaine(15/03/2026)', '7');            // Sunday
+expr('jours_ouvres(05/01/2026, 12/01/2026)', '5');
+expr('jours_ouvres(12/01/2026, 05/01/2026)', '5'); // order-independent
+expr('age(15/03/1990, 15/03/2026)', '36');
+expr('age(16/03/1990, 15/03/2026)', '35');         // birthday not yet reached
+// A bare weekday resolves to its next occurrence — deterministic weekday number.
+expr('jour_semaine(vendredi)', '5');
+expr('jour_semaine(lundi)', '1');
+
 /* ---- cooking & fuel-economy units --------------------------------- */
 expr('3 càs en mL', '45 mL');
 expr('2 tasses en L', '0.5 L');
