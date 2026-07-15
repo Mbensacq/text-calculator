@@ -146,6 +146,13 @@
         if (ctx[j].type === 'text' && j !== exceptIndex) ctx[j].editor.recompute(false);
       }
     }
+    // Typing re-evaluates the whole note; the edited block updates live on its
+    // own, so the *other* blocks' catch-up is coalesced to keep big notes smooth.
+    let refreshTimer = null;
+    function scheduleRefreshText(exceptIndex) {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(function () { refreshTimer = null; refreshText(exceptIndex); }, 120);
+    }
 
     /* ---- Change handlers -------------------------------------------- */
 
@@ -199,7 +206,7 @@
     function textChanged(i, text) {
       blocks[i].body = text;
       save();
-      refreshText(i); // other blocks may reference what just changed
+      scheduleRefreshText(i); // other blocks may reference what just changed (debounced)
     }
 
     function gridChanged(i, model) {
@@ -498,6 +505,7 @@
     }
 
     function render() {
+      if (refreshTimer) { clearTimeout(refreshTimer); refreshTimer = null; } // stale vs the rebuilt ctx
       destroyCtx();
       container.textContent = '';
       ctx = new Array(blocks.length);
