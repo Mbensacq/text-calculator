@@ -495,6 +495,8 @@
       rowHeads = [];
       const table = document.createElement('table');
       table.className = 'grid';
+      table.setAttribute('role', 'grid');
+      table.setAttribute('aria-label', model.name ? 'Tableau ' + model.name : 'Tableau');
 
       const head = document.createElement('tr');
       const corner = document.createElement('th');
@@ -508,6 +510,8 @@
       for (let c = 0; c < model.cols; c++) {
         const th = document.createElement('th');
         th.className = 'grid__colh';
+        th.setAttribute('role', 'columnheader');
+        th.setAttribute('aria-label', 'Colonne ' + colName(c));
         th.appendChild(headerLabel(colName(c)));
         th.appendChild(delBtn('Supprimer la colonne ' + colName(c), (function (col) { return function () { deleteAxis('col', col); }; })(c)));
         th.addEventListener('click', (function (col) { return function () { selectAxis('col', col); }; })(c));
@@ -526,6 +530,8 @@
         const tr = document.createElement('tr');
         const rh = document.createElement('th');
         rh.className = 'grid__rowh';
+        rh.setAttribute('role', 'rowheader');
+        rh.setAttribute('aria-label', 'Ligne ' + (r + 1));
         rh.appendChild(headerLabel(String(r + 1)));
         rh.appendChild(delBtn('Supprimer la ligne ' + (r + 1), (function (row) { return function () { deleteAxis('row', row); }; })(r)));
         rh.addEventListener('click', (function (row) { return function () { selectAxis('row', row); }; })(r));
@@ -534,10 +540,12 @@
         for (let c = 0; c < model.cols; c++) {
           const td = document.createElement('td');
           td.className = 'grid__cell';
+          td.setAttribute('role', 'gridcell');
           const input = document.createElement('input');
           input.type = 'text';
           input.spellcheck = false;
           input.autocomplete = 'off';
+          input.setAttribute('aria-label', 'Cellule ' + colName(c) + (r + 1));
           wireCell(input, r, c);
           inputs[key(r, c)] = input;
           cellTds[key(r, c)] = td;

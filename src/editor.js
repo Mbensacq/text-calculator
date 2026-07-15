@@ -225,6 +225,8 @@
 
     const results = document.createElement('div');
     results.className = 'editor__results-layer';
+    // Announce new/changed results to assistive tech without stealing focus.
+    results.setAttribute('aria-live', 'polite');
     editorBox.appendChild(results);
 
     const pool = {}; // line index -> { el, text }
