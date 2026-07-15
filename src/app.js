@@ -520,6 +520,44 @@
       });
     }
 
+    // ---- Backup: export every note to a JSON file, import (merge) back -----
+    function exportNotes() {
+      const data = store.exportAll();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'text-calculator-' + new Date().toISOString().slice(0, 10) + '.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+    }
+    function importNotesFromFile(file) {
+      const reader = new FileReader();
+      reader.onload = function () {
+        let data;
+        try { data = JSON.parse(reader.result); } catch (e) { window.alert('Fichier illisible (JSON invalide).'); return; }
+        const r = store.importAll(data);
+        renderList();
+        loadActive();
+        pushAll();
+        window.alert('Import terminé : ' + r.added + ' ajoutée(s), ' + r.updated + ' mise(s) à jour.');
+      };
+      reader.readAsText(file);
+    }
+    const exportBtn = document.getElementById('export-notes');
+    const importBtn = document.getElementById('import-notes');
+    const importFile = document.getElementById('import-file');
+    if (exportBtn) exportBtn.addEventListener('click', exportNotes);
+    if (importBtn && importFile) {
+      importBtn.addEventListener('click', function () { importFile.click(); });
+      importFile.addEventListener('change', function () {
+        if (importFile.files && importFile.files[0]) importNotesFromFile(importFile.files[0]);
+        importFile.value = '';
+      });
+    }
+
     document.getElementById('new-note').addEventListener('click', newNote);
     document.getElementById('new-grid').addEventListener('click', newGridNote);
     document.getElementById('tb-grid').addEventListener('click', insertTable);
@@ -548,6 +586,8 @@
         { label: 'Note caisse (expo)', run: loadCaisse },
         { label: 'Aide-mémoire', run: function () { setHelp(true); } },
         { label: 'Synchronisation…', run: function () { setSync(true); } },
+        { label: 'Exporter toutes les notes (sauvegarde)', run: exportNotes },
+        { label: 'Importer des notes…', run: function () { const f = document.getElementById('import-file'); if (f) f.click(); } },
         { label: viewingTrash ? 'Revenir aux notes' : 'Corbeille', run: function () { viewingTrash = !viewingTrash; renderList(); } },
       ];
       store.list().slice(0, 12).forEach(function (it) {

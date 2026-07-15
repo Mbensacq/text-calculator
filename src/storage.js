@@ -235,6 +235,24 @@
 
     function allNotes() { return state.notes.map((n) => getNote(n.id)); }
 
+    // Full backup of this space (including trashed notes). Import merges with
+    // last-write-wins, so restoring on another device never loses newer edits.
+    function exportAll() {
+      return { app: 'text-calculator', version: 1, exportedAt: Date.now(), notes: allNotes() };
+    }
+    function importAll(data) {
+      if (!data || !Array.isArray(data.notes)) return { added: 0, updated: 0, ignored: 0 };
+      let added = 0, updated = 0, ignored = 0;
+      for (const n of data.notes) {
+        if (!n || !n.id) { ignored++; continue; }
+        const r = applyRemote(n.id, n);
+        if (r === 'added') added++;
+        else if (r === 'updated') updated++;
+        else ignored++;
+      }
+      return { added: added, updated: updated, ignored: ignored };
+    }
+
     // Merge a note from another device. Last-write-wins by updatedAt. Accepts
     // both the block shape and the legacy {type, body/grid} shape.
     function applyRemote(id, remote) {
@@ -310,6 +328,8 @@
       getNote: getNote,
       allNotes: allNotes,
       applyRemote: applyRemote,
+      exportAll: exportAll,
+      importAll: importAll,
     };
   }
 
