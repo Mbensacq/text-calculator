@@ -354,6 +354,7 @@
       noteEditor.setNote(note);
       renderMeta();
       renderFilters();
+      if (typeof renderConflictBar === 'function') renderConflictBar();
       renderList();
     }
 
@@ -1265,6 +1266,7 @@
 
     function schedulePush(id) {
       pendingPush[id] = true;
+      dirty[id] = true; // local edit not yet confirmed synced (for conflict detection)
       if (pushTimer) clearTimeout(pushTimer);
       pushTimer = setTimeout(flushPush, 600);
     }
@@ -1295,14 +1297,75 @@
     }
 
     function onRemoteNote(id, remote) {
+      const local = store.getNote(id);
+      const sameContent = !!(local && remote && remote.blocks && JSON.stringify(remote.blocks) === JSON.stringify(local.blocks));
+      if (sameContent) delete dirty[id]; // the server now holds our version
+      // Both sides changed since our last sync → surface a conflict instead of
+      // silently letting last-write-wins discard one side.
+      if (local && dirty[id] && remote && remote.blocks && !sameContent) {
+        conflicts[id] = remote;
+        renderConflictBar();
+        renderList();
+        return;
+      }
       const res = store.applyRemote(id, remote);
       if (res === 'ignored') return;
-      // If the change lands on the note we're actively editing, don't yank the
-      // text from under the cursor — the next keystroke pushes and wins by
-      // timestamp. Otherwise reflect it immediately.
       if (id === activeId && isEditingActive()) { bumpList(); return; }
       if (id === activeId) loadActive();
       else renderList();
+    }
+
+    // ---- Conflict resolution (both devices edited the same note) ----------
+    const dirty = {};          // note ids with local edits not yet confirmed synced
+    const conflicts = {};      // note id -> the remote version awaiting resolution
+    function renderConflictBar() {
+      const bar = document.getElementById('conflict-bar');
+      if (!bar) return;
+      bar.textContent = '';
+      if (!conflicts[activeId]) { bar.hidden = true; return; }
+      bar.hidden = false;
+      const msg = document.createElement('span');
+      msg.className = 'conflict-bar__msg';
+      msg.textContent = '⚠ Cette note a été modifiée sur un autre appareil.';
+      bar.appendChild(msg);
+      const acts = document.createElement('span');
+      acts.className = 'conflict-bar__actions';
+      [['Garder la mienne', keepMine], ['Prendre l’autre', takeTheirs], ['Garder les deux', keepBoth]].forEach(function (pair) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'conflict-bar__btn';
+        btn.textContent = pair[0];
+        btn.addEventListener('click', function () { pair[1](activeId); });
+        acts.appendChild(btn);
+      });
+      bar.appendChild(acts);
+    }
+    function keepMine(id) {
+      delete conflicts[id];
+      delete dirty[id];
+      const n = store.getNote(id);
+      if (n) store.updateBlocks(id, n.blocks); // bump updatedAt so mine wins
+      pushNow(id);
+      renderConflictBar();
+      renderList();
+    }
+    function takeTheirs(id) {
+      const r = conflicts[id];
+      delete conflicts[id];
+      delete dirty[id];
+      if (r) { r.updatedAt = Date.now(); store.applyRemote(id, r); }
+      if (id === activeId) loadActive(); else renderList();
+      renderConflictBar();
+    }
+    function keepBoth(id) {
+      const r = conflicts[id];
+      delete conflicts[id];
+      delete dirty[id];
+      if (r && r.blocks) { store.createFrom(r.blocks); pushNow(store.active().id); } // remote copy as a new note
+      const mine = store.getNote(id);
+      if (mine) { store.updateBlocks(id, mine.blocks); pushNow(id); }
+      loadActive();
+      renderConflictBar();
     }
     function onRemoteDelete(id) {
       if (!store.getNote(id)) return;

@@ -464,6 +464,34 @@ body {
 .md-view th, .md-view td { border: 1px solid var(--rule); padding: 4px 10px; text-align: left; }
 .md-view th { background: var(--sidebar-bg); }
 
+/* Conflict bar (both devices edited the same note) */
+.conflict-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 16px 0;
+  padding: 9px 14px;
+  background: var(--error-bg);
+  border: 1px solid var(--error);
+  border-radius: 10px;
+  font-size: 13px;
+}
+.conflict-bar__msg { color: var(--error); font-weight: 600; }
+.conflict-bar__actions { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.conflict-bar__btn {
+  font: inherit;
+  font-size: 12.5px;
+  padding: 4px 11px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+.conflict-bar__btn:hover { border-color: var(--accent); color: var(--accent); }
+
 .note-item__actions {
   position: absolute;
   top: 50%;
