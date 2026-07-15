@@ -129,7 +129,7 @@
     el.animate(keyframes, { duration: duration, easing: 'cubic-bezier(.2,.7,.3,1)' });
   }
 
-  const KIND_TAG = { func: 'ƒ', var: 'var', unit: 'unité', const: 'const', keyword: 'mot' };
+  const KIND_TAG = { func: 'ƒ', var: 'var', unit: 'unité', const: 'const', keyword: 'mot', table: 'tableau', cell: 'cellule' };
   const WORD_CHAR = /[\p{L}\p{N}_]/u;
   const WORD_START = /[\p{L}_]/u;
 
@@ -138,6 +138,10 @@
     const highlight = opts.highlight; // colour + measuring layer
     const onChange = opts.onChange || function () {};
     const staticNames = opts.completions || []; // [{ name, kind }]
+    // Live completion sources supplied by a note controller: table names, and
+    // the filled cells of a named table (for "Nom!B1" suggestions).
+    const dynamicCompletions = opts.dynamicCompletions || function () { return []; };
+    const cellsForTable = opts.cellsForTable || function () { return []; };
     // Injected evaluator (default: evaluate this textarea alone). A block in a
     // multi-block note passes one that evaluates the whole note's shared scope
     // and returns just this block's lines.
@@ -216,8 +220,23 @@
       const seen = {};
       const out = [];
       for (const it of docNames) if (!seen[it.name]) { seen[it.name] = 1; out.push(it); }
+      const dyn = dynamicCompletions() || [];
+      for (const it of dyn) if (!seen[it.name]) { seen[it.name] = 1; out.push(it); }
       for (const it of staticNames) if (!seen[it.name]) { seen[it.name] = 1; out.push(it); }
       return out;
+    }
+
+    // "Nom!Bxx" being typed → suggest that table's cells. Returns the token span
+    // and the parsed table / cell prefix, or null.
+    function qualifiedContext() {
+      const pos = input.selectionStart;
+      if (pos !== input.selectionEnd) return null;
+      const text = input.value;
+      let s = pos;
+      while (s > 0 && /[A-Za-z0-9!]/.test(text[s - 1])) s--;
+      const m = /^([A-Za-z][A-Za-z0-9]*)!([A-Za-z]*\d*)$/.exec(text.slice(s, pos));
+      if (!m) return null;
+      return { start: s, end: pos, table: m[1], cellPrefix: m[2] };
     }
 
     function filterMatches(prefix) {
@@ -259,6 +278,21 @@
     }
 
     function refreshAc() {
+      // Qualified cell "Nom!B1" takes priority — its trigger is the "!".
+      const qc = qualifiedContext();
+      if (qc) {
+        const pfx = qc.cellPrefix.toLowerCase();
+        const cells = (cellsForTable(qc.table) || [])
+          .filter(function (c) { return c.toLowerCase().indexOf(pfx) === 0; })
+          .slice(0, 8);
+        if (!cells.length) { closeAc(); return; }
+        acItems = cells.map(function (c) { return { name: qc.table + '!' + c, kind: 'cell', insert: qc.table + '!' + c }; });
+        acIndex = 0;
+        acWord = { start: qc.start, end: qc.end };
+        acOpen = true;
+        renderAc();
+        return;
+      }
       const w = currentWord();
       if (!w) { closeAc(); return; }
       const matches = filterMatches(w.text);
@@ -274,7 +308,7 @@
       const it = acItems[i];
       if (!it || !acWord) return;
       const isFunc = it.kind === 'func';
-      const insert = isFunc ? it.name + '()' : it.name;
+      const insert = it.insert != null ? it.insert : (isFunc ? it.name + '()' : it.name);
       input.focus();
       input.setSelectionRange(acWord.start, acWord.end);
       let ok = false;

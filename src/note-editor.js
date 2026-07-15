@@ -77,6 +77,36 @@
       };
     }
 
+    // Autocomplete sources handed to each text editor: the names of the note's
+    // tables, and the filled cells of a given table (in A1 notation).
+    function tableNameCompletions() {
+      const out = [];
+      for (const c of ctx) {
+        if (c && c.type === 'grid') {
+          const m = c.gridEditor.getModel();
+          if (m && m.name) out.push({ name: m.name, kind: 'table' });
+        }
+      }
+      return out;
+    }
+    function cellsForTable(name) {
+      for (const c of ctx) {
+        if (c && c.type === 'grid') {
+          const m = c.gridEditor.getModel();
+          if (m && m.name === name) {
+            const out = [];
+            for (const k in m.cells) {
+              if (String(m.cells[k]).trim() === '') continue;
+              const parts = k.split(',');
+              out.push(TC.Grid.colName(+parts[1]) + (+parts[0] + 1));
+            }
+            return out.sort();
+          }
+        }
+      }
+      return [];
+    }
+
     // Give every table a short, stable name (T1, T2…) so cells can be qualified
     // when the note has more than one. Existing names are kept.
     function assignTableNames() {
@@ -389,6 +419,8 @@
         highlight: hl,
         block: true,
         completions: completions,
+        dynamicCompletions: tableNameCompletions,
+        cellsForTable: cellsForTable,
         evaluate: function () { return evaluateBlock(i); },
         onChange: function (text) { textChanged(i, text); },
       });
