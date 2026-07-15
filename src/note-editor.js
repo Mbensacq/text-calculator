@@ -548,6 +548,36 @@
       return lines.join('\n');
     }
 
+    // Every table in the note as CSV (computed values), tables separated by a
+    // blank line. Fields with commas / quotes / newlines are quoted.
+    function csvField(v) {
+      const s = String(v == null ? '' : v);
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    }
+    function gridToCSV(model) {
+      const comp = TC.computeGrid(model);
+      let maxR = 0, maxC = 0;
+      for (let r = 0; r < model.rows; r++) {
+        for (let c = 0; c < model.cols; c++) {
+          const cell = comp[r + ',' + c];
+          if (cell && (cell.display || cell.error)) { if (r + 1 > maxR) maxR = r + 1; if (c + 1 > maxC) maxC = c + 1; }
+        }
+      }
+      if (!maxR || !maxC) return '';
+      const rows = [];
+      for (let r = 0; r < maxR; r++) {
+        const row = [];
+        for (let c = 0; c < maxC; c++) { const cell = comp[r + ',' + c]; row.push(csvField(cell ? (cell.error ? '' : cell.display) : '')); }
+        rows.push(row.join(','));
+      }
+      return rows.join('\n');
+    }
+    function toCSV() {
+      const parts = [];
+      for (const c of ctx) if (c && c.type === 'grid') { const csv = gridToCSV(c.gridEditor.getModel()); if (csv) parts.push(csv); }
+      return parts.join('\n\n');
+    }
+
     // The whole note as Markdown, with each result appended after its line.
     function toMarkdown() {
       const res = TC.evaluateDocument(combinedText(), { externalCells: noteCells() });
@@ -586,6 +616,7 @@
       },
       getBlocks: getBlocks,
       toMarkdown: toMarkdown,
+      toCSV: toCSV,
       undo: undo,
       redo: redo,
       insertTable: insertTable,

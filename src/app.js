@@ -873,15 +873,32 @@
     function importNotesFromFile(file) {
       const reader = new FileReader();
       reader.onload = function () {
-        let data;
-        try { data = JSON.parse(reader.result); } catch (e) { window.alert('Fichier illisible (JSON invalide).'); return; }
-        const r = store.importAll(data);
-        renderList();
-        loadActive();
-        pushAll();
-        window.alert('Import terminé : ' + r.added + ' ajoutée(s), ' + r.updated + ' mise(s) à jour.');
+        const raw = reader.result;
+        let data = null;
+        try { data = JSON.parse(raw); } catch (e) { /* not JSON */ }
+        if (data && Array.isArray(data.notes)) {
+          const r = store.importAll(data);
+          renderList();
+          loadActive();
+          pushAll();
+          window.alert('Import terminé : ' + r.added + ' ajoutée(s), ' + r.updated + ' mise(s) à jour.');
+        } else {
+          // Plain text (Soulver / Numi / .txt / .md) → one new note.
+          viewingTrash = false;
+          const note = store.createFrom([{ type: 'text', body: String(raw) }]);
+          loadActive();
+          animateSwitch();
+          pushNow(note.id);
+          toast('Texte importé dans une nouvelle note');
+        }
       };
       reader.readAsText(file);
+    }
+    function exportCSV() {
+      const csv = noteEditor.toCSV();
+      if (!csv) { toast('Aucun tableau à exporter dans cette note'); return; }
+      const item = activeItem();
+      downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), safeName(item && item.title) + '.csv');
     }
     // ---- Multiple selection with grouped actions --------------------------
     function setSelectMode(on) {
@@ -991,7 +1008,9 @@
         { label: 'Historique de la note (versions)', run: openHistory },
         { label: 'Copier la note (Markdown)', run: copyNote },
         { label: 'Exporter la note en Markdown', run: exportMarkdown },
+        { label: 'Exporter les tableaux en CSV', run: exportCSV },
         { label: 'Imprimer / exporter en PDF', hint: 'impression', run: function () { window.print(); } },
+        { label: 'Importer un fichier (JSON ou texte)…', run: function () { const f = document.getElementById('import-file'); if (f) f.click(); } },
         { label: 'Exporter toutes les notes (sauvegarde)', run: exportNotes },
         { label: 'Importer des notes…', run: function () { const f = document.getElementById('import-file'); if (f) f.click(); } },
         { label: viewingTrash ? 'Revenir aux notes' : 'Corbeille', run: function () { viewingTrash = !viewingTrash; renderList(); } },
