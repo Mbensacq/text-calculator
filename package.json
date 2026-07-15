@@ -6,7 +6,9 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "test": "node test/engine.test.js"
+    "test": "node test/engine.test.js",
+    "check-versions": "node test/version-check.js",
+    "browser-test": "node test/browser.test.js"
   },
   "keywords": [
     "calculator",
