@@ -276,6 +276,24 @@ const delRow0 = Grid.deleteRow(gm, 0);
 check('delete row shrinks height', delRow0.rows, 3);
 check('delete row rewrites refs upward', delRow0.cells['0,2'], '=A1*B1');
 
+/* ---- simplify (constant folding, result-preserving) --------------- */
+const { simplifyDocument } = require('../src/simplify.js');
+function simp(text) {
+  const n = evaluateDocument(text).names;
+  return simplifyDocument(text, (x) => n.vars.indexOf(x) >= 0, (x) => n.funcs.indexOf(x) >= 0);
+}
+check('fold a fully-constant expression', simp('(3 + 12) * 2 =').trim(), '30 =');
+check('fold inside a definition', simp('x = 2 * (3 + 12)'), 'x = 30');
+check('partial fold keeps the variable', simp('prix = 10\nprix * (2 + 1) =').split('\n')[1], 'prix * 3 =');
+check('accounting percentage folds', simp('300 € + 20% =').trim(), '360 € =');
+check('lone percentage is left as-is', simp('tva = 20%'), 'tva = 20%');
+check('inexact division is left as-is', simp('1 / 3 =').trim(), '1 / 3 =');
+check('function body is not folded', simp('f(x) = x^2 + (3 + 1)'), 'f(x) = x^2 + (3 + 1)');
+check('heading untouched', simp('# Mes comptes'), '# Mes comptes');
+// The core guarantee: results never change.
+const simpDoc = 'a = (2 + 3) * 4 =\nb = sqrt(9) + 1 =\nc = 20 °C en °F =\nd = 3 pommes + 2 pommes =';
+check('simplify preserves every result', JSON.stringify(run(simp(simpDoc))), JSON.stringify(run(simpDoc)));
+
 /* ---- report ------------------------------------------------------- */
 console.log('');
 console.log(passed + ' réussis, ' + failed + ' échoués');

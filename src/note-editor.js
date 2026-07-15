@@ -252,6 +252,23 @@
         if (activeTextEditor) activeTextEditor.insertAtCaret(text, offset);
         else if (ctx[0] && ctx[0].type === 'text') { ctx[0].editor.focus(); ctx[0].editor.insertAtCaret(text, offset); }
       },
+      // Shorten constant calculations across every text block, using the whole
+      // note's variable/function names so a variable is never mistaken for a
+      // constant. Returns true if anything changed.
+      simplify: function () {
+        const names = TC.evaluateDocument(combinedText()).names;
+        const isVar = function (n) { return names.vars.indexOf(n) >= 0; };
+        const isFunc = function (n) { return names.funcs.indexOf(n) >= 0; };
+        let any = false;
+        for (let i = 0; i < ctx.length; i++) {
+          if (ctx[i].type !== 'text') continue;
+          const cur = ctx[i].editor.getValue();
+          const next = TC.simplifyDocument(cur, isVar, isFunc);
+          if (next !== cur) { blocks[i].body = next; ctx[i].editor.setValue(next); any = true; }
+        }
+        if (any) { save(); refreshText(); }
+        return any;
+      },
       destroy: destroyCtx,
     };
   }

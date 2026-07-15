@@ -473,6 +473,7 @@
     document.getElementById('new-note').addEventListener('click', newNote);
     document.getElementById('new-grid').addEventListener('click', newGridNote);
     document.getElementById('tb-grid').addEventListener('click', insertTable);
+    document.getElementById('tb-simplify').addEventListener('click', function () { noteEditor.simplify(); });
     document.getElementById('load-example').addEventListener('click', loadExample);
     document.getElementById('load-sales').addEventListener('click', loadSales);
     document.getElementById('load-caisse').addEventListener('click', loadCaisse);

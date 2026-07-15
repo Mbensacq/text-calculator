@@ -68,6 +68,10 @@ temps = 2 h
 - **Autocomplétion** : en tapant un nom, une liste propose les variables et
   fonctions de la note ainsi que les fonctions, constantes et unités intégrées
   (Tab/Entrée pour valider, flèches pour choisir, Échap pour fermer).
+- **Simplifier** (bouton ⤓) : réduit les calculs constants sans changer le
+  résultat — `(3 + 12) * 2` → `30`, `x * (2 + 1)` → `x * 3` — et ne raccourcit
+  que si la forme courte redonne *exactement* la même valeur (`1 / 3` est laissé
+  tel quel).
 - **Aide-mémoire** intégré (bouton « ? »).
 - **Fonctions type Excel / maths** insérables en un clic (barre ƒ) : `sum`,
   `moyenne`, `médiane`, `variance`, `ecarttype`, `min`, `max`, `produit`,
