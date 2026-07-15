@@ -79,6 +79,8 @@
       updatedAt: note.updatedAt || Date.now(),
       pinned: !!note.pinned,
       trashed: !!note.trashed,
+      folder: typeof note.folder === 'string' ? note.folder : '',
+      tags: Array.isArray(note.tags) ? note.tags.filter(function (t) { return typeof t === 'string' && t.trim(); }) : [],
     };
   }
 
@@ -174,7 +176,9 @@
         pinned: !!n.pinned,
         hasTable: hasTable(n),
         active: n.id === state.activeId,
-        search: noteSearch(n),
+        search: noteSearch(n) + ' ' + (n.folder || '') + ' ' + (n.tags || []).join(' '),
+        folder: n.folder || '',
+        tags: (n.tags || []).slice(),
       };
     }
 
@@ -239,6 +243,8 @@
       const out = { id: n.id, updatedAt: n.updatedAt || 0, blocks: toBlocks(n) };
       if (n.pinned) out.pinned = true;
       if (n.trashed) out.trashed = true;
+      if (n.folder) out.folder = n.folder;
+      if (n.tags && n.tags.length) out.tags = n.tags.slice();
       return out;
     }
 
@@ -272,6 +278,8 @@
         existing.blocks = toBlocks(remote);
         existing.pinned = !!remote.pinned;
         existing.trashed = !!remote.trashed;
+        existing.folder = typeof remote.folder === 'string' ? remote.folder : '';
+        existing.tags = Array.isArray(remote.tags) ? remote.tags.slice() : [];
         existing.updatedAt = ts;
         persist();
         return 'updated';
@@ -298,6 +306,33 @@
       n.pinned = !!val;
       n.updatedAt = Date.now();
       persist();
+    }
+
+    function setFolder(id, folder) {
+      const n = find(id);
+      if (!n) return;
+      n.folder = (folder || '').trim();
+      n.updatedAt = Date.now();
+      persist();
+    }
+    function setTags(id, tags) {
+      const n = find(id);
+      if (!n) return;
+      const seen = {};
+      n.tags = (tags || []).map(function (t) { return (t || '').trim(); })
+        .filter(function (t) { return t && !seen[t.toLowerCase()] && (seen[t.toLowerCase()] = 1); });
+      n.updatedAt = Date.now();
+      persist();
+    }
+    function allFolders() {
+      const set = {};
+      visibleNotes().forEach(function (n) { if (n.folder) set[n.folder] = 1; });
+      return Object.keys(set).sort();
+    }
+    function allTags() {
+      const set = {};
+      visibleNotes().forEach(function (n) { (n.tags || []).forEach(function (t) { set[t] = 1; }); });
+      return Object.keys(set).sort();
     }
 
     function setTrashed(id, val) {
@@ -336,6 +371,10 @@
       trashList: trashList,
       togglePin: togglePin,
       setPinned: setPinned,
+      setFolder: setFolder,
+      setTags: setTags,
+      allFolders: allFolders,
+      allTags: allTags,
       setTrashed: setTrashed,
       active: active,
       setActive: setActive,

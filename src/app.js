@@ -236,6 +236,8 @@
     let queryTerms = [];
     let selectMode = false;
     const selectedIds = new Set();
+    let filterFolder = '';
+    const filterTags = new Set();
 
     const noteView = document.getElementById('note-view');
     const sidebarTitle = document.querySelector('.sidebar__title');
@@ -283,7 +285,102 @@
       const note = store.active();
       activeId = note.id;
       noteEditor.setNote(note);
+      renderMeta();
+      renderFilters();
       renderList();
+    }
+
+    // ---- Folders & tags: metadata bar over the note, filters in the sidebar --
+    function activeItem() {
+      const all = store.list().concat(store.trashList());
+      for (let i = 0; i < all.length; i++) if (all[i].id === activeId) return all[i];
+      return null;
+    }
+    function afterMetaChange() {
+      renderMeta();
+      renderFilters();
+      renderList();
+      schedulePush(activeId);
+    }
+    function renderMeta() {
+      const meta = document.getElementById('note-meta');
+      if (!meta) return;
+      const item = activeItem();
+      meta.textContent = '';
+      const folder = (item && item.folder) || '';
+      const folderBtn = document.createElement('button');
+      folderBtn.type = 'button';
+      folderBtn.className = 'note-meta__folder' + (folder ? ' is-set' : '');
+      folderBtn.textContent = '📁 ' + (folder || 'Classeur');
+      folderBtn.title = 'Ranger cette note dans un classeur';
+      folderBtn.addEventListener('click', function () {
+        const val = window.prompt('Classeur (laisser vide pour retirer) :', folder);
+        if (val === null) return;
+        store.setFolder(activeId, val);
+        afterMetaChange();
+      });
+      meta.appendChild(folderBtn);
+
+      const tags = (item && item.tags) || [];
+      tags.forEach(function (t) {
+        const chip = document.createElement('span');
+        chip.className = 'tag-chip';
+        chip.appendChild(document.createTextNode('#' + t));
+        const x = document.createElement('button');
+        x.type = 'button';
+        x.className = 'tag-chip__x';
+        x.textContent = '×';
+        x.title = 'Retirer l’étiquette';
+        x.addEventListener('click', function () {
+          store.setTags(activeId, tags.filter(function (tt) { return tt !== t; }));
+          afterMetaChange();
+        });
+        chip.appendChild(x);
+        meta.appendChild(chip);
+      });
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.className = 'note-meta__add';
+      add.textContent = '＋ étiquette';
+      add.addEventListener('click', function () {
+        const val = window.prompt('Nouvelle étiquette :', '');
+        if (!val) return;
+        store.setTags(activeId, tags.concat([val]));
+        afterMetaChange();
+      });
+      meta.appendChild(add);
+    }
+    function renderFilters() {
+      const box = document.getElementById('note-filters');
+      if (!box) return;
+      const folders = store.allFolders();
+      const tags = store.allTags();
+      box.textContent = '';
+      if (!folders.length && !tags.length) { box.hidden = true; filterFolder = ''; filterTags.clear(); return; }
+      box.hidden = false;
+      folders.forEach(function (f) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'filter-chip filter-chip--folder' + (filterFolder === f ? ' is-on' : '');
+        b.textContent = '📁 ' + f;
+        b.addEventListener('click', function () { filterFolder = filterFolder === f ? '' : f; renderFilters(); renderList(); });
+        box.appendChild(b);
+      });
+      tags.forEach(function (t) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'filter-chip' + (filterTags.has(t) ? ' is-on' : '');
+        b.textContent = '#' + t;
+        b.addEventListener('click', function () { if (filterTags.has(t)) filterTags.delete(t); else filterTags.add(t); renderFilters(); renderList(); });
+        box.appendChild(b);
+      });
+    }
+    function matchesFilters(item) {
+      if (filterFolder && item.folder !== filterFolder) return false;
+      if (filterTags.size) {
+        for (const t of filterTags) if ((item.tags || []).indexOf(t) < 0) return false;
+      }
+      return true;
     }
 
     function focusActive() { noteEditor.focus(); }
@@ -452,7 +549,9 @@
     }
 
     function renderList() {
-      const items = (viewingTrash ? store.trashList() : store.list()).filter(matchesQuery);
+      const items = (viewingTrash ? store.trashList() : store.list())
+        .filter(matchesQuery)
+        .filter(function (it) { return viewingTrash || matchesFilters(it); });
       if (sidebarTitle) sidebarTitle.textContent = viewingTrash ? 'Corbeille' : 'Notes';
       if (trashToggle) trashToggle.textContent = viewingTrash ? '← Retour aux notes' : '🗑 Corbeille';
 

@@ -233,6 +233,65 @@ body {
 }
 .tpl-menu__opt:hover { background: var(--accent-soft); color: var(--accent); }
 
+/* Note metadata bar (folder + tags) above the note */
+.note-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px 0;
+}
+.note-meta__folder, .note-meta__add {
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 10px;
+  border: 1px dashed var(--rule);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.note-meta__folder.is-set { border-style: solid; color: var(--ink); }
+.note-meta__folder:hover, .note-meta__add:hover { border-color: var(--accent); color: var(--accent); }
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  padding: 3px 6px 3px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.tag-chip__x {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+}
+/* Sidebar filter chips */
+.note-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 0 12px 8px;
+}
+.filter-chip {
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 9px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.filter-chip:hover { border-color: var(--accent); }
+.filter-chip.is-on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
 .note-item__actions {
   position: absolute;
   top: 50%;
