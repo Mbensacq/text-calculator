@@ -822,18 +822,49 @@
     }
 
     // ---- Backup: export every note to a JSON file, import (merge) back -----
-    function downloadNotes(data, label) {
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    function downloadBlob(blob, filename) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'text-calculator-' + label + '-' + new Date().toISOString().slice(0, 10) + '.json';
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       a.remove();
       setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
     }
+    function safeName(s) { return (s || 'note').replace(/[^\p{L}\p{N}_ -]/gu, '').trim().slice(0, 40) || 'note'; }
+    function toast(msg) {
+      let el = document.getElementById('toast');
+      if (!el) { el = document.createElement('div'); el.id = 'toast'; el.className = 'toast'; document.body.appendChild(el); }
+      el.textContent = msg;
+      el.classList.add('is-shown');
+      clearTimeout(el._t);
+      el._t = setTimeout(function () { el.classList.remove('is-shown'); }, 1800);
+    }
+    function downloadNotes(data, label) {
+      downloadBlob(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
+        'text-calculator-' + label + '-' + new Date().toISOString().slice(0, 10) + '.json');
+    }
     function exportNotes() { downloadNotes(store.exportAll(), 'notes'); }
+    function exportMarkdown() {
+      const md = noteEditor.toMarkdown();
+      const item = activeItem();
+      downloadBlob(new Blob([md], { type: 'text/markdown;charset=utf-8' }), safeName(item && item.title) + '.md');
+    }
+    function copyNote() {
+      const md = noteEditor.toMarkdown();
+      function done() { toast('Note copiée dans le presse-papiers'); }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(md).then(done, function () { toast('Copie impossible'); });
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = md;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (e) { /* ignore */ }
+        ta.remove();
+      }
+    }
     function exportSelection() {
       const notes = Array.from(selectedIds).map(function (id) { return store.getNote(id); }).filter(Boolean);
       if (!notes.length) return;
@@ -958,6 +989,9 @@
         { label: 'Aide-mémoire', run: function () { setHelp(true); } },
         { label: 'Synchronisation…', run: function () { setSync(true); } },
         { label: 'Historique de la note (versions)', run: openHistory },
+        { label: 'Copier la note (Markdown)', run: copyNote },
+        { label: 'Exporter la note en Markdown', run: exportMarkdown },
+        { label: 'Imprimer / exporter en PDF', hint: 'impression', run: function () { window.print(); } },
         { label: 'Exporter toutes les notes (sauvegarde)', run: exportNotes },
         { label: 'Importer des notes…', run: function () { const f = document.getElementById('import-file'); if (f) f.click(); } },
         { label: viewingTrash ? 'Revenir aux notes' : 'Corbeille', run: function () { viewingTrash = !viewingTrash; renderList(); } },

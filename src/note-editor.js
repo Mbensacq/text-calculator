@@ -525,6 +525,56 @@
       });
     }
 
+    // Render one grid model as a Markdown table (computed values), trimming
+    // trailing empty rows and columns.
+    function gridToMarkdown(model) {
+      const comp = TC.computeGrid(model);
+      let maxR = 0, maxC = 0;
+      for (let r = 0; r < model.rows; r++) {
+        for (let c = 0; c < model.cols; c++) {
+          const cell = comp[r + ',' + c];
+          if (cell && (cell.display || cell.error)) { if (r + 1 > maxR) maxR = r + 1; if (c + 1 > maxC) maxC = c + 1; }
+        }
+      }
+      if (!maxR || !maxC) return '';
+      const cellAt = function (r, c) { const cell = comp[r + ',' + c]; return cell ? (cell.error ? '⚠' : cell.display) : ''; };
+      const lines = [];
+      for (let r = 0; r < maxR; r++) {
+        const row = [];
+        for (let c = 0; c < maxC; c++) row.push(cellAt(r, c));
+        lines.push('| ' + row.join(' | ') + ' |');
+        if (r === 0) lines.push('| ' + row.map(function () { return '---'; }).join(' | ') + ' |');
+      }
+      return lines.join('\n');
+    }
+
+    // The whole note as Markdown, with each result appended after its line.
+    function toMarkdown() {
+      const res = TC.evaluateDocument(combinedText(), { externalCells: noteCells() });
+      const disp = {};
+      res.lines.forEach(function (l) { if (l.resultRequested && l.display != null) disp[l.index] = l.display; });
+      const out = [];
+      for (let i = 0; i < blocks.length; i++) {
+        const c = ctx[i];
+        if (c && c.type === 'text') {
+          const lines = c.editor.getValue().split('\n');
+          const offset = textOffsetBefore(i);
+          lines.forEach(function (ln, k) {
+            const d = disp[offset + k];
+            out.push(d != null ? ln.replace(/\s*=\s*$/, '') + '  →  ' + d : ln);
+          });
+          out.push('');
+        } else if (c && c.type === 'grid') {
+          const md = gridToMarkdown(c.gridEditor.getModel());
+          if (md) { out.push(md); out.push(''); }
+        } else if (blocks[i].type === 'image') {
+          out.push(blocks[i].caption ? '*' + blocks[i].caption + '*' : '*(image)*');
+          out.push('');
+        }
+      }
+      return out.join('\n').replace(/\n{3,}/g, '\n\n').trim() + '\n';
+    }
+
     return {
       setNote: function (note) {
         blocks = loadBlocks((note && note.blocks) || []);
@@ -535,6 +585,7 @@
         if (history) history.reset(snapshot());
       },
       getBlocks: getBlocks,
+      toMarkdown: toMarkdown,
       undo: undo,
       redo: redo,
       insertTable: insertTable,
