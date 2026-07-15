@@ -447,6 +447,22 @@
     };
   }
 
+  // Convert one quantity to a target unit. Same-dimension conversions go through
+  // Units; a cross-currency conversion (€ → $) needs an exchange rate supplied by
+  // the document ("en" between two currencies).
+  function convertOne(q, target, env) {
+    const from = Units.currencyCode(q.dim);
+    const to = Units.currencyCode(target.dim);
+    if (from && to && from !== to) {
+      const rate = env && env.rate ? env.rate(from, to) : null;
+      if (rate == null) {
+        throw new CalcError('taux de change ' + from + '→' + to + ' inconnu (à définir dans les réglages)');
+      }
+      return Units.quantity(q.base * rate, target.dim, target.unit);
+    }
+    return Units.convertTo(q, target.unit, target.dim);
+  }
+
   // Apply a plain binary operator to two scalar quantities.
   function scalarBinary(op, a, b) {
     if (isDate(a) || isDate(b)) return dateBinary(op, a, b);
@@ -631,8 +647,8 @@
       case 'convert': {
         const q = evaluate(ast.expr, env);
         const target = evaluate(ast.target, env);
-        if (isList(q)) return Units.list(q.items.map((x) => Units.convertTo(x, target.unit, target.dim)));
-        return Units.convertTo(q, target.unit, target.dim);
+        if (isList(q)) return Units.list(q.items.map((x) => convertOne(x, target, env)));
+        return convertOne(q, target, env);
       }
 
       case 'compare': {

@@ -158,6 +158,10 @@
     // A resolver for A1 cell / range references that aren't satisfied by an
     // inline pipe-table — used to reach the note's interactive table blocks.
     const externalCells = options.externalCells || null;
+    // Exchange rates as "value of one unit of each currency in a common
+    // reference" (e.g. { EUR: 1, USD: 0.92 } → 1 USD = 0.92 €). rate(from,to)
+    // then divides the two. Populated from the user's settings; empty by default.
+    const rates = options.rates || null;
     // A single reference instant for the whole document, so "aujourd'hui",
     // "demain" and friends all agree within one evaluation.
     const NOW = Date.now();
@@ -351,6 +355,11 @@
         },
         lookupQCell: function (table, cell) {
           return externalCells && externalCells.lookupQCell ? externalCells.lookupQCell(table, cell) : null;
+        },
+        rate: function (from, to) {
+          if (!rates) return null;
+          const rf = rates[from], rt = rates[to];
+          return rf != null && rt != null ? rf / rt : null;
         },
         now: NOW,
       };

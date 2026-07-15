@@ -273,6 +273,15 @@ expr('somme_cumulee(1, 2, 3, 4)', '1, 3, 6, 10');
 expr('cumul(10 €, 20 €, 5 €)', '10 €, 30 €, 35 €');
 expr('ecart_type(2, 4, 4, 4, 5, 5, 7, 9)', '2');
 
+/* ---- currency conversion with manual rates ------------------------ */
+const RATES = { EUR: 1, USD: 0.92, GBP: 1.17 };
+function conv(text) { return norm(evaluateDocument(text, { rates: RATES }).lines[0].display); }
+check('euro to dollar via rate', conv('100 € en $ ='), '108.695652 $');
+check('dollar to euro via rate', conv('100 $ en € ='), '92 €');
+check('cross-currency round-trip', conv('(100 € en $) en € ='), '100 €');
+check('missing rate is a clear error', /taux de change/.test(run('100 € en $ =')[0]), true);
+check('same-dimension convert still works', conv('100 cm en m ='), '1 m');
+
 /* ---- advanced dates: weekdays, business days, age ----------------- */
 expr('jour_semaine(01/01/2026)', '4');            // Thursday
 expr('jour_semaine(15/03/2026)', '7');            // Sunday

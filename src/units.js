@@ -49,6 +49,15 @@
   }
   function isDimensionless(a) { return Object.keys(a).length === 0; }
 
+  // Each currency is its own base dimension. currencyCode returns the ISO code
+  // of a pure single-currency quantity ({ EUR: 1 } → "EUR"), else null — used to
+  // spot cross-currency conversions, which need an exchange rate.
+  const CURRENCIES = { EUR: true, USD: true, GBP: true, CHF: true, JPY: true };
+  function currencyCode(dim) {
+    const keys = Object.keys(dim);
+    return keys.length === 1 && dim[keys[0]] === 1 && CURRENCIES[keys[0]] ? keys[0] : null;
+  }
+
   /* ------------------------------------------------------------------ *
    * Unit table. Each unit maps to an SI factor and a dimension.
    * ------------------------------------------------------------------ */
@@ -357,6 +366,7 @@
     scaleDim,
     sameDim,
     isDimensionless,
+    currencyCode,
     add, sub, mul, div, mod, pow, neg,
     convertTo,
   };
