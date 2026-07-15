@@ -17,7 +17,7 @@
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="styles/main.css?v=26">
+  <link rel="stylesheet" href="styles/main.css?v=27">
 </head>
 <body>
   <div class="app" id="app">
@@ -144,10 +144,27 @@ prix * (2 + 1) →  prix * 3
 fact(n) = si(n &lt;= 1, 1, n * fact(n-1))</pre>
           <p>Intégrées : <code>sqrt</code>, <code>round</code>, <code>abs</code>,
           <code>min</code>, <code>max</code>, <code>sum</code>, <code>moy</code>,
-          <code>médiane</code>, <code>variance</code>, <code>ecarttype</code>,
+          <code>médiane</code>, <code>variance</code>, <code>ecart_type</code>,
+          <code>percentile(données, rang)</code>, <code>somme_cumulee</code>,
           <code>produit</code>, <code>pgcd</code>, <code>ppcm</code>,
           <code>combin</code>, <code>nPr</code>, <code>log(x, b)</code>,
           <code>sin</code>/<code>cos</code>/<code>tan</code>, factorielle <code>5!</code>.</p>
+        </section>
+        <section>
+          <h3>Pourcentages relationnels</h3>
+          <p>La part d'un tout, ou l'évolution entre deux valeurs — le résultat
+          s'affiche en « % ».</p>
+          <pre>40 sur 250 =         → 16 %
+evolution(80, 95) =  → 18.75 %
+variation(100, 90) = → -10 %</pre>
+        </section>
+        <section>
+          <h3>Finance</h3>
+          <pre>ttc(100 €) =              → 120 €   (TVA 20 % par défaut)
+ttc(100 €, 5.5%) =        → 105.5 €
+ht(120 €) =   tva(100 €) =   remise(80 €, 25%) =
+mensualite(200000 €, 3%, 20) =   (prêt : capital, taux/an, années)
+interet_compose(1000 €, 5%, 10) =</pre>
         </section>
         <section>
           <h3>Listes, plages, somme indexée</h3>
@@ -172,9 +189,13 @@ total =             → 4.05 €</pre>
         <section>
           <h3>Unités & pourcentages</h3>
           <p>Conversion avec <code>en</code>. Longueurs, masses, durées,
-          volumes, <code>°C</code>/<code>°F</code>, données, monnaies.</p>
+          volumes (dont <code>càs</code>, <code>càc</code>, <code>tasse</code>,
+          <code>gallon</code>), <code>°C</code>/<code>°F</code>, données,
+          monnaies. Les devises se convertissent quand un taux est réglé.</p>
           <pre>2 km + 500 m =      → 2.5 km
 20 °C en °F =       → 68 °F
+3 càs en mL =       → 45 mL
+100 € en $ =        (selon le taux réglé)
 300 € + 20% =       → 360 €</pre>
         </section>
         <section>
@@ -202,6 +223,9 @@ rendu(20 €, 17 €) =  → 3 € à rendre</pre>
 aujourd'hui + 3 jours =
 10/01/2026 + 2 semaines =
 demain &gt; aujourd'hui =         → 1
+vendredi =                  (prochain vendredi)
+jours_ouvres(05/01/2026, 12/01/2026) =   → 5
+age(15/03/1990) =           jour_semaine(d) =
 date(25, 12, 2026)          jour(d), mois(d), annee(d)</pre>
         </section>
         <section>
@@ -336,19 +360,19 @@ D3: =somme(D1:D2)</pre>
     </aside>
   </div>
 
-  <script src="src/units.js?v=26"></script>
-  <script src="src/tokenizer.js?v=26"></script>
-  <script src="src/parser.js?v=26"></script>
-  <script src="src/evaluator.js?v=26"></script>
-  <script src="src/formatter.js?v=26"></script>
-  <script src="src/engine.js?v=26"></script>
-  <script src="src/editor.js?v=26"></script>
-  <script src="src/storage.js?v=26"></script>
-  <script src="src/grid.js?v=26"></script>
-  <script src="src/grid-editor.js?v=26"></script>
-  <script src="src/simplify.js?v=26"></script>
-  <script src="src/note-editor.js?v=26"></script>
-  <script src="src/sync.js?v=26"></script>
-  <script src="src/app.js?v=26"></script>
+  <script src="src/units.js?v=27"></script>
+  <script src="src/tokenizer.js?v=27"></script>
+  <script src="src/parser.js?v=27"></script>
+  <script src="src/evaluator.js?v=27"></script>
+  <script src="src/formatter.js?v=27"></script>
+  <script src="src/engine.js?v=27"></script>
+  <script src="src/editor.js?v=27"></script>
+  <script src="src/storage.js?v=27"></script>
+  <script src="src/grid.js?v=27"></script>
+  <script src="src/grid-editor.js?v=27"></script>
+  <script src="src/simplify.js?v=27"></script>
+  <script src="src/note-editor.js?v=27"></script>
+  <script src="src/sync.js?v=27"></script>
+  <script src="src/app.js?v=27"></script>
 </body>
 </html>

@@ -40,12 +40,22 @@ temps = 2 h
   de quoi écrire des fonctions par morceaux et de la récursion :
   `fact(n) = si(n <= 1, 1, n * fact(n - 1))`.
 - **Somme indexée** : `Σ(i, 1, n, i^2) =` (aussi `sigma`).
+- **Statistiques** : `moy`, `médiane`, `variance`, `ecart_type`,
+  `percentile(données, rang)`, `somme_cumulee`.
+- **Pourcentages relationnels** : `40 sur 250 =` → `16 %`,
+  `evolution(80, 95) =` → `18.75 %`, `variation(a, b)`.
+- **Finance** : `ttc()` / `ht()` / `tva()` (TVA 20 % par défaut), `remise()`,
+  `mensualite(capital, taux annuel, années)`, `interet_compose()`.
 - **Comptes** : `total` (somme du bloc courant) et `ans` (résultat précédent).
 - **Températures** `°C` / `°F` / `K` : `20 °C en °F =` → `68 °F`.
+- **Unités** : longueurs, masses, durées, volumes (dont cuisine `càs` / `càc` /
+  `tasse` / `gallon`), données, angles, consommation (`mpg_en_l100`), et
+  **devises** convertibles quand un taux est réglé (`100 € en $ =`).
 - **Dates & durées** : dates `JJ/MM/AAAA` (ou ISO `AAAA-MM-JJ`), mots-clés
-  `aujourd'hui` / `demain` / `hier`, et arithmétique du calendrier —
-  `15/03/2026 - 10/01/2026 =` → `64 jours`, `aujourd'hui + 3 jours =`,
-  comparaisons de dates, `date(j, m, a)`, `jour()` / `mois()` / `annee()`.
+  `aujourd'hui` / `demain` / `hier` et jours de semaine (`vendredi` = le prochain),
+  arithmétique du calendrier — `15/03/2026 - 10/01/2026 =` → `64 jours`,
+  `jours_ouvres(a, b)`, `age(naissance)`, `jour_semaine(d)`, `date(j, m, a)`,
+  `jour()` / `mois()` / `annee()`.
 - **Tableaux façon tableur** : écrivez un tableau avec des `|`, adressez les
   cellules en `A1` (colonnes A, B, C… et lignes 1, 2, 3…), mettez des formules
   dans les cellules (`=B2*C2`) et totalisez des plages : `somme(B2:B10) =`.
