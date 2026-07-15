@@ -98,6 +98,12 @@
   def(['cL', 'cl'], 1e-5, { length: 3 });
   def(['mL', 'ml'], 1e-6, { length: 3 });
   def(['hL', 'hl'], 0.1, { length: 3 });
+  // Cooking measures (metric convention) and US liquid volumes.
+  def(['càs', 'cas', 'cuil_soupe', 'tbsp'], 1.5e-5, { length: 3 });  // 15 mL
+  def(['càc', 'cac', 'cuil_cafe', 'tsp'], 5e-6, { length: 3 });      // 5 mL
+  def(['tasse', 'tasses', 'cup', 'cups'], 2.5e-4, { length: 3 });    // 250 mL
+  def(['gal', 'gallon', 'gallons'], 3.785411784e-3, { length: 3 });  // US gallon
+  def(['pinte', 'pintes', 'pint', 'pints'], 4.73176473e-4, { length: 3 }); // US pint
 
   // Mass (SI base: kilogram)
   def(['kg', 'kilo', 'kilos', 'kilogramme', 'kilogrammes'], 1, { mass: 1 });

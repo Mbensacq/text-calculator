@@ -273,6 +273,13 @@ expr('somme_cumulee(1, 2, 3, 4)', '1, 3, 6, 10');
 expr('cumul(10 €, 20 €, 5 €)', '10 €, 30 €, 35 €');
 expr('ecart_type(2, 4, 4, 4, 5, 5, 7, 9)', '2');
 
+/* ---- cooking & fuel-economy units --------------------------------- */
+expr('3 càs en mL', '45 mL');
+expr('2 tasses en L', '0.5 L');
+expr('1 gal en L', '3.785412 L');
+expr('mpg_en_l100(30)', '7.840486');
+expr('l100_en_mpg(7.840486)', '30');
+
 /* ---- finance: VAT, discount, loan payment, compound growth -------- */
 expr('ttc(100 €)', '120 €');
 expr('ttc(100 €, 5.5%)', '105.5 €');

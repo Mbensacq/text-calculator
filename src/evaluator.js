@@ -93,6 +93,10 @@
     asinh: (a) => Units.scalar(Math.asinh(needDimensionless(a, 'asinh'))),
     acosh: (a) => Units.scalar(Math.acosh(needDimensionless(a, 'acosh'))),
     atanh: (a) => Units.scalar(Math.atanh(needDimensionless(a, 'atanh'))),
+    // Fuel economy: L/100 km and miles-per-gallon are reciprocals, so this is a
+    // dedicated conversion rather than a unit factor (235.214583 = US constant).
+    mpg_en_l100: (a) => Units.scalar(235.214583 / needDimensionless(a, 'mpg_en_l100')),
+    l100_en_mpg: (a) => Units.scalar(235.214583 / needDimensionless(a, 'l100_en_mpg')),
   };
 
   // Variadic helpers operate on same-dimension quantities and keep the unit.
