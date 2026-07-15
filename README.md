@@ -82,6 +82,10 @@ temps = 2 h
   (devis, note de frais, budget, recette), **sélection multiple** avec actions
   groupées, **historique de version** par note, **export/import** JSON de secours,
   et **navigation par glissement** entre les notes sur mobile.
+- **Export &amp; interop** : **impression / PDF** (mise en page épurée),
+  **Markdown** (résultats inclus, tableaux convertis), **CSV** des tableaux,
+  **copie** de la note ; **import** d'un JSON de sauvegarde ou de tout fichier
+  texte (une note façon Soulver/Numi se recalcule aussitôt).
 - **Grille cliquable** : une vraie grille où une cellule `=B1*C1` affiche son
   **résultat** (la formule n'apparaît qu'à l'édition), avec des poignées « + »
   pour ajouter lignes et colonnes.
