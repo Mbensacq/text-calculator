@@ -14,3 +14,11 @@ Thumbs.db
 
 # Sync server runtime data
 server/data/
+
+# Secrets — never commit real environment files (only *.example is tracked)
+.env
+.env.*
+!.env.example
+server/.env
+server/.env.*
+!server/.env.example

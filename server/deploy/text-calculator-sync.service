@@ -1,7 +1,15 @@
-# systemd unit — copy to /etc/systemd/system/text-calculator-sync.service
-# then:  sudo systemctl daemon-reload && sudo systemctl enable --now text-calculator-sync
+# systemd unit — serveur de synchronisation Text Calculator.
 #
-# Adjust User, WorkingDirectory and the paths to match your VPS.
+# Installation :
+#   sudo cp deploy/text-calculator-sync.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now text-calculator-sync
+#
+# Toute la configuration vit dans le fichier « .env » (voir .env.example),
+# chargé ci-dessous par EnvironmentFile — vous n'avez donc plus rien à éditer
+# ici une fois les chemins ajustés à votre VPS (User, WorkingDirectory, chemin
+# du .env).
+
 [Unit]
 Description=Text Calculator sync server
 After=network.target
@@ -10,30 +18,10 @@ After=network.target
 Type=simple
 User=www-data
 WorkingDirectory=/var/www/text-calculator/server
+EnvironmentFile=/var/www/text-calculator/server/.env
 ExecStart=/usr/bin/node server.js
 Restart=always
 RestartSec=2
-
-# --- Configuration (edit these) ---
-Environment=PORT=8090
-Environment=HOST=127.0.0.1
-Environment=CORS_ORIGIN=https://calc.mon-domaine.com
-
-# --- Stockage ---
-# Par défaut : fichier JSON (aucune base requise).
-Environment=DATA_FILE=/var/www/text-calculator/server/data/notes.json
-# OU une base de données (le fichier est alors ignoré) :
-#   MySQL / MariaDB (Infomaniak) :
-# Environment=DATABASE_URL=mysql://utilisateur:motdepasse@hote:3306/nom_base
-#   PostgreSQL :
-# Environment=DATABASE_URL=postgres://utilisateur:motdepasse@hote:5432/nom_base
-#   TLS (souvent requis pour une base managée) :
-# Environment=DB_SSL=1
-
-# Uncomment to require a shared token (recommended for a public endpoint):
-# Environment=SYNC_TOKEN=change-me-long-random-string
-# Uncomment to also serve the app itself from this server (single origin):
-# Environment=SERVE_STATIC=/var/www/text-calculator
 
 [Install]
 WantedBy=multi-user.target

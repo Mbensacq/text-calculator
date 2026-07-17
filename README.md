@@ -266,6 +266,72 @@ vers votre hébergement plutôt que par une *redirection* HTTP, afin que le site
 s'ouvre nativement sur votre domaine. Le front reste un ensemble de fichiers
 statiques : rien à changer selon l'hébergeur.
 
+## Déploiement automatique (push sur `main` → serveur)
+
+Objectif : **un seul clone** sur votre serveur, un peu de configuration dans
+GitHub, puis **plus rien à faire** — chaque commit sur `main` redéploie tout
+seul (le site *et* le serveur de synchro sont dans le même dépôt).
+
+**À chaque push sur `main`**, le workflow
+[`.github/workflows/deploy-server.yml`](.github/workflows/deploy-server.yml) :
+1. rejoue la suite de tests (un `main` cassé n'est jamais déployé) ;
+2. se connecte en SSH à votre serveur et lance
+   [`server/deploy/pull.sh`](server/deploy/pull.sh) : `git reset --hard
+   origin/main` (met à jour site + serveur), installe les dépendances serveur
+   si une base SQL est configurée, puis `systemctl restart`.
+
+### 1. Sur le serveur (une seule fois)
+
+```sh
+# a) Cloner le dépôt à l'emplacement de votre choix
+sudo mkdir -p /var/www/text-calculator && sudo chown "$USER" /var/www/text-calculator
+git clone https://github.com/mbensacq/text-calculator.git /var/www/text-calculator
+cd /var/www/text-calculator/server
+
+# b) Configuration : copier puis remplir le .env (voir server/.env.example)
+cp .env.example .env && nano .env          # PORT, CORS_ORIGIN, SYNC_TOKEN, stockage…
+mkdir -p data                              # si stockage fichier (défaut)
+
+# c) Service systemd (ajustez User= et les chemins dans le fichier .service)
+sudo cp deploy/text-calculator-sync.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now text-calculator-sync
+
+# d) Autoriser le redémarrage sans mot de passe pour l'utilisateur de déploiement
+#    (remplacez « deploy » par votre utilisateur SSH) :
+echo 'deploy ALL=(root) NOPASSWD: /usr/bin/systemctl restart text-calculator-sync' \
+  | sudo tee /etc/sudoers.d/text-calculator
+```
+
+> Conseil : faites tourner le service **et** le déploiement sous le **même
+> utilisateur** (mettez `User=deploy` dans le `.service`) — cet utilisateur
+> possède alors le dépôt et évite tout souci de permissions.
+
+Un `nginx` place le TLS devant le service et sert les fichiers statiques ; voir
+[`server/deploy/nginx.conf.example`](server/deploy/nginx.conf.example) et
+[`server/README.md`](server/README.md).
+
+### 2. Dans GitHub (une seule fois)
+
+*Settings → Secrets and variables → Actions* :
+
+| Type | Nom | Valeur |
+|---|---|---|
+| Variable | `DEPLOY_ENABLED` | `true` (active le déploiement) |
+| Secret | `DEPLOY_HOST` | domaine ou IP du serveur |
+| Secret | `DEPLOY_USER` | utilisateur SSH de déploiement |
+| Secret | `DEPLOY_SSH_KEY` | clé **privée** OpenSSH (sans passphrase) |
+| Secret | `DEPLOY_PATH` | chemin du dépôt cloné (`/var/www/text-calculator`) |
+| Secret | `DEPLOY_PORT` | *(facultatif)* port SSH, défaut `22` |
+
+Créez la paire de clés avec `ssh-keygen -t ed25519 -f deploy_key -N ""`, ajoutez
+`deploy_key.pub` aux `~/.ssh/authorized_keys` du serveur, et collez le contenu
+de `deploy_key` (la clé privée) dans le secret `DEPLOY_SSH_KEY`.
+
+Tant que `DEPLOY_ENABLED` n'est pas `true`, l'étape de déploiement est
+**ignorée** (les tests tournent quand même) — vous pouvez donc tout préparer
+sans rien casser.
+
 ## Lancer le projet
 
 Aucune dépendance, aucune étape de build. Ouvrez `index.html` dans un

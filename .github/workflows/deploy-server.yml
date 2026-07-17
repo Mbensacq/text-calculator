@@ -1,0 +1,68 @@
+# Déploiement automatique sur votre serveur (Infomaniak) à chaque push sur main.
+#
+# À chaque commit sur « main » :
+#   1. la suite de tests est rejouée (un main cassé n'est jamais déployé) ;
+#   2. si le déploiement est activé, le workflow se connecte en SSH au serveur
+#      et lance server/deploy/pull.sh (git reset --hard origin/main + restart).
+#
+# ── Activation (une seule fois, côté GitHub) ───────────────────────────────
+# Settings → Secrets and variables → Actions :
+#   • Variables :  DEPLOY_ENABLED = true
+#   • Secrets   :  DEPLOY_HOST      (ex. calc.mon-domaine.com ou l'IP)
+#                  DEPLOY_USER      (utilisateur SSH de déploiement)
+#                  DEPLOY_SSH_KEY   (clé PRIVÉE OpenSSH, sans passphrase)
+#                  DEPLOY_PATH      (chemin du dépôt cloné, ex. /var/www/text-calculator)
+#                  DEPLOY_PORT      (facultatif, défaut 22)
+# Tant que DEPLOY_ENABLED n'est pas « true », l'étape de déploiement est ignorée
+# (les tests, eux, tournent toujours).
+
+name: Deploy to server
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-server
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier la syntaxe de chaque module
+        run: for f in src/*.js test/*.js sw.js server/*.js; do node --check "$f" || exit 1; done
+      - name: Suite du moteur
+        run: node test/engine.test.js
+      - name: Alignement des versions d'assets
+        run: node test/version-check.js
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: ${{ vars.DEPLOY_ENABLED == 'true' }}
+    steps:
+      - name: Déploiement par SSH
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          SSH_HOST: ${{ secrets.DEPLOY_HOST }}
+          SSH_USER: ${{ secrets.DEPLOY_USER }}
+          SSH_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          if [ -z "$SSH_KEY" ] || [ -z "$SSH_HOST" ] || [ -z "$SSH_USER" ] || [ -z "$DEPLOY_PATH" ]; then
+            echo "::warning::Secrets de déploiement incomplets — étape ignorée."
+            exit 0
+          fi
+          PORT="${SSH_PORT:-22}"
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -p "$PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          ssh -i ~/.ssh/id_deploy -p "$PORT" -o StrictHostKeyChecking=accept-new \
+            "$SSH_USER@$SSH_HOST" "cd '$DEPLOY_PATH' && bash server/deploy/pull.sh"
