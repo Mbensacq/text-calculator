@@ -32,7 +32,10 @@
       const json = JSON.stringify(blocks);
       const last = arr[arr.length - 1];
       if (last && last.json === json) return;                 // nothing changed
-      if (last && (now - last.t) < minInterval) { last.json = json; last.t = now; }
+      // Coalesce within the window, but keep the window ANCHORED to the first
+      // edit of the cluster (don't advance last.t) — otherwise a continuous
+      // session slides the window forever and collapses to a single version.
+      if (last && (now - last.t) < minInterval) { last.json = json; }
       else arr.push({ t: now, json: json });
       while (arr.length > limit) arr.shift();
       save(map);

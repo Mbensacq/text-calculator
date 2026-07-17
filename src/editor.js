@@ -159,7 +159,7 @@
       div.appendChild(textNode(cb[1]));
       const done = /[xX]/.test(cb[2]);
       div.appendChild(span('md-check' + (done ? ' is-done' : ''), cb[2]));
-      appendInline(div, cb[3], cb[1].length + cb[2].length);
+      appendInline(div, cb[3], abs + cb[1].length + cb[2].length);
       return;
     }
     // Bullet list "- …" / "* …" (a space after the marker rules out -5 and 2*3).
@@ -167,7 +167,7 @@
     if (li) {
       div.appendChild(textNode(li[1]));
       div.appendChild(span('md-bullet', li[2]));
-      appendInline(div, li[3], li[1].length + li[2].length);
+      appendInline(div, li[3], abs + li[1].length + li[2].length);
       return;
     }
 

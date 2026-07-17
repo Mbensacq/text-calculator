@@ -1301,8 +1301,11 @@
       const sameContent = !!(local && remote && remote.blocks && JSON.stringify(remote.blocks) === JSON.stringify(local.blocks));
       if (sameContent) delete dirty[id]; // the server now holds our version
       // Both sides changed since our last sync → surface a conflict instead of
-      // silently letting last-write-wins discard one side.
-      if (local && dirty[id] && remote && remote.blocks && !sameContent) {
+      // silently letting last-write-wins discard one side. A genuine remote edit
+      // always carries a newer timestamp; requiring that avoids mistaking the
+      // delayed echo of our own earlier push (older ts) for a real conflict.
+      const remoteNewer = remote && (remote.updatedAt || 0) > (local ? (local.updatedAt || 0) : 0);
+      if (local && dirty[id] && remote && remote.blocks && !sameContent && remoteNewer) {
         conflicts[id] = remote;
         renderConflictBar();
         renderList();

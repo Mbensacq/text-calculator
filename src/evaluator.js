@@ -438,13 +438,13 @@
   }
 
   // A child environment that overrides a single variable (used by Σ and, more
-  // generally, by any bound-variable construct).
+  // generally, by any bound-variable construct). Everything else (cells, ranges,
+  // qualified cells, exchange rates, the document's fixed "now") is preserved so
+  // a Σ body can still reference B1, convert currencies, or read a date.
   function withLocal(env, name, value) {
-    return {
+    return Object.assign({}, env, {
       lookupVar: function (n) { return n === name ? value : (env && env.lookupVar ? env.lookupVar(n) : null); },
-      lookupFunc: env && env.lookupFunc,
-      callFunction: env && env.callFunction,
-    };
+    });
   }
 
   // Convert one quantity to a target unit. Same-dimension conversions go through

@@ -396,6 +396,10 @@ const rt1 = { rows: 4, cols: 1, cells: { '0,0': '10', '1,0': '20' }, name: 'T1' 
 const rt2 = { rows: 4, cols: 1, cells: { '0,0': '1', '1,0': '2', '2,0': '3' }, name: 'T2' };
 check('qualified range sums the named table', runCells('somme(T2!A1:A3) =', [rt1, rt2])[0], '6');
 check('qualified range on the other table', runCells('somme(T1!A1:A2) =', [rt1, rt2])[0], '30');
+// Regression (review #5): a Σ body must keep access to cell refs — withLocal
+// preserves the whole environment, not just variables. t1's B1 = 20, so
+// Σ(i,1,3, B1*i) = 20·(1+2+3) = 120.
+check('Σ body can still reference a cell', runCells('Σ(i, 1, 3, B1 * i) =', [t1])[0], '120');
 check('unknown table name errors out',
   evaluateDocument('T3!B1 =', { externalCells: makeCells([t1, t2]) }).lines[0].error != null, true);
 check('lone bang is still factorial, not a qualified ref', run('5! =')[0], '120');

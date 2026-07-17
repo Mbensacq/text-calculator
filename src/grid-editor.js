@@ -281,8 +281,8 @@
 
     function numericFromDisplay(s) {
       const t = String(s == null ? '' : s).replace(/[\s  ]/g, '');
-      const m = /^-?\d+(?:\.\d+)?/.exec(t);
-      return m ? parseFloat(m[0]) : null;
+      const m = /^-?\d+(?:[.,]\d+)?/.exec(t); // accept a comma decimal separator too
+      return m ? parseFloat(m[0].replace(',', '.')) : null;
     }
     function labelForRow(r, c) {
       if (c !== 0) { const d = computed[key(r, 0)]; if (d && d.display) return d.display; }

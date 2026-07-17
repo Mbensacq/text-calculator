@@ -32,6 +32,10 @@ const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 const TOKEN = process.env.SYNC_TOKEN || '';           // if set, required as ?auth=
 const SERVE_STATIC = process.env.SERVE_STATIC || '';  // optional: absolute path to the site
 const HEARTBEAT_MS = Number(process.env.HEARTBEAT_MS || 25000);
+// Max accepted PUT body. Must stay well above the largest note: an embedded
+// image is capped client-side at ~2.6 MB and end-to-end encryption + base64
+// inflate it, so 12 MB leaves comfortable headroom for a few images.
+const MAX_BODY = Number(process.env.MAX_BODY || 12 * 1024 * 1024);
 
 const store = createStore(process.env);
 const streams = {};          // ws -> Set(res)
@@ -129,8 +133,17 @@ const server = http.createServer((req, res) => {
     // --- Write a note ---
     if (req.method === 'PUT' && id) {
       let body = '';
-      req.on('data', (c) => { body += c; if (body.length > 1e6) req.destroy(); });
+      let tooLarge = false;
+      req.on('data', (c) => {
+        body += c;
+        if (body.length > MAX_BODY) {
+          tooLarge = true;
+          if (!res.headersSent) { res.writeHead(413, { 'Content-Type': 'application/json' }); res.end('{"error":"payload too large"}'); }
+          req.destroy();
+        }
+      });
       req.on('end', () => {
+        if (tooLarge) return;
         let note; try { note = JSON.parse(body); } catch (e) { res.writeHead(400); res.end('{"error":"bad json"}'); return; }
         store.put(ws, id, note).then(() => {
           broadcast(ws, '/' + id, note);

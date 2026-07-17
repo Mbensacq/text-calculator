@@ -285,7 +285,7 @@
         return 'updated';
       }
       const note = normalise({ id: id, blocks: toBlocks(remote), updatedAt: ts,
-        pinned: remote.pinned, trashed: remote.trashed });
+        pinned: remote.pinned, trashed: remote.trashed, folder: remote.folder, tags: remote.tags });
       state.notes.push(note);
       persist();
       return 'added';
